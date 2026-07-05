@@ -32,23 +32,28 @@ export async function fetchContracts() {
     }
   }
 
-  // HTML vyhľadávanie na webe CRZ
+  // HTML vyhľadávanie na webe CRZ (action + polia podľa reálneho formulára)
+  const SEARCH = 'https://www.crz.gov.sk/2171273-sk/centralny-register-zmluv/';
   const htmlAttempts = [
-    `https://www.crz.gov.sk/zmluvy/?art_ico=${ICO}`,
-    `https://www.crz.gov.sk/zmluvy/?art_zs2=${Q}`,
-    `https://www.crz.gov.sk/?ID=2171273&art_zs2=${Q}`,
+    `${SEARCH}?art_ico=${ICO}&search=H%C4%BEada%C5%A5&frm_id_frm_filter_3=1`,
+    `${SEARCH}?art_ico=${ICO}`,
+    `${SEARCH}?art_zs1=${Q}`,
+    `${SEARCH}?art_zs2=${Q}`,
   ];
   for (const url of htmlAttempts) {
     try {
       const html = await getText(url, { retries: 0, timeoutMs: 15000 });
       const items = scrapeSearch(html);
-      notes.push(`${url.slice(0, 70)} -> HTML ${html.length} B, ${items.length} zmlúv`);
+      notes.push(`${url.slice(0, 80)} -> HTML ${html.length} B, ${items.length} zmlúv`);
       if (items.length) {
         console.log('  crz diagnostika:', notes.join(' | '));
         return writeResult('contracts', { items, via: url });
       }
+      // 0 výsledkov — zaloguj odkazy zo stránky pre ladenie scrapera
+      const hrefs = [...new Set([...html.matchAll(/href="([^"]*\d{5,}[^"]*)"/g)].map(m => m[1]))];
+      console.log(`  crz odkazy na ${url.slice(0, 60)}:`, hrefs.slice(0, 10).join(' , ') || '—');
     } catch (e) {
-      notes.push(`${url.slice(0, 70)} -> ${e.message.slice(0, 120)}`);
+      notes.push(`${url.slice(0, 80)} -> ${e.message.slice(0, 120)}`);
     }
   }
 
