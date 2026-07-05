@@ -1,0 +1,32 @@
+{
+  "obec": "Ľubietová",
+  "lat": 48.7478,
+  "lon": 19.3625,
+  "elevationM": 495,
+  "okres": "Banská Bystrica",
+  "kraj": "Banskobystrický kraj",
+  "wikiTitle": "Ľubietová",
+  "icoObce": null,
+  "icoSearchName": "Obec Ľubietová",
+  "planes": {
+    "radiusNm": 25,
+    "refreshSeconds": 45
+  },
+  "quakes": {
+    "radiusKm": 150,
+    "days": 30,
+    "minMagnitude": 1.5
+  },
+  "webcams": [
+    {
+      "name": "Donovaly",
+      "page": "https://www.parksnow.sk/zima/",
+      "snapshot": ""
+    },
+    {
+      "name": "Šachtičky",
+      "page": "https://www.sachticky.sk/",
+      "snapshot": ""
+    }
+  ]
+}

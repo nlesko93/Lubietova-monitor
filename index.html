@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="sk" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ľubietová Monitor</title>
+<meta name="description" content="Monitorovací dashboard obce Ľubietová — počasie, ovzdušie, lietadlá a satelity nad obcou, správy, transparentnosť obce a ďalšie verejne dostupné údaje v reálnom čase.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <h1>Ľubietová <span class="accent">Monitor</span></h1>
+    <p class="subtitle">Verejne dostupné údaje o obci v reálnom čase · okres Banská Bystrica · 48.748° N, 19.363° E · 495 m n. m.</p>
+  </div>
+  <div class="topbar-status">
+    <div class="clock" id="clock" aria-live="off">--:--:--</div>
+    <div class="topbar-meta" id="topbar-sun">—</div>
+    <button class="theme-toggle" id="theme-toggle" title="Prepnúť svetlý/tmavý režim" aria-label="Prepnúť tému">◐</button>
+  </div>
+</header>
+
+<main class="grid">
+
+  <!-- ŽIVÉ KARTY -->
+  <section class="card card-wide" id="card-map" aria-labelledby="h-map">
+    <div class="card-head">
+      <h2 id="h-map">Živá mapa</h2>
+      <span class="card-status" data-status="map"></span>
+    </div>
+    <div id="map" class="map" role="application" aria-label="Mapa okolia Ľubietovej"></div>
+    <div class="map-legend" id="map-legend"></div>
+  </section>
+
+  <section class="card" id="card-weather" aria-labelledby="h-weather">
+    <div class="card-head">
+      <h2 id="h-weather">Počasie</h2>
+      <span class="card-status" data-status="weather"></span>
+    </div>
+    <div class="card-body" id="weather-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-air" aria-labelledby="h-air">
+    <div class="card-head">
+      <h2 id="h-air">Kvalita ovzdušia</h2>
+      <span class="card-status" data-status="air"></span>
+    </div>
+    <div class="card-body" id="air-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-alerts" aria-labelledby="h-alerts">
+    <div class="card-head">
+      <h2 id="h-alerts">Výstrahy</h2>
+      <span class="card-status" data-status="alerts"></span>
+    </div>
+    <div class="card-body" id="alerts-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-planes" aria-labelledby="h-planes">
+    <div class="card-head">
+      <h2 id="h-planes">Lietadlá nad obcou</h2>
+      <span class="card-status" data-status="planes"></span>
+    </div>
+    <div class="card-body" id="planes-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-sky" aria-labelledby="h-sky">
+    <div class="card-head">
+      <h2 id="h-sky">Obloha teraz</h2>
+      <span class="card-status" data-status="sky"></span>
+    </div>
+    <div class="card-body" id="sky-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-sats" aria-labelledby="h-sats">
+    <div class="card-head">
+      <h2 id="h-sats">Satelity nad obzorom</h2>
+      <span class="card-status" data-status="sats"></span>
+    </div>
+    <div class="card-body" id="sats-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-quakes" aria-labelledby="h-quakes">
+    <div class="card-head">
+      <h2 id="h-quakes">Zemetrasenia do 150 km</h2>
+      <span class="card-status" data-status="quakes"></span>
+    </div>
+    <div class="card-body" id="quakes-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <!-- KARTY Z HODINOVÝCH DÁT -->
+  <section class="card" id="card-news" aria-labelledby="h-news">
+    <div class="card-head">
+      <h2 id="h-news">Správy o Ľubietovej</h2>
+      <span class="card-status" data-status="news"></span>
+    </div>
+    <div class="card-body" id="news-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-obec" aria-labelledby="h-obec">
+    <div class="card-head">
+      <h2 id="h-obec">Obecný úrad — aktuality</h2>
+      <span class="card-status" data-status="obec"></span>
+    </div>
+    <div class="card-body" id="obec-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-contracts" aria-labelledby="h-contracts">
+    <div class="card-head">
+      <h2 id="h-contracts">Zmluvy obce</h2>
+      <span class="card-status" data-status="contracts"></span>
+    </div>
+    <div class="card-body" id="contracts-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-finance" aria-labelledby="h-finance">
+    <div class="card-head">
+      <h2 id="h-finance">Hospodárenie obce</h2>
+      <span class="card-status" data-status="finance"></span>
+    </div>
+    <div class="card-body" id="finance-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-demo" aria-labelledby="h-demo">
+    <div class="card-head">
+      <h2 id="h-demo">Obyvateľstvo</h2>
+      <span class="card-status" data-status="demo"></span>
+    </div>
+    <div class="card-body" id="demo-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+  <section class="card" id="card-webcams" aria-labelledby="h-webcams" hidden>
+    <div class="card-head">
+      <h2 id="h-webcams">Webkamery v okolí</h2>
+      <span class="card-status" data-status="webcams"></span>
+    </div>
+    <div class="card-body" id="webcams-body"></div>
+  </section>
+
+  <section class="card" id="card-wiki" aria-labelledby="h-wiki">
+    <div class="card-head">
+      <h2 id="h-wiki">O obci</h2>
+      <span class="card-status" data-status="wiki"></span>
+    </div>
+    <div class="card-body" id="wiki-body"><p class="placeholder">Načítavam…</p></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Ľubietová Monitor — nezávislý prehľad verejne dostupných (OSINT) údajov. Nie je oficiálnou stránkou obce.</p>
+  <p class="sources">Zdroje: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a> ·
+    <a href="https://meteoalarm.org/" rel="noopener">Meteoalarm</a> ·
+    <a href="https://adsb.lol/" rel="noopener">adsb.lol</a> ·
+    <a href="https://celestrak.org/" rel="noopener">CelesTrak</a> ·
+    <a href="https://earthquake.usgs.gov/" rel="noopener">USGS</a> ·
+    <a href="https://www.swpc.noaa.gov/" rel="noopener">NOAA SWPC</a> ·
+    <a href="https://news.google.com/" rel="noopener">Google News</a> ·
+    <a href="https://www.lubietova.sk/" rel="noopener">lubietova.sk</a> ·
+    <a href="https://www.crz.gov.sk/" rel="noopener">CRZ</a> ·
+    <a href="https://www.registeruz.sk/" rel="noopener">RegisterUZ</a> ·
+    <a href="https://slovak.statistics.sk/" rel="noopener">ŠÚ SR</a> ·
+    <a href="https://sk.wikipedia.org/" rel="noopener">Wikipédia</a> ·
+    <a href="https://www.openstreetmap.org/" rel="noopener">OpenStreetMap</a></p>
+</footer>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/satellite.min.js"></script>
+<script src="assets/vendor/astronomy.browser.min.js"></script>
+<script type="module" src="assets/js/main.js"></script>
+</body>
+</html>

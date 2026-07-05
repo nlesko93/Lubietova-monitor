@@ -1,0 +1,60 @@
+name: Aktualizácia dát a nasadenie
+
+on:
+  schedule:
+    - cron: '17 * * * *'   # každú hodinu
+  workflow_dispatch:
+  push:
+    branches: [main, claude/lubietova-osint-dashboard-reycfe]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Stiahnuť dáta zo zdrojov
+        run: node scripts/fetch/all.mjs
+
+      - name: Zhrnutie dát
+        run: |
+          echo "## Stav zdrojov" >> "$GITHUB_STEP_SUMMARY"
+          for f in data/*.json; do
+            ok=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$f')).ok)")
+            n=$(node -e "const d=JSON.parse(require('fs').readFileSync('$f'));console.log(d.items?d.items.length:'-')")
+            echo "- \`$f\` ok=$ok items=$n" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Overenie nasadenej stránky
+        run: |
+          sleep 10
+          url="${{ steps.deployment.outputs.page_url }}"
+          echo "Kontrolujem $url"
+          curl -sSf "$url" | grep -q "Ľubietová" && echo "OK: stránka beží"
+          curl -sSf "${url}data/news.json" | head -c 200
