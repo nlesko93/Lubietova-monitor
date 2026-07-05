@@ -7,12 +7,9 @@ const NAME = CONFIG.icoSearchName || 'Obec Ľubietová';
 const ICO = CONFIG.icoObce || '00313564';
 const Q = encodeURIComponent(NAME);
 
-const API_ATTEMPTS = [
-  `https://www.crz.gov.sk/api/v2/zmluvy?objednavatel=${Q}&limit=15`,
-  `https://www.crz.gov.sk/api/v2/zmluvy?ico=${ICO}&limit=15`,
-  `https://www.crz.gov.sk/api/v1/zmluvy?q=${Q}`,
-  `https://www.crz.gov.sk/api/zmluvy?q=${Q}`,
-];
+// API na crz.gov.sk neexistuje (všetky /api/* cesty vracajú 404),
+// funguje HTML vyhľadávanie podľa IČO — overené v Actions behu č. 5.
+const API_ATTEMPTS = [];
 
 export async function fetchContracts() {
   const notes = [];
@@ -35,7 +32,6 @@ export async function fetchContracts() {
   // HTML vyhľadávanie na webe CRZ (action + polia podľa reálneho formulára)
   const SEARCH = 'https://www.crz.gov.sk/2171273-sk/centralny-register-zmluv/';
   const htmlAttempts = [
-    `${SEARCH}?art_ico=${ICO}&search=H%C4%BEada%C5%A5&frm_id_frm_filter_3=1`,
     `${SEARCH}?art_ico=${ICO}`,
     `${SEARCH}?art_zs1=${Q}`,
     `${SEARCH}?art_zs2=${Q}`,
