@@ -22,12 +22,42 @@ export async function fetchDemographics() {
   if (!obecCode) throw new Error('kód obce sa v číselníku nenašiel');
   console.log(`  statistics: ${CONFIG.obec} = ${obecCode} (dim ${dimUsed})`);
 
-  // 2) časový rad
-  const url = `${API}/dataset/${CUBE}/${obecCode}/all/all?lang=sk&type=json`;
-  const cube = await getJSON(url);
-  const items = parseJsonStat(cube);
-  if (!items.length) throw new Error('kocka nevrátila použiteľné hodnoty');
-  return writeResult('demographics', { items, obecCode });
+  // 2) zisti kódy rokov a ukazovateľov (niektoré kocky nepodporujú "all")
+  const years = await dimCodes(`${CUBE}_rok`);
+  const ukaz = await dimCodes(`${CUBE}_ukaz`);
+  console.log(`  statistics: rokov ${years.length} (${years.slice(0, 3)}…), ukazovatele: ${ukaz.join(',') || '—'}`);
+
+  // 3) časový rad — postupne od najkonkrétnejšieho tvaru
+  const attempts = [
+    years.length && ukaz.length && `${API}/dataset/${CUBE}/${obecCode}/${years.slice(-25).join(',')}/${ukaz[0]}?lang=sk&type=json`,
+    ukaz.length && `${API}/dataset/${CUBE}/${obecCode}/all/${ukaz[0]}?lang=sk&type=json`,
+    `${API}/dataset/${CUBE}/${obecCode}/all/all?lang=sk&type=json`,
+  ].filter(Boolean);
+
+  let lastErr;
+  for (const url of attempts) {
+    try {
+      const cube = await getJSON(url, { retries: 0 });
+      const items = parseJsonStat(cube);
+      if (items.length) return writeResult('demographics', { items, obecCode, via: url });
+      lastErr = new Error('kocka nevrátila použiteľné hodnoty');
+    } catch (e) {
+      lastErr = e;
+      console.warn(`  statistics dataset: ${e.message.slice(0, 200)}`);
+    }
+  }
+  throw lastErr;
+}
+
+async function dimCodes(dim) {
+  try {
+    const d = await getJSON(`${API}/dimension/${CUBE}/${dim}?lang=sk`, { retries: 0 });
+    return Object.entries(d?.category?.index || {})
+      .sort((a, b) => a[1] - b[1]).map(([k]) => k);
+  } catch (e) {
+    console.warn(`  statistics dim ${dim}: ${e.message.slice(0, 150)}`);
+    return [];
+  }
 }
 
 const norm = s => String(s || '').toLowerCase()

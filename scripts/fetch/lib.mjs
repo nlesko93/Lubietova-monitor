@@ -20,7 +20,11 @@ export async function get(url, { timeoutMs = 20000, headers = {}, retries = 1 } 
         redirect: 'follow',
         headers: { 'user-agent': UA, accept: '*/*', ...headers },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
+      if (!res.ok) {
+        let body = '';
+        try { body = (await res.text()).slice(0, 300).replace(/\s+/g, ' '); } catch { /* ignore */ }
+        throw new Error(`HTTP ${res.status} ${url}${body ? ` :: ${body}` : ''}`);
+      }
       return res;
     } catch (e) {
       lastErr = e;

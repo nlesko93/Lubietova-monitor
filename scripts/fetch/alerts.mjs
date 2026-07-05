@@ -27,7 +27,14 @@ export async function fetchAlerts() {
 // legacy ATOM: entry obsahuje cap:* polia
 function fromAtom(xml) {
   const items = [];
-  for (const entry of xmlBlocks(xml, 'entry')) {
+  const entries = xmlBlocks(xml, 'entry');
+  const areaSamples = new Set();
+  for (const entry of entries) {
+    const a = xmlValue(entry, 'cap:areaDesc');
+    if (a) areaSamples.add(a);
+  }
+  console.log(`  alerts: ${entries.length} entries, oblasti: ${[...areaSamples].slice(0, 8).join(' | ') || '—'}`);
+  for (const entry of entries) {
     const areas = xmlValue(entry, 'cap:areaDesc') || '';
     if (!AREA_MATCH.test(areas)) continue;
     const status = xmlValue(entry, 'cap:status');
