@@ -10,17 +10,26 @@ const FEEDS = [
 const AREA_MATCH = /Bansk[áa] Bystrica|Banskobystrick/i;
 
 export async function fetchAlerts() {
-  let lastErr;
+  let lastErr, empty = null;
   for (const url of FEEDS) {
     try {
+      let items;
       if (url.includes('api/v1')) {
         const data = await getJSON(url);
-        return writeResult('alerts', { items: fromApi(data), via: url });
+        items = fromApi(data);
+      } else {
+        const xml = await getText(url);
+        console.log(`  alerts: feed ${url.slice(0, 60)} → ${xml.length} B`);
+        items = fromAtom(xml);
       }
-      const xml = await getText(url);
-      return writeResult('alerts', { items: fromAtom(xml), via: url });
-    } catch (e) { lastErr = e; }
+      if (items.length) return writeResult('alerts', { items, via: url });
+      empty = { items, via: url };
+    } catch (e) {
+      lastErr = e;
+      console.warn(`  alerts: ${e.message.slice(0, 150)}`);
+    }
   }
+  if (empty) return writeResult('alerts', empty);
   throw lastErr;
 }
 

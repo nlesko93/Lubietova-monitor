@@ -52,12 +52,17 @@ export async function fetchContracts() {
     }
   }
 
-  // Nič nezabralo — zaloguj dokumentáciu API pre ďalšiu iteráciu.
+  // Nič nezabralo — zaloguj polia vyhľadávacieho formulára a výňatok
+  // stránky, aby sa dali parametre doladiť v ďalšej iterácii.
   try {
-    const doc = await getText('https://www.crz.gov.sk/api/', { retries: 0 });
-    console.log('  crz API docs (výňatok):', stripTags(doc).slice(0, 1500));
+    const page = await getText('https://www.crz.gov.sk/zmluvy/', { retries: 0 });
+    const fields = [...page.matchAll(/<(?:input|select)[^>]*\sname="([^"]+)"/gi)].map(m => m[1]);
+    const forms = [...page.matchAll(/<form[^>]*action="([^"]*)"[^>]*>/gi)].map(m => m[1]);
+    console.log('  crz formuláre:', forms.join(' , ') || '—', '| polia:', [...new Set(fields)].join(',') || '—');
+    const tablePos = page.search(/zmluva|table|result/i);
+    console.log('  crz stránka (výňatok):', stripTags(page.slice(Math.max(0, tablePos), tablePos + 900)).slice(0, 700));
   } catch (e) {
-    console.log('  crz API docs nedostupné:', e.message.slice(0, 120));
+    console.log('  crz /zmluvy/ nedostupné:', e.message.slice(0, 120));
   }
   console.log('  crz diagnostika:', notes.join(' | '));
   return writeResult('contracts', { items: [], note: 'endpoint sa zatiaľ nepodarilo nájsť' });

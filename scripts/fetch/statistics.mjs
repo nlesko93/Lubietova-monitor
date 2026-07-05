@@ -22,17 +22,12 @@ export async function fetchDemographics() {
   if (!obecCode) throw new Error('kód obce sa v číselníku nenašiel');
   console.log(`  statistics: ${CONFIG.obec} = ${obecCode} (dim ${dimUsed})`);
 
-  // 2) zisti kódy rokov a ukazovateľov (niektoré kocky nepodporujú "all")
-  const years = await dimCodes(`${CUBE}_rok`);
-  const ukaz = await dimCodes(`${CUBE}_ukaz`);
-  console.log(`  statistics: rokov ${years.length} (${years.slice(0, 3)}…), ukazovatele: ${ukaz.join(',') || '—'}`);
-
-  // 3) časový rad — postupne od najkonkrétnejšieho tvaru
+  // 2) časový rad — kocka má 4 dimenzie (obec, rok, ďalšia, ukazovateľ);
+  //    "all" pre všetky okrem obce a v parseri sa vyberie riadok "spolu".
   const attempts = [
-    years.length && ukaz.length && `${API}/dataset/${CUBE}/${obecCode}/${years.slice(-25).join(',')}/${ukaz[0]}?lang=sk&type=json`,
-    ukaz.length && `${API}/dataset/${CUBE}/${obecCode}/all/${ukaz[0]}?lang=sk&type=json`,
+    `${API}/dataset/${CUBE}/${obecCode}/all/all/all?lang=sk&type=json`,
     `${API}/dataset/${CUBE}/${obecCode}/all/all?lang=sk&type=json`,
-  ].filter(Boolean);
+  ];
 
   let lastErr;
   for (const url of attempts) {
@@ -40,49 +35,51 @@ export async function fetchDemographics() {
       const cube = await getJSON(url, { retries: 0 });
       const items = parseJsonStat(cube);
       if (items.length) return writeResult('demographics', { items, obecCode, via: url });
+      console.warn(`  statistics: ${url} vrátila 0 hodnôt, dims=${(cube.id || []).join(',')}`);
       lastErr = new Error('kocka nevrátila použiteľné hodnoty');
     } catch (e) {
       lastErr = e;
-      console.warn(`  statistics dataset: ${e.message.slice(0, 200)}`);
+      console.warn(`  statistics dataset: ${e.message.slice(0, 220)}`);
     }
   }
   throw lastErr;
 }
 
-async function dimCodes(dim) {
-  try {
-    const d = await getJSON(`${API}/dimension/${CUBE}/${dim}?lang=sk`, { retries: 0 });
-    return Object.entries(d?.category?.index || {})
-      .sort((a, b) => a[1] - b[1]).map(([k]) => k);
-  } catch (e) {
-    console.warn(`  statistics dim ${dim}: ${e.message.slice(0, 150)}`);
-    return [];
-  }
-}
-
 const norm = s => String(s || '').toLowerCase()
   .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
-// JSON-stat 2.0 → [{year, population}]
+// JSON-stat 2.0 → [{year, population}]. Pri ostatných dimenziách sa vyberie
+// položka "spolu/celkom" (ak existuje), inak prvá.
 function parseJsonStat(js) {
-  const dimIds = js?.id || [];
-  const timeDimId = dimIds.find(d => /rok|year|time/i.test(d)) || dimIds[1];
-  const timeDim = js?.dimension?.[timeDimId];
-  if (!timeDim) return [];
-  const timeIdx = Object.entries(timeDim.category.index)
-    .sort((a, b) => a[1] - b[1]).map(([k]) => k);
-  const size = js.size || [];
-  const values = js.value || [];
-  // veľkosť bloku pre časovú dimenziu
-  const tPos = dimIds.indexOf(timeDimId);
-  let stride = 1;
-  for (let i = tPos + 1; i < size.length; i++) stride *= size[i];
+  const ids = js?.id || [];
+  const sizes = js?.size || [];
+  const values = js?.value || [];
+  if (!ids.length || !values.length) return [];
 
+  const strides = new Array(ids.length);
+  let s = 1;
+  for (let i = ids.length - 1; i >= 0; i--) { strides[i] = s; s *= sizes[i]; }
+
+  const dimOrder = id => Object.entries(js.dimension[id].category.index)
+    .sort((a, b) => a[1] - b[1]).map(([k]) => k);
+
+  const timePos = ids.findIndex(d => /rok|year|time|obd/i.test(d));
+  if (timePos < 0) return [];
+
+  let offset = 0;
+  ids.forEach((id, pos) => {
+    if (pos === timePos) return;
+    const labels = js.dimension[id].category.label || {};
+    const order = dimOrder(id);
+    const totalIdx = order.findIndex(c => /spolu|celkom|total|úhrn/i.test(labels[c] || ''));
+    offset += Math.max(0, totalIdx) * strides[pos];
+  });
+
+  const timeDim = js.dimension[ids[timePos]];
   const items = [];
-  timeIdx.forEach((t, i) => {
-    // prvá kombinácia ostatných dimenzií (celkový ukazovateľ býva prvý)
-    const v = values[i * stride];
-    const year = parseInt(String(timeDim.category.label?.[t] ?? t).match(/\d{4}/)?.[0]);
+  dimOrder(ids[timePos]).forEach((code, i) => {
+    const v = values[offset + i * strides[timePos]];
+    const year = parseInt(String(timeDim.category.label?.[code] ?? code).match(/\d{4}/)?.[0]);
     if (v != null && year) items.push({ year, population: v });
   });
   return items.filter(it => it.population > 0).sort((a, b) => a.year - b.year).slice(-25);
