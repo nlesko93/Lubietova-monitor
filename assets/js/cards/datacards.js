@@ -123,6 +123,52 @@ export function initDemo() {
   });
 }
 
+// Druh odpadu podľa kľúčových slov v názve udalosti → emoji + farba badge.
+const WASTE_KINDS = [
+  [/plast|pet|žlt/i, '🟡', 'var(--series-3)', 'plasty'],
+  [/papier|modr/i, '🔵', 'var(--series-1)', 'papier'],
+  [/sklo|zelen/i, '🟢', 'var(--series-4)', 'sklo'],
+  [/bio|kuchyn|konár|tráv/i, '🟤', '#8f6b4a', 'bioodpad'],
+  [/kov|plechov/i, '🔴', 'var(--series-6)', 'kovy'],
+  [/elektro|nebezpe/i, '⚠️', 'var(--status-serious)', 'nebezpečný/elektro'],
+  [/komun|zmesov|tko|smeti/i, '⚫', 'var(--text-muted)', 'komunálny'],
+];
+const wasteKind = title => WASTE_KINDS.find(([re]) => re.test(title)) || [null, '🗑️', 'var(--text-secondary)', null];
+
+export function initWaste() {
+  return dataCard('waste', 'waste-body', (body, d) => {
+    const dayMs = 86400e3;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const daysTo = iso => Math.round((new Date(iso + 'T00:00:00') - today) / dayMs);
+    const dayLabel = n => n <= 0 ? 'dnes' : n === 1 ? 'zajtra' : `o ${n} dní`;
+    const dateFmt = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric' });
+
+    const next = d.items[0];
+    const [, emoji, color, kind] = wasteKind(next.title);
+    const n = daysTo(next.date);
+    body.appendChild(el('div', { class: 'hero-row' }, [
+      el('span', { class: 'hero-emoji', text: emoji }),
+      el('span', { class: 'hero-figure', text: dayLabel(n) }),
+      el('span', { class: 'hero-side' }, [
+        el('span', { class: 'badge', style: `--badge-color:${color}`, text: next.title }),
+        el('span', { html: `<br>${dateFmt.format(new Date(next.date))}${kind ? ' · ' + kind : ''}` }),
+      ]),
+    ]));
+
+    const list = el('ul', { class: 'item-list' });
+    for (const it of d.items.slice(1, 6)) {
+      const [, em, c] = wasteKind(it.title);
+      list.appendChild(el('li', {}, [
+        el('span', { class: 'item-value', text: dayLabel(daysTo(it.date)) }),
+        el('span', { class: 'badge', style: `--badge-color:${c}`, text: `${em} ${it.title}` }),
+        el('span', { class: 'item-meta', text: dateFmt.format(new Date(it.date)) }),
+      ]));
+    }
+    if (d.items.length > 1) body.appendChild(list);
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Zdroj: verejný kalendár zvozu odpadu obce (Google Calendar)' }));
+  }, { emptyText: 'V kalendári nie sú žiadne najbližšie termíny zvozu.' });
+}
+
 export function initWebcams() {
   const card = document.getElementById('card-webcams');
   return dataCard('webcams', 'webcams-body', (body, d) => {

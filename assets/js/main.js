@@ -10,7 +10,7 @@ import { initQuakes } from './cards/quakes.js';
 import { initWiki } from './cards/wiki.js';
 import {
   initNews, initObec, initAlerts, initContracts,
-  initFinance, initDemo, initWebcams,
+  initFinance, initDemo, initWebcams, initWaste,
 } from './cards/datacards.js';
 
 // --- téma ---
@@ -44,7 +44,7 @@ try {
 const cards = [
   initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
   initWiki, initNews, initObec, initAlerts, initContracts, initFinance,
-  initDemo, initWebcams,
+  initDemo, initWebcams, initWaste,
 ];
 for (const init of cards) {
   Promise.resolve().then(init).catch(e => console.error(init.name, e));

@@ -9,6 +9,7 @@ import { fetchFinance } from './registeruz.mjs';
 import { fetchDemographics } from './statistics.mjs';
 import { fetchTle } from './tle.mjs';
 import { fetchWebcams } from './webcams.mjs';
+import { fetchWaste } from './waste.mjs';
 
 const FETCHERS = [
   ['news', fetchNews],
@@ -19,6 +20,7 @@ const FETCHERS = [
   ['demographics', fetchDemographics],
   ['tle', fetchTle],
   ['webcams', fetchWebcams],
+  ['waste', fetchWaste],
 ];
 
 const results = await Promise.allSettled(
