@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { get, writeResult, CONFIG } from './lib.mjs';
+import { writeResult, CONFIG } from './lib.mjs';
 
 const OBEC_NAME = /ľubietová/i;
 const OBEC_CODE = (CONFIG.obecStatCode || '508748').trim();
@@ -38,9 +38,19 @@ export async function fetchElections() {
   return writeResult('elections', { items });
 }
 
+const MAX_ZIP_BYTES = 60 * 1024 * 1024;
+
 async function scanZip(elec, zipUrl) {
-  const res = await get(zipUrl, { retries: 1, timeoutMs: 60000 });
+  // timeout musí kryť aj sťahovanie tela, nie len hlavičky
+  const res = await fetch(zipUrl, {
+    signal: AbortSignal.timeout(120000),
+    headers: { 'user-agent': 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)' },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const len = parseInt(res.headers.get('content-length') || '0');
+  if (len > MAX_ZIP_BYTES) throw new Error(`zip príliš veľký (${Math.round(len / 1e6)} MB)`);
   const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > MAX_ZIP_BYTES) throw new Error(`zip príliš veľký (${Math.round(buf.length / 1e6)} MB)`);
   const dir = mkdtempSync(path.join(tmpdir(), `volby-${elec.key}-`));
   const zipPath = path.join(dir, 'data.zip');
   writeFileSync(zipPath, buf);
