@@ -87,11 +87,16 @@ async function scanZip(elec, zipUrl) {
     const header = rows[0];
     const matches = rows.filter(r => r.some(c => OBEC_NAME.test(c)) || r.includes(OBEC_CODE));
     if (!matches.length) continue;
-    console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce; hlavička: ${header.join('§').slice(0, 350)}`);
     const parsed = parseRows(elec, header, matches);
-    if (parsed && (!best || parsed.rows.length > best.rows.length)) {
-      console.log(`  elections ${elec.key}: vzorka: ${matches[0].join('§').slice(0, 350)}`);
-      best = parsed;
+    console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce, parsed=${parsed ? `kind${parsed.kind}/${parsed.count}` : 'null'}; hlavička: ${header.join('§').slice(0, 200)}`);
+    if (parsed) {
+      // uprednostni súhrnnú tabuľku (strany/kandidáti), pri zhode menej riadkov
+      const better = !best || parsed.kind > best.kind ||
+        (parsed.kind === best.kind && parsed.count < best.count);
+      if (better) {
+        console.log(`  elections ${elec.key}: použijem ${path.basename(f)} — ${parsed.rows.slice(0, 3).map(r => `${r.name}:${r.votes}`).join(', ')}`);
+        best = parsed;
+      }
     }
   }
   return best;
@@ -125,34 +130,45 @@ function splitCsvLine(line, delim) {
   return out;
 }
 
-// Nájde stĺpce subjektu/kandidáta, hlasov a podielu podľa hlavičky.
+// Nájde súhrnnú tabuľku výsledkov: stĺpec názvu strany / mena kandidáta,
+// stĺpec platných hlasov a podielu. Preferenčné tabuľky (strana + kandidát)
+// sa vynechávajú — pre výsledok obce chceme súhrn strán, resp. kandidátov.
 function parseRows(elec, header, rows) {
-  const h = header.map(c => c.toLowerCase());
+  const h = header.map(c => c.toLowerCase().trim());
   const idx = re => h.findIndex(c => re.test(c));
-  const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|^meno$|priezvisko|subjekt/);
-  // P_HL / "počet platných hlasov" má prednosť; PC_HL je v niektorých
-  // tabuľkách poradové číslo, ako hlasy sa berie len keď nič iné nie je
-  let votesIdx = idx(/^p_hl$|(po[cč]et )?(platn[yý]ch )?hlasov|hlasy/);
-  if (votesIdx < 0) votesIdx = idx(/^pc_hl$/);
+
+  const partyIdx = idx(/^n[aá]zov.*(subjekt|stran|koal|politick)/); // "Názov politického subjektu"
+  const kandidatIdx = idx(/^kandid[aá]t/);                          // komunálne: KANDIDAT
+  const menoIdx = idx(/^meno$/);
+  const priezIdx = idx(/priezvisko/);
+  const hasCandidate = menoIdx >= 0 && priezIdx >= 0;
+
+  // platné hlasy — NIE prednostné/hlasovania
+  let votesIdx = h.findIndex(c => /po[cč]et\s+platn[yý]ch\s+hlasov/.test(c) && !/predn/.test(c));
+  if (votesIdx < 0) votesIdx = idx(/^p_hl$/);
+  if (votesIdx < 0) votesIdx = h.findIndex(c => /^hlasy$/.test(c));
+  if (votesIdx < 0) return null;
+
+  // strana + kandidát v jednej tabuľke = preferenčné hlasy → nie je to súhrn
+  if (partyIdx >= 0 && hasCandidate) return null;
+
+  let nameFn, kind;
+  if (partyIdx >= 0) { nameFn = r => r[partyIdx]; kind = 3; }            // súhrn strán
+  else if (hasCandidate) { nameFn = r => `${r[menoIdx]} ${r[priezIdx]}`.trim(); kind = 3; } // súhrn kandidátov (prez.)
+  else if (kandidatIdx >= 0) { nameFn = r => r[kandidatIdx]; kind = 2; } // komunálne
+  else if (priezIdx >= 0) { nameFn = r => r[priezIdx]; kind = 2; }
+  else return null;
+
   const pctIdx = idx(/podiel|%|percent/);
-  if (nameIdx < 0 || votesIdx < 0) return null;
-
-  const firstNameIdx = idx(/^meno/);
-  const surnameIdx = idx(/priezvisko/);
   const results = rows.map(r => ({
-    name: surnameIdx >= 0 && firstNameIdx >= 0 && surnameIdx !== nameIdx
-      ? `${r[firstNameIdx]} ${r[surnameIdx]}`.trim()
-      : r[nameIdx],
-    votes: parseInt(String(r[votesIdx]).replace(/\s/g, '')) || 0,
-    pct: pctIdx >= 0 ? parseFloat(String(r[pctIdx]).replace(',', '.')) : null,
-  })).filter(x => x.name && x.votes > 0);
+    name: (nameFn(r) || '').trim(),
+    votes: parseInt(String(r[votesIdx] ?? '').replace(/\s/g, '')) || 0,
+    pct: pctIdx >= 0 ? parseFloat(String(r[pctIdx] ?? '').replace(',', '.')) : null,
+  })).filter(x => x.name && !/^\d+$/.test(x.name) && x.votes > 0);
 
-  if (!results.length) return null;
-  // tabuľky s číselnými kódmi namiesto mien (napr. OSK tab06d/tab09d) preskoč
-  const numericNames = results.filter(x => /^\d+$/.test(x.name)).length;
-  if (numericNames > results.length / 2) return null;
+  if (results.length < 2) return null;
   results.sort((a, b) => b.votes - a.votes);
   const total = results.reduce((s, x) => s + x.votes, 0);
-  for (const x of results) x.pct ??= Math.round((x.votes / total) * 1000) / 10;
-  return { key: elec.key, name: elec.name, totalVotes: total, rows: results.slice(0, 12) };
+  for (const x of results) if (!(x.pct >= 0)) x.pct = Math.round((x.votes / total) * 1000) / 10;
+  return { key: elec.key, name: elec.name, totalVotes: total, kind, count: results.length, rows: results.slice(0, 12) };
 }
