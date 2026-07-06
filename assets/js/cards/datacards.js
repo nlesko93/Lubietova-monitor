@@ -1,6 +1,7 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
-import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml } from '../util.js';
+import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
+import { setBuses, setTraffic } from './mapcard.js';
 
 async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false } = {}) {
   const body = document.getElementById(bodyId);
@@ -252,40 +253,116 @@ export function initOutages() {
   }, { handlesEmpty: true });
 }
 
+const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
+
+// Odhad polôh autobusov z cestovného poriadku (ak idú načas) — interpolácia
+// medzi susednými zastávkami podľa aktuálneho času.
+function busVehicles(lines) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const vehicles = [];
+  for (const l of lines) for (const dir of l.directions || []) {
+    const stops = dir.stops || [];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const A = stops[i], B = stops[i + 1];
+      if (!A.times?.length || !B.times?.length) continue;
+      for (const ta of A.times) {
+        const ma = toMin(ta);
+        const tb = B.times.find(t => toMin(t) > ma);
+        if (!tb) continue;
+        const mb = toMin(tb);
+        if (mb - ma > 25 || mb <= ma) continue; // nespárované (short-turn) → preskoč
+        if (nowMin >= ma && nowMin <= mb) {
+          const f = (nowMin - ma) / (mb - ma);
+          vehicles.push({
+            lat: A.lat + (B.lat - A.lat) * f, lon: A.lon + (B.lon - A.lon) * f,
+            line: l.line, dirLabel: dir.label, from: A.name, to: B.name, depart: ta, arrive: tb,
+          });
+        }
+      }
+    }
+  }
+  return vehicles;
+}
+
 export function initBuses() {
   const card = document.getElementById('card-buses');
-  return dataCard('buses', 'buses-body', (body, d) => {
-    const lines = (d.lines || []).filter(l => l.departures?.length);
+  const body = document.getElementById('buses-body');
+  loadData('buses').then(d => {
+    const lines = (d.lines || []).filter(l => (l.directions || []).some(x => x.departures?.length));
     if (!lines.length) { card.hidden = true; return; }
     card.hidden = false;
 
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
+    every(30 * 1000, () => {
+      renderBuses(body, lines);
+      setBuses(busVehicles(lines));
+    });
+    setStatus('buses', updatedLabel(d.updated), 'live');
+  }).catch(e => showError(body, 'buses', e, 'Cestovný poriadok sa nepodarilo načítať.'));
+}
 
-    for (const l of lines) {
-      const next = l.departures.find(t => toMin(t) >= nowMin);
-      const mins = next ? toMin(next) - nowMin : null;
+// zobraz najbližšie odchody; ak je po poslednom, zobraz posledné 8 dňa
+function chipTimes(departures, nowMin, next) {
+  const upcoming = departures.filter(t => toMin(t) >= nowMin);
+  return upcoming.length ? upcoming.slice(0, 10) : departures.slice(-8);
+}
 
+function renderBuses(body, lines) {
+  body.innerHTML = '';
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const l = lines[0];
+
+  for (const dir of l.directions) {
+    if (!dir.departures?.length) continue;
+    const next = dir.departures.find(t => toMin(t) >= nowMin);
+    const mins = next ? toMin(next) - nowMin : null;
+    body.appendChild(el('div', { class: 'bus-dir' }, [
+      el('div', { class: 'bus-dir-head' }, [
+        el('span', { class: 'bus-dir-label', text: `🚌 ${dir.label}` }),
+        el('span', { class: 'bus-dir-next', text: next
+          ? `${next}${mins != null ? ' · o ' + (mins <= 0 ? 'chvíľu' : mins + ' min') : ''}`
+          : 'dnes už žiadny spoj' }),
+      ]),
+      el('div', { class: 'time-chips' }, chipTimes(dir.departures, nowMin, next)
+        .map(t => el('span', { class: `chip${t === next ? ' chip-now' : ''}`, text: t }))),
+    ]));
+  }
+  body.appendChild(el('p', { class: 'chart-caption', html:
+    `Zastávka Ľubietová, nám. · trasa ${escapeHtml(l.route || '')}<br>` +
+    `Ikony 🚌 na mape sú odhad polohy podľa cestovného poriadku. ` +
+    `<a href="${l.pdf}" target="_blank" rel="noopener">Úplný cestovný poriadok (PDF) →</a>` }));
+}
+
+export function initTraffic() {
+  return dataCard('traffic', 'traffic-body', (body, d) => {
+    setTraffic(d.events || []);
+
+    if (d.route) {
+      const delay = d.route.freeMinutes != null ? d.route.minutes - d.route.freeMinutes : 0;
+      const color = delay >= 8 ? 'var(--status-critical)' : delay >= 3 ? 'var(--status-warning)' : 'var(--status-good)';
       body.appendChild(el('div', { class: 'hero-row' }, [
-        el('span', { class: 'hero-emoji', text: '🚌' }),
-        el('span', { class: 'hero-figure', text: next || '—' }),
+        el('span', { class: 'hero-figure', text: `${d.route.minutes}` }),
         el('span', { class: 'hero-side', html:
-          (next
-            ? `najbližší spoj linky <b>${l.line}</b>${mins != null ? '<br>o ' + (mins === 0 ? 'chvíľu' : mins + ' min') : ''}`
-            : `dnes už žiadny spoj linky <b>${l.line}</b>`) }),
+          `min do Banskej Bystrice${d.route.lengthKm ? ' · ' + d.route.lengthKm + ' km' : ''}<br>` +
+          `<span class="badge" style="--badge-color:${color}">${delay > 0 ? '+' + delay + ' min zdržanie' : 'plynulá premávka'}</span>` }),
       ]));
-
-      // dnešné zvyšné odchody + ďalšie ako chipy
-      const upcoming = l.departures.filter(t => toMin(t) >= nowMin);
-      const shown = (upcoming.length ? upcoming : l.departures).slice(0, 14);
-      body.appendChild(el('div', { class: 'time-chips' },
-        shown.map(t => el('span', { class: `chip${t === next ? ' chip-now' : ''}`, text: t }))));
-
-      body.appendChild(el('p', { class: 'chart-caption', html:
-        `Odchody zo zastávky ${escapeHtml(l.stop || 'Ľubietová')} · trasa ${escapeHtml(l.route || '')}<br>` +
-        `<a href="${l.pdf}" target="_blank" rel="noopener">úplný cestovný poriadok linky ${l.line} (PDF) →</a> · platnosť spojov (pracovné dni/víkend) v PDF` }));
     }
+
+    if (d.events?.length) {
+      const list = el('ul', { class: 'item-list' });
+      for (const e of d.events.slice(0, 6)) {
+        list.appendChild(el('li', {}, [
+          el('span', { class: 'item-title', text: `${e.icon || '⚠️'} ${e.label}${e.subtype ? ' — ' + e.subtype : ''}` }),
+          el('span', { class: 'item-meta', text: [e.street, e.speedKmh != null ? e.speedKmh + ' km/h' : null, e.ts ? timeAgo(e.ts) : null].filter(Boolean).join(' · ') }),
+        ]));
+      }
+      body.appendChild(list);
+    } else {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Žiadne hlásené udalosti na ceste BB ↔ Ľubietová. ✅' }));
+    }
+    body.appendChild(el('p', { class: 'chart-caption', text:
+      `Zdroj: ${d.route?.source || 'Waze'} · udalosti Waze · aktualizované hodinovo` }));
   }, { handlesEmpty: true });
 }
 

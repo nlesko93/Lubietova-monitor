@@ -14,6 +14,19 @@
     { "line": "610", "route": "Banská Bystrica – Slovenská Ľupča – Lučatín – Ľubietová – Strelníky – Povrazník", "pdf": "https://www.sadzv.sk/cp/aktualne/primestske/060610.pdf" }
   ],
   "busStopMatch": "ubietov",
+  "busRouteStops": [
+    { "match": "Banská Bystrica", "name": "Banská Bystrica", "lat": 48.7355, "lon": 19.1560 },
+    { "match": "Slovenská Ľupča", "name": "Slovenská Ľupča", "lat": 48.7616, "lon": 19.2540 },
+    { "match": "Lučatín", "name": "Lučatín", "lat": 48.7830, "lon": 19.3050 },
+    { "match": "Ľubietová", "name": "Ľubietová", "lat": 48.7478, "lon": 19.3625 },
+    { "match": "Strelníky", "name": "Strelníky", "lat": 48.7350, "lon": 19.3820 },
+    { "match": "Povrazník", "name": "Povrazník", "lat": 48.7060, "lon": 19.3900 }
+  ],
+  "traffic": {
+    "from": { "name": "Banská Bystrica", "lat": 48.7355, "lon": 19.1560 },
+    "to": { "name": "Ľubietová", "lat": 48.7478, "lon": 19.3625 },
+    "bbox": { "top": 48.80, "bottom": 48.70, "left": 19.14, "right": 19.40 }
+  },
   "planes": {
     "radiusNm": 25,
     "refreshSeconds": 45

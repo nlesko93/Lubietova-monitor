@@ -261,6 +261,12 @@ a.item-title:hover { color: var(--accent); }
 .webcam-grid img { width: 100%; border-radius: 8px; display: block; }
 .webcam-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
 
+/* ---------- autobusy: smery ---------- */
+.bus-dir { margin-bottom: 12px; }
+.bus-dir-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+.bus-dir-label { font-size: 0.82rem; color: var(--text-secondary); }
+.bus-dir-next { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* ---------- time chips (odchody autobusov) ---------- */
 .time-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
 .time-chips .chip {

@@ -2,7 +2,8 @@
 // cez setPlanes()/setQuakes().
 import { getConfig, setStatus, el, escapeHtml } from '../util.js';
 
-let map, planeLayer, quakeLayer;
+let map, planeLayer, quakeLayer, busLayer, trafficLayer;
+let pendingBuses = null, pendingTraffic = null;
 
 export async function initMap() {
   const cfg = await getConfig();
@@ -20,12 +21,17 @@ export async function initMap() {
 
   planeLayer = L.layerGroup().addTo(map);
   quakeLayer = L.layerGroup().addTo(map);
+  busLayer = L.layerGroup().addTo(map);
+  trafficLayer = L.layerGroup().addTo(map);
+  if (pendingBuses) setBuses(pendingBuses);
+  if (pendingTraffic) setTraffic(pendingTraffic);
 
   const legend = document.getElementById('map-legend');
   legend.append(
     legendKey('#3987e5', 'obec'),
     legendKey('#c98500', 'lietadlo'),
     legendKey('#e66767', 'zemetrasenie'),
+    legendKey('#199e70', 'autobus 610'),
   );
   setStatus('map', 'OpenStreetMap');
 }
@@ -61,6 +67,48 @@ export function setPlanes(planes) {
       `rýchlosť ${p.speedKmh != null ? Math.round(p.speedKmh) + ' km/h' : '—'}`
     );
     planeLayer.addLayer(m);
+  }
+}
+
+function busIcon() {
+  return L.divIcon({
+    className: 'bus-icon',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    html: '<div style="background:#199e70;color:#fff;border:2px solid var(--surface-1);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4)">🚌</div>',
+  });
+}
+
+// Odhadnuté polohy autobusov (počítané v prehliadači z cestovného poriadku).
+export function setBuses(vehicles) {
+  pendingBuses = vehicles;
+  if (!busLayer) return;
+  busLayer.clearLayers();
+  for (const v of vehicles || []) {
+    if (v.lat == null || v.lon == null) continue;
+    const m = L.marker([v.lat, v.lon], { icon: busIcon(), zIndexOffset: 1000 });
+    m.bindPopup(
+      `<b>Linka ${escapeHtml(v.line)}</b> · ${escapeHtml(v.dirLabel || '')}<br>` +
+      `${escapeHtml(v.from)} (${v.depart}) → ${escapeHtml(v.to)} (${v.arrive})<br>` +
+      '<i>odhad podľa cestovného poriadku</i>'
+    );
+    busLayer.addLayer(m);
+  }
+}
+
+// Udalosti na ceste (Waze) — nehody, zápchy, polícia…
+export function setTraffic(events) {
+  pendingTraffic = events;
+  if (!trafficLayer) return;
+  trafficLayer.clearLayers();
+  for (const e of events || []) {
+    if (e.lat == null || e.lon == null) continue;
+    const m = L.marker([e.lat, e.lon], {
+      icon: L.divIcon({ className: 'traffic-icon', iconSize: [22, 22], iconAnchor: [11, 11],
+        html: `<div style="font-size:18px;line-height:22px;text-align:center">${e.icon || '⚠️'}</div>` }),
+    });
+    m.bindPopup(`<b>${escapeHtml(e.label || '')}</b>${e.street ? '<br>' + escapeHtml(e.street) : ''}`);
+    trafficLayer.addLayer(m);
   }
 }
 

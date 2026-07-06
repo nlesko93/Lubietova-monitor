@@ -34,6 +34,29 @@
     <div class="map-legend" id="map-legend"></div>
   </section>
 
+  <section class="theme" aria-label="Doprava a cesta">
+    <h2 class="theme-title">🚌 Doprava a cesta</h2>
+    <div class="theme-grid">
+
+      <section class="card" id="card-buses" aria-labelledby="h-buses">
+        <div class="card-head">
+          <h2 id="h-buses">Autobusy — linka 610</h2>
+          <span class="card-status" data-status="buses"></span>
+        </div>
+        <div class="card-body" id="buses-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-traffic" aria-labelledby="h-traffic">
+        <div class="card-head">
+          <h2 id="h-traffic">Cesta do Banskej Bystrice</h2>
+          <span class="card-status" data-status="traffic"></span>
+        </div>
+        <div class="card-body" id="traffic-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+    </div>
+  </section>
+
   <section class="theme" aria-label="Obec a samospráva">
     <h2 class="theme-title">🏛 Obec a samospráva</h2>
     <div class="theme-grid">
@@ -100,14 +123,6 @@
           <span class="card-status" data-status="demo"></span>
         </div>
         <div class="card-body" id="demo-body"><p class="placeholder">Načítavam…</p></div>
-      </section>
-
-      <section class="card" id="card-buses" aria-labelledby="h-buses" hidden>
-        <div class="card-head">
-          <h2 id="h-buses">Odchody autobusov</h2>
-          <span class="card-status" data-status="buses"></span>
-        </div>
-        <div class="card-body" id="buses-body"></div>
       </section>
 
     </div>

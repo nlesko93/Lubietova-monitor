@@ -12,7 +12,7 @@ import { initGallery } from './cards/gallery.js';
 import {
   initNews, initObec, initAlerts, initContracts,
   initFinance, initDemo, initWebcams, initWaste, initElections,
-  initOutages, initBuses, initHydro,
+  initOutages, initBuses, initHydro, initTraffic,
 } from './cards/datacards.js';
 
 // --- téma ---
@@ -47,7 +47,7 @@ const cards = [
   initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
   initWiki, initNews, initObec, initAlerts, initContracts, initFinance,
   initDemo, initWebcams, initWaste, initElections,
-  initOutages, initBuses, initHydro, initGallery,
+  initOutages, initBuses, initHydro, initGallery, initTraffic,
 ];
 for (const init of cards) {
   Promise.resolve().then(init).catch(e => console.error(init.name, e));
