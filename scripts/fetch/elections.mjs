@@ -42,7 +42,7 @@ async function fetchOne(elec) {
       visited.add(page);
       let html;
       try {
-        html = await getText(page, { retries: 0, timeoutMs: 15000 });
+        html = await getText(page, { retries: 2, timeoutMs: 20000 });
       } catch (e) {
         console.log(`  elections ${elec.key}: ${page.slice(0, 70)} -> ${e.message.slice(0, 100)}`);
         continue;

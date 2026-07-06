@@ -11,7 +11,7 @@ export async function fetchDemographics() {
   let obecCode = null, dimUsed = null;
   for (const dim of dims) {
     try {
-      const d = await getJSON(`${API}/dimension/${CUBE}/${dim}?lang=sk`, { retries: 0 });
+      const d = await getJSON(`${API}/dimension/${CUBE}/${dim}?lang=sk`, { retries: 2 });
       const entries = d?.category?.label ? Object.entries(d.category.label) : [];
       const hit = entries.find(([, label]) => norm(label) === norm(CONFIG.obec)) ||
         entries.find(([, label]) => norm(label).includes(norm(CONFIG.obec)));
