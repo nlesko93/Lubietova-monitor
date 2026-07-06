@@ -11,8 +11,11 @@ const OBEC_NAME = /ľubietová/i;
 const OBEC_CODE = (CONFIG.obecStatCode || '508748').trim();
 
 const ELECTIONS = [
-  { key: 'nrsr2023', name: 'Parlamentné 2023', zips: [
-    'https://volby.statistics.sk/nrsr/nrsr2023/files/NRSR2023_SK_csv.zip'] },
+  // celoslovenský zip NRSR má 226 MB (okrsky) — obecná tabuľka sa berie priamo
+  { key: 'nrsr2023', name: 'Parlamentné 2023', csvs: [
+    'https://volby.statistics.sk/nrsr/nrsr2023/files/csv/NRSR2023_SK_tab03e.csv',
+    'https://volby.statistics.sk/nrsr/nrsr2023/files/csv/NRSR2023_SK_tab03d.csv',
+    'https://volby.statistics.sk/nrsr/nrsr2023/files/csv/NRSR2023_SK_tab03a.csv'] },
   { key: 'prezident2024', name: 'Prezidentské 2024 (2. kolo)', zips: [
     'https://volby.statistics.sk/prez/prez2024/files/kolo2/PREZ2024_kolo2_SK_csv.zip'] },
   { key: 'prezident2024k1', name: 'Prezidentské 2024 (1. kolo)', zips: [
@@ -26,16 +29,32 @@ const ELECTIONS = [
 export async function fetchElections() {
   const items = [];
   for (const elec of ELECTIONS) {
-    for (const zip of elec.zips) {
+    for (const url of [...(elec.zips || []), ...(elec.csvs || [])]) {
       try {
-        const parsed = await scanZip(elec, zip);
+        const parsed = /\.zip$/i.test(url)
+          ? await scanZip(elec, url)
+          : await scanCsvUrl(elec, url);
         if (parsed) { items.push(parsed); break; }
       } catch (e) {
-        console.log(`  elections ${elec.key}: ${zip.split('/').pop()} -> ${e.message.slice(0, 160)}`);
+        console.log(`  elections ${elec.key}: ${url.split('/').pop()} -> ${e.message.slice(0, 160)}`);
       }
     }
   }
   return writeResult('elections', { items });
+}
+
+async function scanCsvUrl(elec, url) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = decodeBuf(Buffer.from(await res.arrayBuffer()));
+  const rows = csvRows(text);
+  if (rows.length < 2) return null;
+  const header = rows[0];
+  const matches = rows.filter(r => r.some(c => OBEC_NAME.test(c)) || r.includes(OBEC_CODE));
+  console.log(`  elections ${elec.key}: ${url.split('/').pop()} -> ${rows.length} riadkov, obec ${matches.length}; hlavička: ${header.join('§').slice(0, 350)}`);
+  if (!matches.length) return null;
+  console.log(`  elections ${elec.key}: vzorka: ${matches[0].join('§').slice(0, 350)}`);
+  return parseRows(elec, header, matches);
 }
 
 const MAX_ZIP_BYTES = 60 * 1024 * 1024;
@@ -87,8 +106,10 @@ function decodeBuf(buf) {
 function csvRows(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
-  const delim = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
-  return lines.map(l => splitCsvLine(l, delim));
+  // niektoré exporty (komunálne voľby) používajú zvislítko
+  const counts = [';', ',', '|'].map(d => [d, (lines[0].match(new RegExp(`\\${d}`, 'g')) || []).length]);
+  counts.sort((a, b) => b[1] - a[1]);
+  return lines.map(l => splitCsvLine(l, counts[0][0]));
 }
 
 function splitCsvLine(line, delim) {
@@ -108,8 +129,8 @@ function splitCsvLine(line, delim) {
 function parseRows(elec, header, rows) {
   const h = header.map(c => c.toLowerCase());
   const idx = re => h.findIndex(c => re.test(c));
-  const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|^meno|priezvisko|subjekt/);
-  const votesIdx = idx(/(po[cč]et )?(platn[yý]ch )?hlasov|hlasy|hlasov spolu/);
+  const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|^meno$|priezvisko|subjekt/);
+  const votesIdx = idx(/pc_hl|(po[cč]et )?(platn[yý]ch )?hlasov|hlasy/);
   const pctIdx = idx(/podiel|%|percent/);
   if (nameIdx < 0 || votesIdx < 0) return null;
 

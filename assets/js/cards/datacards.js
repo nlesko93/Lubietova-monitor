@@ -232,32 +232,34 @@ export function initWaste() {
 
 export function initOutages() {
   return dataCard('outages', 'outages-body', (body, d) => {
-    if (d.pending) {
-      body.appendChild(el('p', { class: 'empty-note', text: 'Zdroj odstávok (SSD) sa ešte pripravuje.' }));
-      return;
-    }
     if (!d.items.length) {
-      body.appendChild(el('p', { class: 'empty-note', text: 'Žiadne plánované odstávky elektriny pre Ľubietovú. ✅' }));
+      body.appendChild(el('p', { class: 'empty-note', text: 'Na úradnej tabuli obce nie je žiadny oznam o odstávke elektriny. ✅' }));
+      body.appendChild(el('p', { class: 'chart-caption', html:
+        'Sleduje sa úradná tabuľa obce · odberné miesto si overíte na <a href="https://www.ssd.sk/planovane-odstavky" target="_blank" rel="noopener">ssd.sk</a>' }));
       return;
     }
     const list = el('ul', { class: 'item-list' });
     for (const o of d.items.slice(0, 6)) {
       list.appendChild(el('li', {}, [
-        el('span', { class: 'badge', style: '--badge-color: var(--status-warning)', text: `${o.from}${o.to ? ' – ' + o.to : ''}` }),
-        el('span', { class: 'item-meta', text: o.area || '' }),
+        el('a', { class: 'item-title', href: o.link || '#', target: '_blank', rel: 'noopener' }, [
+          el('span', { class: 'badge', style: '--badge-color: var(--status-warning)', text: `⚡ ${o.title}` }),
+        ]),
+        el('span', { class: 'item-meta', text: [o.summary, o.date ? timeAgo(o.date) : null].filter(Boolean).join(' · ') }),
       ]));
     }
     body.appendChild(list);
-    body.appendChild(el('p', { class: 'chart-caption', text: 'Zdroj: Stredoslovenská distribučná (ssd.sk)' }));
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Oznamy o prerušení distribúcie elektriny z úradnej tabule obce (SSD)' }));
   }, { handlesEmpty: true });
 }
 
 export function initBuses() {
+  const card = document.getElementById('card-buses');
   return dataCard('buses', 'buses-body', (body, d) => {
-    if (d.pending || !d.items?.length) {
-      body.appendChild(el('p', { class: 'empty-note', text: 'Odchody autobusov sa ešte pripravujú (zdroj cp.sk).' }));
+    if (d.unavailable || !d.items?.length) {
+      card.hidden = true;
       return;
     }
+    card.hidden = false;
     const list = el('ul', { class: 'item-list' });
     for (const b of d.items.slice(0, 8)) {
       list.appendChild(el('li', {}, [
@@ -267,7 +269,6 @@ export function initBuses() {
       ]));
     }
     body.appendChild(list);
-    body.appendChild(el('p', { class: 'chart-caption', text: 'Odchody zo zastávky Ľubietová · zdroj: cp.sk (aktualizované hodinovo)' }));
   }, { handlesEmpty: true });
 }
 
