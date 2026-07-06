@@ -63,10 +63,13 @@ export function timeAgo(iso) {
   if (!iso) return '';
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (!isFinite(s)) return '';
+  if (s < 0) return 'teraz';                       // článok datovaný do budúcnosti
   if (s < 90) return 'pred chvíľou';
-  if (s < 3600) return `pred ${Math.round(s / 60)} min`;
-  if (s < 86400) return `pred ${Math.round(s / 3600)} h`;
-  return `pred ${Math.round(s / 86400)} d`;
+  if (s < 3600) return `pred ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `pred ${Math.floor(s / 3600)} h`;
+  const d = Math.floor(s / 86400);                 // celé uplynulé dni (nie zaokrúhlené)
+  if (d === 1) return 'včera';
+  return `pred ${d} d`;
 }
 
 export function updatedLabel(iso) {
