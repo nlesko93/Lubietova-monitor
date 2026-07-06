@@ -1,133 +1,82 @@
-// Výsledky volieb v obci — otvorené dáta ŠÚ SR.
-// Datasety sa hľadajú cez CKAN API portálu data.gov.sk; CSV s výsledkami
-// za obce sa filtruje na Ľubietovú. Kým nie je parser doladený podľa
-// reálnych hlavičiek (logujú sa), zapisuje sa diagnostický výstup.
-import { get, getText, writeResult, CONFIG } from './lib.mjs';
+// Výsledky volieb v obci — oficiálne CSV exporty z volby.statistics.sk
+// (cesty overené v Actions behu č. 21). Zip sa rozbalí cez `unzip`
+// na runneri, CSV sa prefiltrujú na riadky Ľubietovej.
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { get, writeResult, CONFIG } from './lib.mjs';
 
 const OBEC_NAME = /ľubietová/i;
 const OBEC_CODE = (CONFIG.obecStatCode || '508748').trim();
 
 const ELECTIONS = [
-  { key: 'nrsr2023', name: 'Parlamentné voľby 2023', site: 'https://volby.statistics.sk/nrsr/nrsr2023/' },
-  { key: 'prezident2024', name: 'Prezidentské voľby 2024', site: 'https://volby.statistics.sk/prez/prez2024/' },
-  { key: 'ep2024', name: 'Voľby do EP 2024', site: 'https://volby.statistics.sk/ep/ep2024/' },
-  { key: 'komunalne2022', name: 'Komunálne voľby 2022', site: 'https://volby.statistics.sk/osk/osk2022/' },
+  { key: 'nrsr2023', name: 'Parlamentné 2023', zips: [
+    'https://volby.statistics.sk/nrsr/nrsr2023/files/NRSR2023_SK_csv.zip'] },
+  { key: 'prezident2024', name: 'Prezidentské 2024 (2. kolo)', zips: [
+    'https://volby.statistics.sk/prez/prez2024/files/kolo2/PREZ2024_kolo2_SK_csv.zip'] },
+  { key: 'prezident2024k1', name: 'Prezidentské 2024 (1. kolo)', zips: [
+    'https://volby.statistics.sk/prez/prez2024/files/kolo1/PREZ2024_kolo1_SK_csv.zip'] },
+  { key: 'ep2024', name: 'Európsky parlament 2024', zips: [
+    'https://volby.statistics.sk/ep/ep2024/files/EP2024_SK_csv.zip'] },
+  { key: 'komunalne2022', name: 'Komunálne 2022', zips: [
+    'https://volby.statistics.sk/osk/osk2022/files/OSK2022_SK_csv.zip'] },
 ];
 
 export async function fetchElections() {
   const items = [];
   for (const elec of ELECTIONS) {
-    try {
-      const parsed = await fetchOne(elec);
-      if (parsed) items.push(parsed);
-    } catch (e) {
-      console.log(`  elections ${elec.key}: ${e.message.slice(0, 180)}`);
+    for (const zip of elec.zips) {
+      try {
+        const parsed = await scanZip(elec, zip);
+        if (parsed) { items.push(parsed); break; }
+      } catch (e) {
+        console.log(`  elections ${elec.key}: ${zip.split('/').pop()} -> ${e.message.slice(0, 160)}`);
+      }
     }
   }
-  if (!items.length) await logPortalDiscovery();
   return writeResult('elections', { items });
 }
 
-// Nájde na webe volieb odkazy na dátové súbory (CSV/XLSX/JSON) —
-// prehľadá koreň + jednu úroveň "data/opendata" podstránok.
-async function fetchOne(elec) {
-  const dataLinks = [];
-  const queue = [elec.site];
-  const visited = new Set();
+async function scanZip(elec, zipUrl) {
+  const res = await get(zipUrl, { retries: 1, timeoutMs: 60000 });
+  const buf = Buffer.from(await res.arrayBuffer());
+  const dir = mkdtempSync(path.join(tmpdir(), `volby-${elec.key}-`));
+  const zipPath = path.join(dir, 'data.zip');
+  writeFileSync(zipPath, buf);
+  execFileSync('unzip', ['-o', '-qq', zipPath, '-d', dir]);
+  const csvs = readdirSync(dir, { recursive: true }).map(String).filter(f => /\.csv$/i.test(f));
+  console.log(`  elections ${elec.key}: ${zipUrl.split('/').pop()} (${Math.round(buf.length / 1024)} kB) -> ${csvs.length} CSV`);
 
-  for (let depth = 0; depth < 3 && queue.length; depth++) {
-    const pages = queue.splice(0, 5);
-    for (const page of pages) {
-      if (visited.has(page)) continue;
-      visited.add(page);
-      let html;
-      try {
-        html = await getText(page, { retries: 2, timeoutMs: 20000 });
-      } catch (e) {
-        console.log(`  elections ${elec.key}: ${page.slice(0, 70)} -> ${e.message.slice(0, 100)}`);
-        continue;
-      }
-      if (depth === 0) {
-        console.log(`  elections ${elec.key}: HTML ${html.length} B | obsah: ${html.slice(0, 700).replace(/\s+/g, ' ')}`);
-      }
-      // nasleduj meta-refresh / JS redirect (weby volieb sú rozcestníky)
-      const mr = html.match(/http-equiv=["']refresh["'][^>]*content=["'][^;"']*;\s*url=([^"']+)/i) ||
-        html.match(/location(?:\.href)?\s*=\s*["']([^"']+)["']/i);
-      if (mr) {
-        try {
-          let target = new URL(mr[1], page.endsWith('/') ? page : page + '/').href;
-          // adresárové ciele potrebujú lomku, inak sa relatívne odkazy skladajú zle
-          if (!/\.[a-z]{2,4}$/i.test(target) && !target.endsWith('/')) target += '/';
-          console.log(`  elections ${elec.key}: redirect -> ${target}`);
-          if (!visited.has(target)) queue.push(target);
-        } catch { /* ignoruj */ }
-      }
-      // relatívne odkazy na adresárových stránkach (…/sk) sa musia skladať
-      // voči adresáru, nie voči rodičovi
-      const base = /\.[a-z]{2,4}(\?|$)/i.test(page) || page.endsWith('/') ? page : page + '/';
-      const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m => m[1]))]
-        .map(u => { try { return new URL(u, base).href; } catch { return null; } })
-        .filter(Boolean);
-      for (const u of links) {
-        if (/\.(csv|xlsx|json)(\?|$)/i.test(u)) dataLinks.push(u);
-        else if (/open.?data|\/data|download|stiahnut|subor|vysledk|\/obc|obec/i.test(u) && u.startsWith(elec.site) && !visited.has(u)) queue.push(u);
-      }
-      console.log(`  elections ${elec.key} [d${depth}]: ${page.slice(0, 90)} -> ${links.length} odkazov: ` +
-        links.slice(0, 20).map(u => u.replace(elec.site, '')).join(' , ').slice(0, 900));
+  // kandidátske tabuľky: tie, kde sa obec vyskytuje vo viacerých riadkoch
+  let best = null;
+  for (const f of csvs) {
+    const text = decodeBuf(readFileSync(path.join(dir, f)));
+    if (!new RegExp(`${OBEC_CODE}|ubietov`, 'i').test(text)) continue;
+    const rows = csvRows(text);
+    if (rows.length < 2) continue;
+    const header = rows[0];
+    const matches = rows.filter(r => r.some(c => OBEC_NAME.test(c)) || r.includes(OBEC_CODE));
+    if (!matches.length) continue;
+    console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce; hlavička: ${header.join('§').slice(0, 350)}`);
+    const parsed = parseRows(elec, header, matches);
+    if (parsed && (!best || parsed.rows.length > best.rows.length)) {
+      console.log(`  elections ${elec.key}: vzorka: ${matches[0].join('§').slice(0, 350)}`);
+      best = parsed;
     }
   }
-
-  // CSV odkazy skús rovno spracovať (preferuj tie s "obc/obec/tab" v názve)
-  const csvs = [...new Set(dataLinks.filter(u => /\.csv/i.test(u)))]
-    .sort((a, b) => scoreUrl(b) - scoreUrl(a));
-  for (const url of csvs.slice(0, 6)) {
-    try {
-      const rows = await downloadCsvRows(url);
-      if (!rows) continue;
-      const header = rows[0];
-      const matches = rows.filter(r => r.some(c => OBEC_NAME.test(c)) ||
-        r.some(c => c === OBEC_CODE || c === `SK0321${OBEC_CODE}`));
-      console.log(`  elections ${elec.key}: ${url.slice(0, 100)} -> ${rows.length} riadkov, obec match ${matches.length}; hlavička: ${header.join('§').slice(0, 400)}`);
-      if (matches.length) {
-        console.log(`  elections ${elec.key}: vzorka: ${matches[0].join('§').slice(0, 400)}`);
-        const parsed = parseRows(elec, header, matches);
-        if (parsed) return parsed;
-      }
-    } catch (e) {
-      console.log(`  elections ${elec.key}: ${url.slice(0, 80)} -> ${e.message.slice(0, 140)}`);
-    }
-  }
-  return null;
+  return best;
 }
 
-const scoreUrl = u => (/obc|obec/i.test(u) ? 4 : 0) + (/tab|vysledk/i.test(u) ? 2 : 0) - (/okrsk/i.test(u) ? 2 : 0);
-
-// Nový portál otvorených dát (data.slovensko.sk) — zaloguj odpoveď API,
-// aby sa dal doladiť náhradný zdroj, keď weby volieb nič nevydajú.
-async function logPortalDiscovery() {
-  const candidates = [
-    'https://data.slovensko.sk/api/publicApi/v1/datasets/search?q=vo%C4%BEby%20nrsr&pageSize=5',
-    'https://data.slovensko.sk/api/datasets?q=vo%C4%BEby',
-  ];
-  for (const url of candidates) {
-    try {
-      const txt = await getText(url, { retries: 0, timeoutMs: 15000 });
-      console.log(`  elections portal: ${url.slice(0, 80)} -> ${txt.slice(0, 500).replace(/\s+/g, ' ')}`);
-    } catch (e) {
-      console.log(`  elections portal: ${url.slice(0, 80)} -> ${e.message.slice(0, 120)}`);
-    }
-  }
-}
-
-async function downloadCsvRows(url) {
-  const res = await get(url, { retries: 0, timeoutMs: 30000 });
-  const buf = new Uint8Array(await res.arrayBuffer());
+function decodeBuf(buf) {
   let text = new TextDecoder('utf-8', { fatal: false }).decode(buf);
-  if ((text.match(/�/g) || []).length > 5) {
-    text = new TextDecoder('windows-1250').decode(buf);
-  }
+  if ((text.match(/�/g) || []).length > 5) text = new TextDecoder('windows-1250').decode(buf);
+  return text;
+}
+
+function csvRows(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return null;
+  if (lines.length < 2) return [];
   const delim = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
   return lines.map(l => splitCsvLine(l, delim));
 }
@@ -145,21 +94,20 @@ function splitCsvLine(line, delim) {
   return out;
 }
 
-// Všeobecný parser: nájde stĺpce s názvom subjektu/kandidáta, počtom
-// hlasov a percentom podľa hlavičky. Ak sa nenájdu, vráti null a v logu
-// ostane hlavička na doladenie.
+// Nájde stĺpce subjektu/kandidáta, hlasov a podielu podľa hlavičky.
 function parseRows(elec, header, rows) {
   const h = header.map(c => c.toLowerCase());
   const idx = re => h.findIndex(c => re.test(c));
-  const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|meno|priezvisko|subjekt/);
-  const votesIdx = idx(/(po[cč]et )?(platn[yý]ch )?hlas/);
+  const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|^meno|priezvisko|subjekt/);
+  const votesIdx = idx(/(po[cč]et )?(platn[yý]ch )?hlasov|hlasy|hlasov spolu/);
   const pctIdx = idx(/podiel|%|percent/);
   if (nameIdx < 0 || votesIdx < 0) return null;
 
+  const firstNameIdx = idx(/^meno/);
   const surnameIdx = idx(/priezvisko/);
   const results = rows.map(r => ({
-    name: surnameIdx >= 0 && surnameIdx !== nameIdx
-      ? `${r[nameIdx]} ${r[surnameIdx]}`.trim()
+    name: surnameIdx >= 0 && firstNameIdx >= 0 && surnameIdx !== nameIdx
+      ? `${r[firstNameIdx]} ${r[surnameIdx]}`.trim()
       : r[nameIdx],
     votes: parseInt(String(r[votesIdx]).replace(/\s/g, '')) || 0,
     pct: pctIdx >= 0 ? parseFloat(String(r[pctIdx]).replace(',', '.')) : null,

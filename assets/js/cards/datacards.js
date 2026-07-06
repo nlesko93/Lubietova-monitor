@@ -281,7 +281,7 @@ export function initHydro() {
     for (const s of d.items.slice(0, 4)) {
       tiles.appendChild(el('div', { class: 'tile' }, [
         el('div', { class: 'label', text: `${s.station}${s.river ? ' — ' + s.river : ''}` }),
-        el('div', { class: 'value', html: `${s.levelCm ?? '—'} <span class="unit">cm</span>${s.alert ? ' <span class="unit">⚠ ' + s.alert + '</span>' : ''}` }),
+        el('div', { class: 'value', html: `${s.levelCm ?? '—'} <span class="unit">cm</span>${/^[123]$/.test(s.alert || '') ? ' <span class="unit">⚠ ' + s.alert + '. st. PA</span>' : ''}` }),
         el('div', { class: 'sub', text: s.time || '' }),
       ]));
     }

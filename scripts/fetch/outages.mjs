@@ -9,9 +9,22 @@ const CANDIDATE_PAGES = [
   'https://www.ssd.sk/planovane-odstavky',
 ];
 
+// aplikačný skript stránky odstávok (Buxus CMS) — obsahuje API volania
+const APP_SCRIPTS = ['https://www.ssd.sk/buxus/docs/js/new-app.js'];
+
 const CANDIDATE_APIS = [];
 
 export async function fetchOutages() {
+  for (const url of APP_SCRIPTS) {
+    try {
+      const js = await getText(url, { retries: 0, timeoutMs: 15000 });
+      const urls = [...new Set([...js.matchAll(/["'](\/[\w\-/.]*(?:odstavk|outage|ajax|api|buxus\/gen)[\w\-/.?=&]*)["']|["'](https?:\/\/[^"']{10,110})["']/gi)]
+        .map(m => m[1] || m[2]).filter(u => /odstavk|outage|api|ajax/i.test(u)))];
+      console.log(`  outages app.js: ${js.length} B, volania: ${urls.slice(0, 12).join(' , ').slice(0, 700) || '—'}`);
+    } catch (e) {
+      console.log(`  outages app.js: ${e.message.slice(0, 100)}`);
+    }
+  }
   for (const url of CANDIDATE_APIS) {
     try {
       const d = await getJSON(url, { retries: 0, timeoutMs: 15000 });

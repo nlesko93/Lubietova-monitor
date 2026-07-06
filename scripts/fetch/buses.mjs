@@ -39,7 +39,8 @@ async function discoverUbianApis() {
   try {
     const html = await getText(UBIAN, { retries: 0, timeoutMs: 15000 });
     const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1])
-      .filter(s => !/vendor|jquery|bootstrap|mustache|cookie/i.test(s));
+      .filter(s => !/vendor|jquery|bootstrap|mustache|cookie|translations|urbancities/i.test(s))
+      .sort((a, b) => /navigation\.min/.test(b) - /navigation\.min/.test(a));
     console.log(`  buses ubian.sk: HTML ${html.length} B, app skripty: ${scripts.slice(0, 8).join(' , ').slice(0, 500)}`);
     // AJAX volania priamo v HTML (server-rendered web)
     const inline = [...new Set([...html.matchAll(/(?:url\s*:\s*|fetch\(|\.get\(|\.post\()["']([^"']{5,120})["']/gi)].map(m => m[1]))];
