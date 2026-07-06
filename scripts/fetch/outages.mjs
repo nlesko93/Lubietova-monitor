@@ -47,6 +47,12 @@ export async function fetchOutages() {
       // iframe (aplikácia môže byť vložená)
       const iframes = [...html.matchAll(/<iframe[^>]*src="([^"]+)"/gi)].map(m => m[1]);
       if (iframes.length) console.log('  outages iframe:', iframes.join(' , ').slice(0, 400));
+      // surové HTML okolo textu "Aplikácia" — odhalí href/onclick odkazu na appku
+      const appPos = html.indexOf('Aplikácia');
+      if (appPos > 0) {
+        console.log('  outages HTML okolo "Aplikácia":',
+          html.slice(Math.max(0, appPos - 500), appPos + 600).replace(/\s+/g, ' ').slice(0, 1000));
+      }
       const ajax = [...new Set([...html.matchAll(/(?:ajax|fetch|url:)\s*\(?["']([^"']{8,120})["']/gi)].map(m => m[1]))].slice(0, 8);
       if (ajax.length) console.log('  outages ajax:', ajax.join(' , ').slice(0, 500));
       if (/ľubietov/i.test(html)) {

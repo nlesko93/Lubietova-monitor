@@ -64,9 +64,12 @@ async function discoverUbianApis() {
         const js = await getText(s, { retries: 0, timeoutMs: 15000 });
         const urls = [...js.matchAll(/["'](https?:\/\/[^"'\s]{8,120})["']/g)].map(m => m[1])
           .filter(u => /api|ubian|transdata|gtfs|vehicle|stop|depart/i.test(u));
-        const paths = [...js.matchAll(/["'](\/(?:api|navigation|gtfs)[\w\-/]{2,80})["']/g)].map(m => new URL(m[1], UBIAN).href);
+        // relatívne endpointy volané cez $.ajax/fetch v bundle
+        const paths = [...js.matchAll(/["'](\/[A-Za-z][\w\-/]{3,70})["']/g)].map(m => m[1])
+          .filter(p => /search|depart|stop|station|vehicle|poloh|gps|ajax|get|load/i.test(p))
+          .map(p => new URL(p, UBIAN).href);
         [...urls, ...paths].forEach(u => found.add(u));
-        console.log(`  buses bundle ${s.slice(-40)}: ${js.length} B, api kandidáti: ${[...new Set([...urls, ...paths])].slice(0, 12).join(' , ').slice(0, 700)}`);
+        console.log(`  buses bundle ${s.slice(-40)}: ${js.length} B, api kandidáti: ${[...new Set([...urls, ...paths])].slice(0, 15).join(' , ').slice(0, 800)}`);
       } catch (e) {
         console.log(`  buses bundle ${s.slice(-40)}: ${e.message.slice(0, 80)}`);
       }

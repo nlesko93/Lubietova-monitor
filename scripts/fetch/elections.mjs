@@ -55,13 +55,18 @@ async function fetchOne(elec) {
         html.match(/location(?:\.href)?\s*=\s*["']([^"']+)["']/i);
       if (mr) {
         try {
-          const target = new URL(mr[1], page).href;
+          let target = new URL(mr[1], page.endsWith('/') ? page : page + '/').href;
+          // adresárové ciele potrebujú lomku, inak sa relatívne odkazy skladajú zle
+          if (!/\.[a-z]{2,4}$/i.test(target) && !target.endsWith('/')) target += '/';
           console.log(`  elections ${elec.key}: redirect -> ${target}`);
           if (!visited.has(target)) queue.push(target);
         } catch { /* ignoruj */ }
       }
+      // relatívne odkazy na adresárových stránkach (…/sk) sa musia skladať
+      // voči adresáru, nie voči rodičovi
+      const base = /\.[a-z]{2,4}(\?|$)/i.test(page) || page.endsWith('/') ? page : page + '/';
       const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m => m[1]))]
-        .map(u => { try { return new URL(u, page).href; } catch { return null; } })
+        .map(u => { try { return new URL(u, base).href; } catch { return null; } })
         .filter(Boolean);
       for (const u of links) {
         if (/\.(csv|xlsx|json)(\?|$)/i.test(u)) dataLinks.push(u);
