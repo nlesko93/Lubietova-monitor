@@ -23,9 +23,8 @@
   </div>
 </header>
 
-<main class="grid">
+<main class="themes">
 
-  <!-- ŽIVÉ KARTY -->
   <section class="card card-wide" id="card-map" aria-labelledby="h-map">
     <div class="card-head">
       <h2 id="h-map">Živá mapa</h2>
@@ -35,165 +34,192 @@
     <div class="map-legend" id="map-legend"></div>
   </section>
 
-  <section class="card" id="card-weather" aria-labelledby="h-weather">
-    <div class="card-head">
-      <h2 id="h-weather">Počasie</h2>
-      <span class="card-status" data-status="weather"></span>
+  <section class="theme" aria-label="Obec a samospráva">
+    <h2 class="theme-title">🏛 Obec a samospráva</h2>
+    <div class="theme-grid">
+
+      <section class="card" id="card-waste" aria-labelledby="h-waste">
+        <div class="card-head">
+          <h2 id="h-waste">Zber odpadu</h2>
+          <span class="card-status" data-status="waste"></span>
+        </div>
+        <div class="card-body" id="waste-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-outages" aria-labelledby="h-outages">
+        <div class="card-head">
+          <h2 id="h-outages">Odstávky elektriny</h2>
+          <span class="card-status" data-status="outages"></span>
+        </div>
+        <div class="card-body" id="outages-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-obec" aria-labelledby="h-obec">
+        <div class="card-head">
+          <h2 id="h-obec">Obecný úrad — aktuality</h2>
+          <span class="card-status" data-status="obec"></span>
+        </div>
+        <div class="card-body" id="obec-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-news" aria-labelledby="h-news">
+        <div class="card-head">
+          <h2 id="h-news">Správy o Ľubietovej</h2>
+          <span class="card-status" data-status="news"></span>
+        </div>
+        <div class="card-body" id="news-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-elections" aria-labelledby="h-elections">
+        <div class="card-head">
+          <h2 id="h-elections">Voľby v obci</h2>
+          <span class="card-status" data-status="elections"></span>
+        </div>
+        <div class="card-body" id="elections-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-contracts" aria-labelledby="h-contracts">
+        <div class="card-head">
+          <h2 id="h-contracts">Zmluvy obce</h2>
+          <span class="card-status" data-status="contracts"></span>
+        </div>
+        <div class="card-body" id="contracts-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-finance" aria-labelledby="h-finance">
+        <div class="card-head">
+          <h2 id="h-finance">Hospodárenie obce</h2>
+          <span class="card-status" data-status="finance"></span>
+        </div>
+        <div class="card-body" id="finance-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-demo" aria-labelledby="h-demo">
+        <div class="card-head">
+          <h2 id="h-demo">Obyvateľstvo</h2>
+          <span class="card-status" data-status="demo"></span>
+        </div>
+        <div class="card-body" id="demo-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-buses" aria-labelledby="h-buses" hidden>
+        <div class="card-head">
+          <h2 id="h-buses">Odchody autobusov</h2>
+          <span class="card-status" data-status="buses"></span>
+        </div>
+        <div class="card-body" id="buses-body"></div>
+      </section>
+
     </div>
-    <div class="card-body" id="weather-body"><p class="placeholder">Načítavam…</p></div>
   </section>
 
-  <section class="card" id="card-air" aria-labelledby="h-air">
-    <div class="card-head">
-      <h2 id="h-air">Kvalita ovzdušia</h2>
-      <span class="card-status" data-status="air"></span>
+  <section class="theme" aria-label="Počasie a príroda">
+    <h2 class="theme-title">🌦 Počasie a príroda</h2>
+    <div class="theme-grid">
+
+      <section class="card" id="card-weather" aria-labelledby="h-weather">
+        <div class="card-head">
+          <h2 id="h-weather">Počasie</h2>
+          <span class="card-status" data-status="weather"></span>
+        </div>
+        <div class="card-body" id="weather-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-alerts" aria-labelledby="h-alerts">
+        <div class="card-head">
+          <h2 id="h-alerts">Výstrahy</h2>
+          <span class="card-status" data-status="alerts"></span>
+        </div>
+        <div class="card-body" id="alerts-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-air" aria-labelledby="h-air">
+        <div class="card-head">
+          <h2 id="h-air">Kvalita ovzdušia</h2>
+          <span class="card-status" data-status="air"></span>
+        </div>
+        <div class="card-body" id="air-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-hydro" aria-labelledby="h-hydro">
+        <div class="card-head">
+          <h2 id="h-hydro">Vodné stavy</h2>
+          <span class="card-status" data-status="hydro"></span>
+        </div>
+        <div class="card-body" id="hydro-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-quakes" aria-labelledby="h-quakes">
+        <div class="card-head">
+          <h2 id="h-quakes">Zemetrasenia do 150 km</h2>
+          <span class="card-status" data-status="quakes"></span>
+        </div>
+        <div class="card-body" id="quakes-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
     </div>
-    <div class="card-body" id="air-body"><p class="placeholder">Načítavam…</p></div>
   </section>
 
-  <section class="card" id="card-alerts" aria-labelledby="h-alerts">
-    <div class="card-head">
-      <h2 id="h-alerts">Výstrahy</h2>
-      <span class="card-status" data-status="alerts"></span>
+  <section class="theme" aria-label="Nebo nad obcou">
+    <h2 class="theme-title">🛰 Nebo nad obcou</h2>
+    <div class="theme-grid">
+
+      <section class="card" id="card-planes" aria-labelledby="h-planes">
+        <div class="card-head">
+          <h2 id="h-planes">Lietadlá nad obcou</h2>
+          <span class="card-status" data-status="planes"></span>
+        </div>
+        <div class="card-body" id="planes-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-sats" aria-labelledby="h-sats">
+        <div class="card-head">
+          <h2 id="h-sats">Satelity nad obzorom</h2>
+          <span class="card-status" data-status="sats"></span>
+        </div>
+        <div class="card-body" id="sats-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
+      <section class="card" id="card-sky" aria-labelledby="h-sky">
+        <div class="card-head">
+          <h2 id="h-sky">Obloha teraz</h2>
+          <span class="card-status" data-status="sky"></span>
+        </div>
+        <div class="card-body" id="sky-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
+
     </div>
-    <div class="card-body" id="alerts-body"><p class="placeholder">Načítavam…</p></div>
   </section>
 
-  <section class="card" id="card-planes" aria-labelledby="h-planes">
-    <div class="card-head">
-      <h2 id="h-planes">Lietadlá nad obcou</h2>
-      <span class="card-status" data-status="planes"></span>
-    </div>
-    <div class="card-body" id="planes-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
+  <section class="theme" aria-label="Obec v obrazoch">
+    <h2 class="theme-title">📷 Obec v obrazoch</h2>
+    <div class="theme-grid">
 
-  <section class="card" id="card-sky" aria-labelledby="h-sky">
-    <div class="card-head">
-      <h2 id="h-sky">Obloha teraz</h2>
-      <span class="card-status" data-status="sky"></span>
-    </div>
-    <div class="card-body" id="sky-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
+      <section class="card" id="card-gallery" aria-labelledby="h-gallery">
+        <div class="card-head">
+          <h2 id="h-gallery">Fotogaléria obce</h2>
+          <span class="card-status" data-status="gallery"></span>
+        </div>
+        <div class="card-body" id="gallery-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
 
-  <section class="card" id="card-sats" aria-labelledby="h-sats">
-    <div class="card-head">
-      <h2 id="h-sats">Satelity nad obzorom</h2>
-      <span class="card-status" data-status="sats"></span>
-    </div>
-    <div class="card-body" id="sats-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
+      <section class="card" id="card-webcams" aria-labelledby="h-webcams" hidden>
+        <div class="card-head">
+          <h2 id="h-webcams">Webkamery v okolí</h2>
+          <span class="card-status" data-status="webcams"></span>
+        </div>
+        <div class="card-body" id="webcams-body"></div>
+      </section>
 
-  <section class="card" id="card-quakes" aria-labelledby="h-quakes">
-    <div class="card-head">
-      <h2 id="h-quakes">Zemetrasenia do 150 km</h2>
-      <span class="card-status" data-status="quakes"></span>
-    </div>
-    <div class="card-body" id="quakes-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
+      <section class="card" id="card-wiki" aria-labelledby="h-wiki">
+        <div class="card-head">
+          <h2 id="h-wiki">O obci</h2>
+          <span class="card-status" data-status="wiki"></span>
+        </div>
+        <div class="card-body" id="wiki-body"><p class="placeholder">Načítavam…</p></div>
+      </section>
 
-  <!-- KARTY Z HODINOVÝCH DÁT -->
-  <section class="card" id="card-outages" aria-labelledby="h-outages">
-    <div class="card-head">
-      <h2 id="h-outages">Odstávky elektriny</h2>
-      <span class="card-status" data-status="outages"></span>
     </div>
-    <div class="card-body" id="outages-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-buses" aria-labelledby="h-buses">
-    <div class="card-head">
-      <h2 id="h-buses">Odchody autobusov</h2>
-      <span class="card-status" data-status="buses"></span>
-    </div>
-    <div class="card-body" id="buses-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-hydro" aria-labelledby="h-hydro">
-    <div class="card-head">
-      <h2 id="h-hydro">Vodné stavy</h2>
-      <span class="card-status" data-status="hydro"></span>
-    </div>
-    <div class="card-body" id="hydro-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-gallery" aria-labelledby="h-gallery">
-    <div class="card-head">
-      <h2 id="h-gallery">Fotogaléria obce</h2>
-      <span class="card-status" data-status="gallery"></span>
-    </div>
-    <div class="card-body" id="gallery-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-waste" aria-labelledby="h-waste">
-    <div class="card-head">
-      <h2 id="h-waste">Zber odpadu</h2>
-      <span class="card-status" data-status="waste"></span>
-    </div>
-    <div class="card-body" id="waste-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-news" aria-labelledby="h-news">
-    <div class="card-head">
-      <h2 id="h-news">Správy o Ľubietovej</h2>
-      <span class="card-status" data-status="news"></span>
-    </div>
-    <div class="card-body" id="news-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-obec" aria-labelledby="h-obec">
-    <div class="card-head">
-      <h2 id="h-obec">Obecný úrad — aktuality</h2>
-      <span class="card-status" data-status="obec"></span>
-    </div>
-    <div class="card-body" id="obec-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-contracts" aria-labelledby="h-contracts">
-    <div class="card-head">
-      <h2 id="h-contracts">Zmluvy obce</h2>
-      <span class="card-status" data-status="contracts"></span>
-    </div>
-    <div class="card-body" id="contracts-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-finance" aria-labelledby="h-finance">
-    <div class="card-head">
-      <h2 id="h-finance">Hospodárenie obce</h2>
-      <span class="card-status" data-status="finance"></span>
-    </div>
-    <div class="card-body" id="finance-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-elections" aria-labelledby="h-elections">
-    <div class="card-head">
-      <h2 id="h-elections">Voľby v obci</h2>
-      <span class="card-status" data-status="elections"></span>
-    </div>
-    <div class="card-body" id="elections-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-demo" aria-labelledby="h-demo">
-    <div class="card-head">
-      <h2 id="h-demo">Obyvateľstvo</h2>
-      <span class="card-status" data-status="demo"></span>
-    </div>
-    <div class="card-body" id="demo-body"><p class="placeholder">Načítavam…</p></div>
-  </section>
-
-  <section class="card" id="card-webcams" aria-labelledby="h-webcams" hidden>
-    <div class="card-head">
-      <h2 id="h-webcams">Webkamery v okolí</h2>
-      <span class="card-status" data-status="webcams"></span>
-    </div>
-    <div class="card-body" id="webcams-body"></div>
-  </section>
-
-  <section class="card" id="card-wiki" aria-labelledby="h-wiki">
-    <div class="card-head">
-      <h2 id="h-wiki">O obci</h2>
-      <span class="card-status" data-status="wiki"></span>
-    </div>
-    <div class="card-body" id="wiki-body"><p class="placeholder">Načítavam…</p></div>
   </section>
 
 </main>

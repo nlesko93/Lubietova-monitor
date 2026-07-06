@@ -52,7 +52,7 @@ function fromAtom(xml) {
     const severityMatch = title.match(/yellow|orange|red/i) ||
       [xmlValue(entry, 'cap:severity')];
     items.push({
-      event: xmlValue(entry, 'cap:event') || title,
+      event: translateEvent(xmlValue(entry, 'cap:event') || title),
       severity: capitalize(severityMatch?.[0] || 'Unknown'),
       onset: xmlValue(entry, 'cap:onset') || xmlValue(entry, 'cap:effective'),
       expires: xmlValue(entry, 'cap:expires'),
@@ -73,7 +73,7 @@ function fromApi(data) {
       const areas = (info.area || []).map(a => a.areaDesc).join(', ');
       if (!AREA_MATCH.test(areas)) continue;
       items.push({
-        event: info.event,
+        event: translateEvent(info.event),
         severity: awarenessColor(info) || info.severity,
         onset: info.onset,
         expires: info.expires,
@@ -92,6 +92,29 @@ function awarenessColor(info) {
 }
 
 const capitalize = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
+
+// Meteoalarm feed je v angličtine — preklad typov výstrah do slovenčiny.
+const EVENT_SK = [
+  [/thunderstorm/i, 'Búrky'],
+  [/rain.?flood/i, 'Prívalová povodeň'],
+  [/flood/i, 'Povodeň'],
+  [/rain/i, 'Dážď'],
+  [/wind/i, 'Vietor'],
+  [/snow|ice/i, 'Sneh a poľadovica'],
+  [/fog/i, 'Hmla'],
+  [/extreme.?high.?temp|high.?temp|heat/i, 'Vysoké teploty'],
+  [/extreme.?low.?temp|low.?temp|cold|frost/i, 'Nízke teploty'],
+  [/forest.?fire|fire/i, 'Riziko požiarov'],
+  [/avalanche/i, 'Lavíny'],
+  [/coastal/i, 'Pobrežná udalosť'],
+];
+
+function translateEvent(s) {
+  const hit = EVENT_SK.find(([re]) => re.test(s || ''));
+  if (hit) return hit[1];
+  // "Moderate Wind warning" → aspoň očisti od stupňa/warning
+  return String(s || 'Výstraha').replace(/\b(moderate|severe|extreme|warning)\b/gi, '').trim() || 'Výstraha';
+}
 
 function dedupe(items) {
   const seen = new Set();

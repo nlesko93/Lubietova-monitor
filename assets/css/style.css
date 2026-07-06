@@ -90,13 +90,31 @@ a:hover { text-decoration: underline; }
 }
 .theme-toggle:hover { color: var(--text-primary); }
 
-/* ---------- grid & cards ---------- */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 14px;
+/* ---------- tematické sekcie & masonry karty ---------- */
+.themes {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   padding: 10px 24px 24px;
-  align-items: start;
+}
+.theme-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--grid);
+  padding-bottom: 6px;
+}
+/* CSS stĺpce = karty rôznych výšok sa ukladajú tesne pod seba bez dier */
+.theme-grid {
+  columns: 340px;
+  column-gap: 14px;
+}
+.theme-grid .card {
+  break-inside: avoid;
+  margin-bottom: 14px;
 }
 .card {
   background: var(--surface-1);
@@ -104,7 +122,7 @@ a:hover { text-decoration: underline; }
   border-radius: 12px;
   overflow: hidden;
 }
-.card-wide { grid-column: 1 / -1; }
+.card-wide { width: 100%; }
 .card-head {
   display: flex;
   align-items: baseline;
@@ -268,7 +286,8 @@ a.item-title:hover { color: var(--accent); }
 .footer a { color: var(--text-secondary); }
 
 @media (max-width: 560px) {
-  .grid { padding: 8px 10px 16px; grid-template-columns: 1fr; }
+  .themes { padding: 8px 10px 16px; gap: 16px; }
+  .theme-grid { columns: 1; }
   .topbar { padding: 14px 12px 6px; }
   .map { height: 320px; }
   .forecast-strip { grid-template-columns: repeat(4, 1fr); }
