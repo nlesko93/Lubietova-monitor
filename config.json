@@ -10,6 +10,10 @@
   "icoObce": "00313564",
   "icoSearchName": "Obec Ľubietová",
   "wasteIcs": "https://calendar.google.com/calendar/ical/584b83aabc25df783476ea01cbf78f22d42ce49643975e42afc42d506797ba84%40group.calendar.google.com/public/basic.ics",
+  "busLines": [
+    { "line": "610", "route": "Banská Bystrica – Slovenská Ľupča – Lučatín – Ľubietová – Strelníky – Povrazník", "pdf": "https://www.sadzv.sk/cp/aktualne/primestske/060610.pdf" }
+  ],
+  "busStopMatch": "ubietov",
   "planes": {
     "radiusNm": 25,
     "refreshSeconds": 45

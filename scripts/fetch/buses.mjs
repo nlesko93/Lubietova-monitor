@@ -1,47 +1,59 @@
-// Cestovný poriadok — SAD Zvolen / IDS BBSK, prímestská doprava.
-// Discovery objavil sekciu „odchody zo zastávok"; hľadáme linku 610
-// (Banská Bystrica – Ľubietová) a spôsob, ako získať odchody z obce.
-import { getText, writeResult, stripTags } from './lib.mjs';
+// Cestovný poriadok linky 610 (SAD Zvolen / IDS BBSK) — oficiálne PDF.
+// PDF sa prevedie cez `pdftotext -layout` a z riadkov so zastávkou obce
+// (Ľubietová) sa vytiahnu časy odchodov po smeroch.
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { writeResult, CONFIG } from './lib.mjs';
 
-const PAGES = [
-  'https://www.sadzv.sk/cestovne-poriadky/primestska-doprava/',
-  'https://www.sadzv.sk/cestovne-poriadky/primestska-doprava/?tab=odchody-zo-zastavok',
-  'https://sadzv.sk/cestovne-poriadky/primestska-doprava/',
-];
+const STOP = new RegExp(CONFIG.busStopMatch || 'ubietov', 'i');
 
 export async function fetchBuses() {
-  for (const url of PAGES) {
+  const lines = [];
+  for (const bl of CONFIG.busLines || []) {
     try {
-      const html = await getText(url, { retries: 0, timeoutMs: 20000 });
-
-      // odkazy súvisiace s linkou 610 / zastávkou / PDF cestovného poriadku
-      const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m => m[1]))]
-        .map(u => { try { return new URL(u, url).href; } catch { return null; } })
-        .filter(Boolean);
-      const l610 = links.filter(u => /\b610\b|linka.?610|-610-|_610/i.test(u));
-      const pdfs = links.filter(u => /\.pdf/i.test(u) && /610|primest|linka|cp/i.test(u)).slice(0, 8);
-      const stopLinks = links.filter(u => /zastavk|odchod|stop|station/i.test(u)).slice(0, 8);
-
-      // wp-json / admin-ajax endpointy (WordPress dátové rozhranie)
-      const api = [...new Set([...html.matchAll(/["'](https?:\/\/[^"']*(?:wp-json|admin-ajax|api)[^"']*)["']/gi)].map(m => m[1]))]
-        .filter(u => !/oembed/i.test(u)).slice(0, 10);
-
-      console.log(`  buses ${url.slice(0, 70)}: HTML ${html.length} B`);
-      console.log(`    linka 610: ${l610.slice(0, 8).join(' , ').slice(0, 500) || '—'}`);
-      console.log(`    PDF cp: ${pdfs.join(' , ').slice(0, 500) || '—'}`);
-      console.log(`    zastávky/odchody: ${stopLinks.join(' , ').slice(0, 500) || '—'}`);
-      console.log(`    api: ${api.join(' , ').slice(0, 500) || '—'}`);
-
-      // kontext okolo "610" a "Ľubietov" priamo v HTML
-      for (const kw of ['610', 'ubietov']) {
-        const pos = html.search(new RegExp(kw, 'i'));
-        if (pos >= 0) {
-          console.log(`    HTML okolo "${kw}": ${stripTags(html.slice(Math.max(0, pos - 200), pos + 250)).slice(0, 400)}`);
-        }
-      }
+      const parsed = await parseLine(bl);
+      if (parsed) lines.push(parsed);
     } catch (e) {
-      console.log(`  buses ${url.slice(0, 70)}: ${e.message.slice(0, 120)}`);
+      console.log(`  buses ${bl.line}: ${e.message.slice(0, 160)}`);
     }
   }
-  return writeResult('buses', { items: [], pending: true });
+  return writeResult('buses', { lines });
+}
+
+async function parseLine(bl) {
+  const res = await fetch(bl.pdf, {
+    signal: AbortSignal.timeout(30000),
+    headers: { 'user-agent': 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)' },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  const dir = mkdtempSync(path.join(tmpdir(), `bus-${bl.line}-`));
+  const pdfPath = path.join(dir, 'cp.pdf');
+  writeFileSync(pdfPath, buf);
+
+  let text;
+  try {
+    text = execFileSync('pdftotext', ['-layout', '-enc', 'UTF-8', pdfPath, '-'], { encoding: 'utf8', maxBuffer: 20e6 });
+  } catch (e) {
+    throw new Error(`pdftotext zlyhal: ${e.message.slice(0, 100)}`);
+  }
+
+  const allLines = text.split(/\r?\n/);
+  const stopLines = allLines.filter(l => STOP.test(l));
+  console.log(`  buses ${bl.line}: PDF ${Math.round(buf.length / 1024)} kB, ${allLines.length} riadkov, ${stopLines.length} so zastávkou obce`);
+  stopLines.slice(0, 6).forEach(l => console.log(`    | ${l.replace(/\s+/g, ' ').trim().slice(0, 300)}`));
+
+  // časy HH:MM alebo HH.MM z riadkov obce
+  const times = new Set();
+  for (const l of stopLines) {
+    for (const m of l.matchAll(/\b([0-2]?\d)[:.]([0-5]\d)\b/g)) {
+      const h = +m[1], min = +m[2];
+      if (h < 24) times.add(`${String(h).padStart(2, '0')}:${m[2]}`);
+    }
+  }
+  const departures = [...times].sort();
+  if (!departures.length) return { line: bl.line, route: bl.route, pdf: bl.pdf, departures: [] };
+  return { line: bl.line, route: bl.route, pdf: bl.pdf, departures };
 }
