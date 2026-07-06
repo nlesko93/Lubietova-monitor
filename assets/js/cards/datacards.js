@@ -230,6 +230,66 @@ export function initWaste() {
   }, { emptyText: 'V kalendári nie sú žiadne najbližšie termíny zvozu.' });
 }
 
+export function initOutages() {
+  return dataCard('outages', 'outages-body', (body, d) => {
+    if (d.pending) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Zdroj odstávok (SSD) sa ešte pripravuje.' }));
+      return;
+    }
+    if (!d.items.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Žiadne plánované odstávky elektriny pre Ľubietovú. ✅' }));
+      return;
+    }
+    const list = el('ul', { class: 'item-list' });
+    for (const o of d.items.slice(0, 6)) {
+      list.appendChild(el('li', {}, [
+        el('span', { class: 'badge', style: '--badge-color: var(--status-warning)', text: `${o.from}${o.to ? ' – ' + o.to : ''}` }),
+        el('span', { class: 'item-meta', text: o.area || '' }),
+      ]));
+    }
+    body.appendChild(list);
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Zdroj: Stredoslovenská distribučná (ssd.sk)' }));
+  }, { handlesEmpty: true });
+}
+
+export function initBuses() {
+  return dataCard('buses', 'buses-body', (body, d) => {
+    if (d.pending || !d.items?.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Odchody autobusov sa ešte pripravujú (zdroj cp.sk).' }));
+      return;
+    }
+    const list = el('ul', { class: 'item-list' });
+    for (const b of d.items.slice(0, 8)) {
+      list.appendChild(el('li', {}, [
+        el('span', { class: 'item-value', text: b.time }),
+        el('span', { class: 'item-title', text: b.destination }),
+        b.line ? el('span', { class: 'item-meta', text: `linka ${b.line}` }) : null,
+      ]));
+    }
+    body.appendChild(list);
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Odchody zo zastávky Ľubietová · zdroj: cp.sk (aktualizované hodinovo)' }));
+  }, { handlesEmpty: true });
+}
+
+export function initHydro() {
+  return dataCard('hydro', 'hydro-body', (body, d) => {
+    if (d.pending || !d.items?.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Vodné stavy zo SHMÚ sa ešte pripravujú.' }));
+      return;
+    }
+    const tiles = el('div', { class: 'tiles', style: 'grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));' });
+    for (const s of d.items.slice(0, 4)) {
+      tiles.appendChild(el('div', { class: 'tile' }, [
+        el('div', { class: 'label', text: s.station }),
+        el('div', { class: 'value', html: `${s.levelCm ?? '—'} <span class="unit">cm</span>` }),
+        el('div', { class: 'sub', text: [s.river, s.flow != null ? `${s.flow} m³/s` : null, s.time].filter(Boolean).join(' · ') }),
+      ]));
+    }
+    body.appendChild(tiles);
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Najbližšie vodomerné stanice (Hron) · zdroj: SHMÚ' }));
+  }, { handlesEmpty: true });
+}
+
 export function initWebcams() {
   const card = document.getElementById('card-webcams');
   return dataCard('webcams', 'webcams-body', (body, d) => {

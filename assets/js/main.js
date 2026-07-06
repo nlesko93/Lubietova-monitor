@@ -8,9 +8,11 @@ import { initSky } from './cards/sky.js';
 import { initSats } from './cards/sats.js';
 import { initQuakes } from './cards/quakes.js';
 import { initWiki } from './cards/wiki.js';
+import { initGallery } from './cards/gallery.js';
 import {
   initNews, initObec, initAlerts, initContracts,
   initFinance, initDemo, initWebcams, initWaste, initElections,
+  initOutages, initBuses, initHydro,
 } from './cards/datacards.js';
 
 // --- téma ---
@@ -45,6 +47,7 @@ const cards = [
   initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
   initWiki, initNews, initObec, initAlerts, initContracts, initFinance,
   initDemo, initWebcams, initWaste, initElections,
+  initOutages, initBuses, initHydro, initGallery,
 ];
 for (const init of cards) {
   Promise.resolve().then(init).catch(e => console.error(init.name, e));

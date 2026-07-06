@@ -11,6 +11,9 @@ import { fetchTle } from './tle.mjs';
 import { fetchWebcams } from './webcams.mjs';
 import { fetchWaste } from './waste.mjs';
 import { fetchElections } from './elections.mjs';
+import { fetchOutages } from './outages.mjs';
+import { fetchHydro } from './hydro.mjs';
+import { fetchBuses } from './buses.mjs';
 
 const FETCHERS = [
   ['news', fetchNews],
@@ -23,6 +26,9 @@ const FETCHERS = [
   ['webcams', fetchWebcams],
   ['waste', fetchWaste],
   ['elections', fetchElections],
+  ['outages', fetchOutages],
+  ['hydro', fetchHydro],
+  ['buses', fetchBuses],
 ];
 
 const results = await Promise.allSettled(
