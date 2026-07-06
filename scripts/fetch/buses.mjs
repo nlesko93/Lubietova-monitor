@@ -38,9 +38,26 @@ async function discoverUbianApis() {
   const found = new Set();
   try {
     const html = await getText(UBIAN, { retries: 0, timeoutMs: 15000 });
-    const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1]);
-    console.log(`  buses ubian.sk: HTML ${html.length} B, skripty: ${scripts.slice(0, 6).join(' , ').slice(0, 400)}`);
-    for (let s of scripts.slice(0, 3)) {
+    const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1])
+      .filter(s => !/vendor|jquery|bootstrap|mustache|cookie/i.test(s));
+    console.log(`  buses ubian.sk: HTML ${html.length} B, app skripty: ${scripts.slice(0, 8).join(' , ').slice(0, 500)}`);
+    // AJAX volania priamo v HTML (server-rendered web)
+    const inline = [...new Set([...html.matchAll(/(?:url\s*:\s*|fetch\(|\.get\(|\.post\()["']([^"']{5,120})["']/gi)].map(m => m[1]))];
+    if (inline.length) console.log('  buses inline ajax:', inline.slice(0, 12).join(' , ').slice(0, 600));
+    inline.filter(u => /api|search|stop|depart|vehicle/i.test(u))
+      .forEach(u => { try { found.add(new URL(u, UBIAN).href); } catch { /* */ } });
+    // sondy na weby dopravcov (mapa spojov / GPS)
+    for (const site of ['https://www.sadzv.sk/', 'https://mapa.ubian.sk/']) {
+      try {
+        const h = await getText(site, { retries: 0, timeoutMs: 12000 });
+        const hints = [...new Set([...h.matchAll(/["'((]\s*(https?:\/\/[^"'\s)]{10,110}|\/[\w\-/.]*(?:api|gps|mapa|vehicle|poloh)[\w\-/.?=&]*)["')]/gi)]
+          .map(m => m[1]).filter(u => /api|gps|mapa|vehicle|poloh|json/i.test(u)))];
+        console.log(`  buses ${site}: HTML ${h.length} B, hinty: ${hints.slice(0, 10).join(' , ').slice(0, 500) || '—'}`);
+      } catch (e) {
+        console.log(`  buses ${site}: ${e.message.slice(0, 100)}`);
+      }
+    }
+    for (let s of scripts.slice(0, 4)) {
       if (s.startsWith('/')) s = new URL(s, UBIAN).href;
       if (!s.startsWith('http')) continue;
       try {

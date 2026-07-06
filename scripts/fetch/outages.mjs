@@ -40,6 +40,13 @@ export async function fetchOutages() {
       if (tableRows.length) console.log('  outages tabuľka:', tableRows.join(' || ').slice(0, 700));
       const odstavkyLinks = [...new Set([...html.matchAll(/href="([^"]*odstavk[^"]*)"/gi)].map(m => m[1]))].slice(0, 10);
       console.log('  outages odkazy:', odstavkyLinks.join(' , ').slice(0, 600) || '—');
+      // externé odkazy (aplikácia odstávok býva na inej doméne/portáli)
+      const external = [...new Set([...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)].map(m => m[1]))]
+        .filter(u => !/facebook|instagram|linkedin|youtube|cookiebot|google|bootstrap/i.test(u)).slice(0, 15);
+      console.log('  outages externé:', external.join(' , ').slice(0, 800) || '—');
+      // iframe (aplikácia môže byť vložená)
+      const iframes = [...html.matchAll(/<iframe[^>]*src="([^"]+)"/gi)].map(m => m[1]);
+      if (iframes.length) console.log('  outages iframe:', iframes.join(' , ').slice(0, 400));
       const ajax = [...new Set([...html.matchAll(/(?:ajax|fetch|url:)\s*\(?["']([^"']{8,120})["']/gi)].map(m => m[1]))].slice(0, 8);
       if (ajax.length) console.log('  outages ajax:', ajax.join(' , ').slice(0, 500));
       if (/ľubietov/i.test(html)) {

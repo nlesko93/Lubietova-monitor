@@ -35,8 +35,8 @@ async function fetchOne(elec) {
   const queue = [elec.site];
   const visited = new Set();
 
-  for (let depth = 0; depth < 2 && queue.length; depth++) {
-    const pages = queue.splice(0, 4);
+  for (let depth = 0; depth < 3 && queue.length; depth++) {
+    const pages = queue.splice(0, 5);
     for (const page of pages) {
       if (visited.has(page)) continue;
       visited.add(page);
@@ -65,10 +65,10 @@ async function fetchOne(elec) {
         .filter(Boolean);
       for (const u of links) {
         if (/\.(csv|xlsx|json)(\?|$)/i.test(u)) dataLinks.push(u);
-        else if (depth === 0 && /open.?data|\/data|download|subor|vysledk/i.test(u) && u.startsWith(elec.site)) queue.push(u);
+        else if (/open.?data|\/data|download|stiahnut|subor|vysledk|\/obc|obec/i.test(u) && u.startsWith(elec.site) && !visited.has(u)) queue.push(u);
       }
-      console.log(`  elections ${elec.key}: ${page.slice(0, 80)} -> ${links.length} odkazov, dátové: ` +
-        links.filter(u => /open.?data|\.csv|\.xlsx|\.json|download|tab\d|vysledk/i.test(u)).slice(0, 12).join(' , ').slice(0, 900));
+      console.log(`  elections ${elec.key} [d${depth}]: ${page.slice(0, 90)} -> ${links.length} odkazov: ` +
+        links.slice(0, 20).map(u => u.replace(elec.site, '')).join(' , ').slice(0, 900));
     }
   }
 
