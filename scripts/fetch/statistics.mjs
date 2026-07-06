@@ -47,31 +47,40 @@ export async function fetchDemographics() {
   // 3) ďalšie obecné kocky (pohyb obyvateľstva, vek…) — všeobecným
   //    mechanizmom; zoznam kandidátov sa dolaďuje podľa logov discovery.
   const extra = [];
-  for (const cube of EXTRA_CUBES) {
+  for (const { cube, pick } of EXTRA_CUBES) {
     try {
-      const series = await fetchCubeSeries(cube, obecCode);
+      const series = await fetchCubeSeries(cube, obecCode, pick);
       if (series) extra.push(series);
     } catch (e) {
       console.log(`  statistics kocka ${cube}: ${e.message.slice(0, 160)}`);
     }
   }
-  await logCollectionDiscovery();
   return writeResult('demographics', { items: population.items, obecCode, via: population.via, extra });
 }
 
-// Kandidátne kocky s údajmi za obce (overované za behu; zlé id len zaloguje).
-const EXTRA_CUBES = ['om7102rr', 'om7103rr', 'om7014rr', 'om7020rr', 'om7002rr'];
+// Obecné kocky overené v Actions behu č. 13 + filter zaujímavých sérií.
+const EXTRA_CUBES = [
+  { cube: 'om7103rr', pick: /^(živonarodení|zomretí|prisťahovaní|vysťahovaní)\b/i },
+  { cube: 'om7014rr', pick: /^hustota/i },
+];
 
 // Stiahne kocku pre obec: počet dimenzií zistí z chybovej hlášky
 // ("Expected = N"), séria sa rozloží podľa ukazovateľovej dimenzie.
-async function fetchCubeSeries(cube, obecCode) {
+async function fetchCubeSeries(cube, obecCode, pick) {
   let nDims = 3;
   for (let attempt = 0; attempt < 3; attempt++) {
     const url = `${API}/dataset/${cube}/${obecCode}${'/all'.repeat(nDims - 1)}?lang=sk&type=json`;
     try {
       const js = await getJSON(url, { retries: 0 });
       const label = js.label || cube;
-      const series = parseJsonStatSeries(js);
+      const all = parseJsonStatSeries(js);
+      const series = {};
+      for (const [name, pts] of Object.entries(all)) {
+        if (!pick || pick.test(name)) {
+          // "Živonarodení (Osoba)" → "Živonarodení"
+          series[name.replace(/\s*\([^)]*\)\s*$/, '')] = pts;
+        }
+      }
       const names = Object.keys(series);
       console.log(`  statistics ${cube}: "${String(label).slice(0, 80)}" série: ${names.join(' | ').slice(0, 300)}`);
       return names.length ? { cube, label, series } : null;
@@ -82,20 +91,6 @@ async function fetchCubeSeries(cube, obecCode) {
     }
   }
   return null;
-}
-
-async function logCollectionDiscovery() {
-  try {
-    const col = await getJSON(`${API}/collection?lang=sk`, { retries: 0, timeoutMs: 30000 });
-    const links = col?.link?.item || col?.links || [];
-    const municipal = links
-      .map(l => ({ id: (l.href || '').match(/dataset\/(\w+)/)?.[1], label: l.label }))
-      .filter(x => x.id && /rr$/.test(x.id));
-    console.log(`  statistics discovery: ${municipal.length} obecných kociek: ` +
-      municipal.slice(0, 40).map(x => `${x.id}=${String(x.label).slice(0, 60)}`).join(' | ').slice(0, 2500));
-  } catch (e) {
-    console.log(`  statistics discovery: ${e.message.slice(0, 120)}`);
-  }
 }
 
 const norm = s => String(s || '').toLowerCase()
@@ -165,7 +160,7 @@ function parseJsonStatSeries(js) {
   const out = {};
   const indCodes = indPos >= 0 ? dimOrder(ids[indPos]) : [null];
   const indLabels = indPos >= 0 ? (js.dimension[ids[indPos]].category.label || {}) : {};
-  indCodes.slice(0, 8).forEach((indCode, ii) => {
+  indCodes.slice(0, 40).forEach((indCode, ii) => {
     const name = indCode ? (indLabels[indCode] || indCode) : (js.label || 'hodnota');
     const pts = [];
     years.forEach((y, ti) => {
