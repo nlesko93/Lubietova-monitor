@@ -130,7 +130,10 @@ function parseRows(elec, header, rows) {
   const h = header.map(c => c.toLowerCase());
   const idx = re => h.findIndex(c => re.test(c));
   const nameIdx = idx(/n[aá]zov.*(stran|subjekt|koal)|kandid[aá]t|^meno$|priezvisko|subjekt/);
-  const votesIdx = idx(/pc_hl|(po[cč]et )?(platn[yý]ch )?hlasov|hlasy/);
+  // P_HL / "počet platných hlasov" má prednosť; PC_HL je v niektorých
+  // tabuľkách poradové číslo, ako hlasy sa berie len keď nič iné nie je
+  let votesIdx = idx(/^p_hl$|(po[cč]et )?(platn[yý]ch )?hlasov|hlasy/);
+  if (votesIdx < 0) votesIdx = idx(/^pc_hl$/);
   const pctIdx = idx(/podiel|%|percent/);
   if (nameIdx < 0 || votesIdx < 0) return null;
 
@@ -145,6 +148,9 @@ function parseRows(elec, header, rows) {
   })).filter(x => x.name && x.votes > 0);
 
   if (!results.length) return null;
+  // tabuľky s číselnými kódmi namiesto mien (napr. OSK tab06d/tab09d) preskoč
+  const numericNames = results.filter(x => /^\d+$/.test(x.name)).length;
+  if (numericNames > results.length / 2) return null;
   results.sort((a, b) => b.votes - a.votes);
   const total = results.reduce((s, x) => s + x.votes, 0);
   for (const x of results) x.pct ??= Math.round((x.votes / total) * 1000) / 10;
