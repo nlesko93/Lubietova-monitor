@@ -47,6 +47,10 @@ async function fetchOne(elec) {
         console.log(`  elections ${elec.key}: ${page.slice(0, 70)} -> ${e.message.slice(0, 100)}`);
         continue;
       }
+      if (depth === 0) {
+        const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1]).slice(0, 6);
+        console.log(`  elections ${elec.key}: HTML ${html.length} B, skripty: ${scripts.join(' , ').slice(0, 400)} | začiatok: ${html.slice(0, 250).replace(/\s+/g, ' ')}`);
+      }
       const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m => m[1]))]
         .map(u => { try { return new URL(u, page).href; } catch { return null; } })
         .filter(Boolean);

@@ -60,7 +60,7 @@ export async function fetchDemographics() {
 
 // Obecné kocky overené v Actions behu č. 13 + filter zaujímavých sérií.
 const EXTRA_CUBES = [
-  { cube: 'om7103rr', pick: /^(živonarodení|zomretí|prisťahovaní|vysťahovaní)\b/i },
+  { cube: 'om7103rr', pick: /^(živonarodení|zomretí|prisťahovaní|vysťahovaní)/i },
   { cube: 'om7014rr', pick: /^hustota/i },
 ];
 
