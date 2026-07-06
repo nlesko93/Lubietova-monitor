@@ -203,6 +203,23 @@ a.item-title:hover { color: var(--accent); }
 .viz-tooltip .tt-title { font-weight: 600; }
 .viz-tooltip .tt-row { color: var(--text-secondary); }
 
+/* ---------- voľby: horizontálne pruhy + prepínač ---------- */
+.tab-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab-btn {
+  background: var(--surface-2); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 3px 10px; font-size: 0.75rem; cursor: pointer;
+}
+.tab-btn[aria-pressed="true"] { color: var(--text-primary); border-color: var(--accent); }
+.hbar-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 5px 0; }
+.hbar-name { font-size: 0.82rem; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-val { font-size: 0.8rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hbar-track { grid-column: 1 / -1; height: 8px; border-radius: 4px 4px 4px 0; background: var(--surface-2); overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--series-1); }
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem; color: var(--text-secondary); margin: 6px 0 2px; }
+.chart-legend .key { display: inline-flex; align-items: center; gap: 5px; }
+
 /* ---------- sky polar chart ---------- */
 .sky-chart { max-width: 340px; margin: 0 auto; }
 .sky-list { margin-top: 8px; }

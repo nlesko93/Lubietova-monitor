@@ -29,12 +29,12 @@ export async function fetchDemographics() {
     `${API}/dataset/${CUBE}/${obecCode}/all/all?lang=sk&type=json`,
   ];
 
-  let lastErr;
+  let lastErr, population = null;
   for (const url of attempts) {
     try {
       const cube = await getJSON(url, { retries: 0 });
       const items = parseJsonStat(cube);
-      if (items.length) return writeResult('demographics', { items, obecCode, via: url });
+      if (items.length) { population = { items, via: url }; break; }
       console.warn(`  statistics: ${url} vrátila 0 hodnôt, dims=${(cube.id || []).join(',')}`);
       lastErr = new Error('kocka nevrátila použiteľné hodnoty');
     } catch (e) {
@@ -42,7 +42,60 @@ export async function fetchDemographics() {
       console.warn(`  statistics dataset: ${e.message.slice(0, 220)}`);
     }
   }
-  throw lastErr;
+  if (!population) throw lastErr;
+
+  // 3) ďalšie obecné kocky (pohyb obyvateľstva, vek…) — všeobecným
+  //    mechanizmom; zoznam kandidátov sa dolaďuje podľa logov discovery.
+  const extra = [];
+  for (const cube of EXTRA_CUBES) {
+    try {
+      const series = await fetchCubeSeries(cube, obecCode);
+      if (series) extra.push(series);
+    } catch (e) {
+      console.log(`  statistics kocka ${cube}: ${e.message.slice(0, 160)}`);
+    }
+  }
+  await logCollectionDiscovery();
+  return writeResult('demographics', { items: population.items, obecCode, via: population.via, extra });
+}
+
+// Kandidátne kocky s údajmi za obce (overované za behu; zlé id len zaloguje).
+const EXTRA_CUBES = ['om7102rr', 'om7103rr', 'om7014rr', 'om7020rr', 'om7002rr'];
+
+// Stiahne kocku pre obec: počet dimenzií zistí z chybovej hlášky
+// ("Expected = N"), séria sa rozloží podľa ukazovateľovej dimenzie.
+async function fetchCubeSeries(cube, obecCode) {
+  let nDims = 3;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const url = `${API}/dataset/${cube}/${obecCode}${'/all'.repeat(nDims - 1)}?lang=sk&type=json`;
+    try {
+      const js = await getJSON(url, { retries: 0 });
+      const label = js.label || cube;
+      const series = parseJsonStatSeries(js);
+      const names = Object.keys(series);
+      console.log(`  statistics ${cube}: "${String(label).slice(0, 80)}" série: ${names.join(' | ').slice(0, 300)}`);
+      return names.length ? { cube, label, series } : null;
+    } catch (e) {
+      const m = e.message.match(/Expected = (\d+)/);
+      if (m && +m[1] !== nDims) { nDims = +m[1]; continue; }
+      throw e;
+    }
+  }
+  return null;
+}
+
+async function logCollectionDiscovery() {
+  try {
+    const col = await getJSON(`${API}/collection?lang=sk`, { retries: 0, timeoutMs: 30000 });
+    const links = col?.link?.item || col?.links || [];
+    const municipal = links
+      .map(l => ({ id: (l.href || '').match(/dataset\/(\w+)/)?.[1], label: l.label }))
+      .filter(x => x.id && /rr$/.test(x.id));
+    console.log(`  statistics discovery: ${municipal.length} obecných kociek: ` +
+      municipal.slice(0, 40).map(x => `${x.id}=${String(x.label).slice(0, 60)}`).join(' | ').slice(0, 2500));
+  } catch (e) {
+    console.log(`  statistics discovery: ${e.message.slice(0, 120)}`);
+  }
 }
 
 const norm = s => String(s || '').toLowerCase()
@@ -83,4 +136,44 @@ function parseJsonStat(js) {
     if (v != null && year) items.push({ year, population: v });
   });
   return items.filter(it => it.population > 0).sort((a, b) => a.year - b.year).slice(-25);
+}
+
+// JSON-stat → { "názov ukazovateľa": [{year, value}] } — séria pre každú
+// kategóriu prvej ne-časovej, ne-obecnej dimenzie s viac ako 1 položkou.
+function parseJsonStatSeries(js) {
+  const ids = js?.id || [];
+  const sizes = js?.size || [];
+  const values = js?.value || [];
+  if (!ids.length || !values.length) return {};
+
+  const strides = new Array(ids.length);
+  let s = 1;
+  for (let i = ids.length - 1; i >= 0; i--) { strides[i] = s; s *= sizes[i]; }
+  const dimOrder = id => Object.entries(js.dimension[id].category.index)
+    .sort((a, b) => a[1] - b[1]).map(([k]) => k);
+
+  const timePos = ids.findIndex(d => /rok|year|time|obd/i.test(d));
+  if (timePos < 0) return {};
+  const indPos = ids.findIndex((d, i) => i !== timePos && !/obc|nuts/i.test(d) && sizes[i] > 1);
+
+  const timeDim = js.dimension[ids[timePos]];
+  const years = dimOrder(ids[timePos]).map(code => ({
+    code,
+    year: parseInt(String(timeDim.category.label?.[code] ?? code).match(/\d{4}/)?.[0]),
+  }));
+
+  const out = {};
+  const indCodes = indPos >= 0 ? dimOrder(ids[indPos]) : [null];
+  const indLabels = indPos >= 0 ? (js.dimension[ids[indPos]].category.label || {}) : {};
+  indCodes.slice(0, 8).forEach((indCode, ii) => {
+    const name = indCode ? (indLabels[indCode] || indCode) : (js.label || 'hodnota');
+    const pts = [];
+    years.forEach((y, ti) => {
+      const idx = ti * strides[timePos] + (indPos >= 0 ? ii * strides[indPos] : 0);
+      const v = values[idx];
+      if (v != null && y.year) pts.push({ year: y.year, value: v });
+    });
+    if (pts.length) out[name] = pts.sort((a, b) => a.year - b.year).slice(-25);
+  });
+  return out;
 }

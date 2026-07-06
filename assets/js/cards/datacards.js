@@ -1,6 +1,6 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
 import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml } from '../util.js';
-import { barChart } from '../charts.js';
+import { barChart, lineChart } from '../charts.js';
 
 async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false } = {}) {
   const body = document.getElementById(bodyId);
@@ -120,7 +120,68 @@ export function initDemo() {
     body.appendChild(box);
     barChart(box, d.items.map(it => ({ label: String(it.year), value: it.population })), { height: 150 });
     body.appendChild(el('p', { class: 'chart-caption', text: 'Počet obyvateľov obce — Štatistický úrad SR' }));
+
+    // ďalšie časové rady (pohyb obyvateľstva a pod.) z DataCube
+    const COLORS = ['var(--series-1)', 'var(--series-6)', 'var(--series-2)', 'var(--series-3)'];
+    for (const ex of d.extra || []) {
+      const names = Object.keys(ex.series)
+        .filter(n => !/spolu|celkom|úhrn/i.test(n)).slice(0, 4);
+      if (!names.length) continue;
+      const series = names.map((n, i) => ({
+        name: n, color: COLORS[i % COLORS.length],
+        points: ex.series[n].map(p => ({ x: p.year, y: p.value })),
+      })).filter(s => s.points.length > 1);
+      if (!series.length) continue;
+      const chBox = el('div');
+      body.appendChild(chBox);
+      lineChart(chBox, series, {
+        height: 140, fill: series.length === 1,
+        xLabel: v => String(Math.round(v)),
+      });
+      if (series.length > 1) {
+        body.appendChild(el('div', { class: 'chart-legend' }, series.map(s =>
+          el('span', { class: 'key' }, [
+            el('span', { class: 'key-dot', style: `background:${s.color}` }), s.name,
+          ]))));
+      }
+      body.appendChild(el('p', { class: 'chart-caption', text: ex.label || '' }));
+    }
   });
+}
+
+export function initElections() {
+  return dataCard('elections', 'elections-body', (body, d) => {
+    const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+    const content = el('div');
+    body.append(tabs, content);
+
+    const show = key => {
+      const e = d.items.find(x => x.key === key);
+      tabs.querySelectorAll('.tab-btn').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+      content.innerHTML = '';
+      if (!e) return;
+      const max = Math.max(...e.rows.map(r => r.pct ?? 0), 1);
+      for (const r of e.rows) {
+        content.appendChild(el('div', { class: 'hbar-row' }, [
+          el('span', { class: 'hbar-name', title: r.name, text: r.name }),
+          el('span', { class: 'hbar-val', text: `${r.pct != null ? r.pct.toFixed(1) + ' %' : ''} · ${r.votes.toLocaleString('sk-SK')} hl.` }),
+          el('div', { class: 'hbar-track' }, [
+            el('div', { class: 'hbar-fill', style: `width:${Math.max(2, ((r.pct ?? 0) / max) * 100)}%` }),
+          ]),
+        ]));
+      }
+      content.appendChild(el('p', { class: 'chart-caption', text:
+        `Platné hlasy v obci spolu: ${e.totalVotes.toLocaleString('sk-SK')} · zdroj: ŠÚ SR (volby.statistics.sk / data.gov.sk)` }));
+    };
+
+    for (const e of d.items) {
+      const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.name });
+      b.addEventListener('click', () => show(e.key));
+      tabs.appendChild(b);
+    }
+    show(d.items[0]?.key);
+  }, { emptyText: 'Výsledky volieb sa zatiaľ nepodarilo načítať zo ŠÚ SR.' });
 }
 
 // Druh odpadu podľa kľúčových slov v názve udalosti → emoji + farba badge.
