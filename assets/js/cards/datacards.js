@@ -339,13 +339,11 @@ export function initTraffic() {
     setTraffic(d.events || []);
 
     if (d.route) {
-      const delay = d.route.freeMinutes != null ? d.route.minutes - d.route.freeMinutes : 0;
-      const color = delay >= 8 ? 'var(--status-critical)' : delay >= 3 ? 'var(--status-warning)' : 'var(--status-good)';
       body.appendChild(el('div', { class: 'hero-row' }, [
         el('span', { class: 'hero-figure', text: `${d.route.minutes}` }),
         el('span', { class: 'hero-side', html:
           `min do Banskej Bystrice${d.route.lengthKm ? ' · ' + d.route.lengthKm + ' km' : ''}<br>` +
-          `<span class="badge" style="--badge-color:${color}">${delay > 0 ? '+' + delay + ' min zdržanie' : 'plynulá premávka'}</span>` }),
+          `<span class="badge" style="--badge-color:var(--status-good)">${d.route.liveTraffic ? 'podľa premávky' : 'voľná premávka'}</span>` }),
       ]));
     }
 
@@ -358,11 +356,20 @@ export function initTraffic() {
         ]));
       }
       body.appendChild(list);
-    } else {
-      body.appendChild(el('p', { class: 'empty-note', text: 'Žiadne hlásené udalosti na ceste BB ↔ Ľubietová. ✅' }));
     }
+
+    // živé odkazy (Waze/Google Maps) — reálny čas počíta prehliadač používateľa
+    if (d.links?.length) {
+      const links = el('div', { class: 'link-row' });
+      for (const lk of d.links) {
+        links.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+      }
+      body.appendChild(links);
+    }
+
     body.appendChild(el('p', { class: 'chart-caption', text:
-      `Zdroj: ${d.route?.source || 'Waze'} · udalosti Waze · aktualizované hodinovo` }));
+      `Čas cesty: ${d.route?.source || 'OSRM'} (voľná premávka). ` +
+      'Živé udalosti a čas podľa premávky cez odkazy vyššie — Waze/Google Maps ich rátajú v tvojom prehliadači.' }));
   }, { handlesEmpty: true });
 }
 

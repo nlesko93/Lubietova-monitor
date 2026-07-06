@@ -51,12 +51,15 @@ async function parseLine(bl) {
 
   for (const table of tables) {
     const rows = table.split(/\r?\n/);
-    const bbIdx = rows.findIndex(l => /Bansk[aá] Bystrica/i.test(l));
-    const obecIdx = rows.findIndex(l => OBEC.test(l));
-    // smer: ak je BB v tabuľke pred obcou → cesta z BB (smer Povrazník),
-    // inak do BB. Fallback: poradie časov Huta vs Podlipa.
+    // dôležité: berieme len RIADKY ZASTÁVOK (s časmi), nie riadok
+    // hlavičky trasy, ktorý obsahuje BB aj Ľubietová naraz
+    const hasTime = l => extractTimes(l).length > 0;
+    const bbIdx = rows.findIndex(l => /Bansk[aá] Bystrica/i.test(l) && hasTime(l));
+    const obecIdx = rows.findIndex(l => OBEC.test(l) && hasTime(l));
+    // smer: ak je zastávka BB v tabuľke pred obcou → cesta z BB (smer
+    // Povrazník), inak do BB. Fallback: poradie časov Huta vs Podlipa.
     let key;
-    if (bbIdx >= 0 && obecIdx >= 0) key = bbIdx < obecIdx ? 'zBB' : 'doBB';
+    if (bbIdx >= 0 && obecIdx >= 0 && bbIdx !== obecIdx) key = bbIdx < obecIdx ? 'zBB' : 'doBB';
     else key = fallbackDir(rows);
     if (!key) continue;
     const D = dirs[key];

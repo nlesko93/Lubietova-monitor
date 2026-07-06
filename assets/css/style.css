@@ -205,6 +205,14 @@ a.item-title:hover { color: var(--accent); }
 .chart-wrap { overflow-x: auto; }
 .chart-wrap svg { display: block; width: 100%; height: auto; }
 .chart-caption { font-size: 0.72rem; color: var(--text-muted); margin: 4px 0 0; }
+.link-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.btn-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 10px; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 0.8rem; text-decoration: none;
+}
+.btn-link:hover { border-color: var(--series-1); color: var(--series-1); }
 .viz-tooltip {
   position: fixed;
   pointer-events: none;
