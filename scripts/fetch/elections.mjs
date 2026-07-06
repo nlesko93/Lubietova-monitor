@@ -48,8 +48,17 @@ async function fetchOne(elec) {
         continue;
       }
       if (depth === 0) {
-        const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1]).slice(0, 6);
-        console.log(`  elections ${elec.key}: HTML ${html.length} B, skripty: ${scripts.join(' , ').slice(0, 400)} | začiatok: ${html.slice(0, 250).replace(/\s+/g, ' ')}`);
+        console.log(`  elections ${elec.key}: HTML ${html.length} B | obsah: ${html.slice(0, 700).replace(/\s+/g, ' ')}`);
+      }
+      // nasleduj meta-refresh / JS redirect (weby volieb sú rozcestníky)
+      const mr = html.match(/http-equiv=["']refresh["'][^>]*content=["'][^;"']*;\s*url=([^"']+)/i) ||
+        html.match(/location(?:\.href)?\s*=\s*["']([^"']+)["']/i);
+      if (mr) {
+        try {
+          const target = new URL(mr[1], page).href;
+          console.log(`  elections ${elec.key}: redirect -> ${target}`);
+          if (!visited.has(target)) queue.push(target);
+        } catch { /* ignoruj */ }
       }
       const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m => m[1]))]
         .map(u => { try { return new URL(u, page).href; } catch { return null; } })

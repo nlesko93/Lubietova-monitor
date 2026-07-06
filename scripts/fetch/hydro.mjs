@@ -45,22 +45,18 @@ function parseTables(html) {
   return rows;
 }
 
-// Heuristika stĺpcov: [stanica, tok, ..., dátum/čas, stav cm, prietok]
+// Stĺpce SHMÚ tabuľky (overené v Actions behu č. 17):
+// [príznak SPA?, Stanica, Tok, Čas merania, Vodný stav cm]
 function parseStation(cells) {
-  const num = s => {
-    const n = parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
-    return isFinite(n) ? n : null;
-  };
-  const station = cells.find(c => STATION_MATCH.test(c));
-  const numbers = cells.map(num).filter(v => v != null);
-  const time = cells.find(c => /\d{1,2}[.:]\d{2}/.test(c) && /\d{4}|\d{1,2}\./.test(c));
-  if (!station || !numbers.length) return null;
+  if (cells.length < 5) return null;
+  const [flag, station, river, time, level] = cells;
+  const n = parseFloat(String(level).replace(/\s/g, '').replace(',', '.'));
+  if (!station || !isFinite(n)) return null;
   return {
     station,
-    river: cells[1] && cells[1] !== station ? cells[1] : '',
+    river,
     time: time || null,
-    levelCm: numbers[0] ?? null,
-    flow: numbers[1] ?? null,
-    raw: cells.join(' | ').slice(0, 200),
+    levelCm: n,
+    alert: flag?.trim() || null, // P a pod. = stupeň povodňovej aktivity
   };
 }

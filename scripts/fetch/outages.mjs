@@ -4,16 +4,12 @@
 import { getText, getJSON, writeResult, stripTags, CONFIG } from './lib.mjs';
 
 const CANDIDATE_PAGES = [
+  'https://www.ssd.sk/planovane-odstavky?page_id=4958',
+  'https://www.ssd.sk/planovane-odstavky/notifikacie-o-planovanych-odstavkach?page_id=5240',
   'https://www.ssd.sk/planovane-odstavky',
-  'https://www.ssd.sk/planovane-odstavky-elektriny',
-  'https://www.ssd.sk/aktualne-odstavky',
 ];
 
-// odhady API endpointov (SSD portál býva na online.ssd.sk)
-const CANDIDATE_APIS = [
-  `https://online.ssd.sk/api/odstavky?obec=${encodeURIComponent(CONFIG.obec)}`,
-  `https://www.ssd.sk/api/planovane-odstavky?obec=${encodeURIComponent(CONFIG.obec)}`,
-];
+const CANDIDATE_APIS = [];
 
 export async function fetchOutages() {
   for (const url of CANDIDATE_APIS) {
@@ -35,9 +31,17 @@ export async function fetchOutages() {
       const forms = [...html.matchAll(/<form[^>]*action="([^"]*)"/gi)].map(m => m[1]);
       const inputs = [...new Set([...html.matchAll(/<(?:input|select)[^>]*\sname="([^"]+)"/gi)].map(m => m[1]))];
       const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/gi)].map(m => m[1]).slice(0, 8);
-      const apiHints = [...new Set([...html.matchAll(/["'](\/[\w\-/]*(?:api|odstavk|outage)[\w\-/?.=&]*)["']/gi)].map(m => m[1]))].slice(0, 10);
-      console.log(`  outages ${url.slice(0, 60)}: HTML ${html.length} B | formy: ${forms.join(',') || '—'} | polia: ${inputs.join(',').slice(0, 300) || '—'} | api hinty: ${apiHints.join(' , ') || '—'}`);
-      console.log(`  outages skripty: ${scripts.join(' , ').slice(0, 500)}`);
+      const apiHints = [...new Set([...html.matchAll(/["'](\/[\w\-/]*(?:api|odstavk|outage)[\w\-/?.=&]*)["']/gi)].map(m => m[1]))]
+        .filter(u => !/\.(jpg|png|css)/i.test(u)).slice(0, 10);
+      console.log(`  outages ${url.slice(0, 70)}: HTML ${html.length} B | formy: ${forms.join(',') || '—'} | polia: ${inputs.join(',').slice(0, 300) || '—'} | api hinty: ${apiHints.join(' , ') || '—'}`);
+      // tabuľky/zoznamy odstávok na stránke
+      const tableRows = [...html.matchAll(/<tr[\s\S]*?<\/tr>/gi)].slice(0, 4)
+        .map(m => stripTags(m[0]).slice(0, 160));
+      if (tableRows.length) console.log('  outages tabuľka:', tableRows.join(' || ').slice(0, 700));
+      const odstavkyLinks = [...new Set([...html.matchAll(/href="([^"]*odstavk[^"]*)"/gi)].map(m => m[1]))].slice(0, 10);
+      console.log('  outages odkazy:', odstavkyLinks.join(' , ').slice(0, 600) || '—');
+      const ajax = [...new Set([...html.matchAll(/(?:ajax|fetch|url:)\s*\(?["']([^"']{8,120})["']/gi)].map(m => m[1]))].slice(0, 8);
+      if (ajax.length) console.log('  outages ajax:', ajax.join(' , ').slice(0, 500));
       if (/ľubietov/i.test(html)) {
         const pos = html.search(/ľubietov/i);
         console.log('  outages: stránka spomína Ľubietovú:', stripTags(html.slice(pos - 200, pos + 300)));

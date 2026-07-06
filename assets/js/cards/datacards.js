@@ -280,9 +280,9 @@ export function initHydro() {
     const tiles = el('div', { class: 'tiles', style: 'grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));' });
     for (const s of d.items.slice(0, 4)) {
       tiles.appendChild(el('div', { class: 'tile' }, [
-        el('div', { class: 'label', text: s.station }),
-        el('div', { class: 'value', html: `${s.levelCm ?? '—'} <span class="unit">cm</span>` }),
-        el('div', { class: 'sub', text: [s.river, s.flow != null ? `${s.flow} m³/s` : null, s.time].filter(Boolean).join(' · ') }),
+        el('div', { class: 'label', text: `${s.station}${s.river ? ' — ' + s.river : ''}` }),
+        el('div', { class: 'value', html: `${s.levelCm ?? '—'} <span class="unit">cm</span>${s.alert ? ' <span class="unit">⚠ ' + s.alert + '</span>' : ''}` }),
+        el('div', { class: 'sub', text: s.time || '' }),
       ]));
     }
     body.appendChild(tiles);
