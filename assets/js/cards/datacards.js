@@ -255,20 +255,37 @@ export function initOutages() {
 export function initBuses() {
   const card = document.getElementById('card-buses');
   return dataCard('buses', 'buses-body', (body, d) => {
-    if (d.unavailable || !d.items?.length) {
-      card.hidden = true;
-      return;
-    }
+    const lines = (d.lines || []).filter(l => l.departures?.length);
+    if (!lines.length) { card.hidden = true; return; }
     card.hidden = false;
-    const list = el('ul', { class: 'item-list' });
-    for (const b of d.items.slice(0, 8)) {
-      list.appendChild(el('li', {}, [
-        el('span', { class: 'item-value', text: b.time }),
-        el('span', { class: 'item-title', text: b.destination }),
-        b.line ? el('span', { class: 'item-meta', text: `linka ${b.line}` }) : null,
+
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
+
+    for (const l of lines) {
+      const next = l.departures.find(t => toMin(t) >= nowMin);
+      const mins = next ? toMin(next) - nowMin : null;
+
+      body.appendChild(el('div', { class: 'hero-row' }, [
+        el('span', { class: 'hero-emoji', text: '🚌' }),
+        el('span', { class: 'hero-figure', text: next || '—' }),
+        el('span', { class: 'hero-side', html:
+          (next
+            ? `najbližší spoj linky <b>${l.line}</b>${mins != null ? '<br>o ' + (mins === 0 ? 'chvíľu' : mins + ' min') : ''}`
+            : `dnes už žiadny spoj linky <b>${l.line}</b>`) }),
       ]));
+
+      // dnešné zvyšné odchody + ďalšie ako chipy
+      const upcoming = l.departures.filter(t => toMin(t) >= nowMin);
+      const shown = (upcoming.length ? upcoming : l.departures).slice(0, 14);
+      body.appendChild(el('div', { class: 'time-chips' },
+        shown.map(t => el('span', { class: `chip${t === next ? ' chip-now' : ''}`, text: t }))));
+
+      body.appendChild(el('p', { class: 'chart-caption', html:
+        `Odchody zo zastávky ${escapeHtml(l.stop || 'Ľubietová')} · trasa ${escapeHtml(l.route || '')}<br>` +
+        `<a href="${l.pdf}" target="_blank" rel="noopener">úplný cestovný poriadok linky ${l.line} (PDF) →</a> · platnosť spojov (pracovné dni/víkend) v PDF` }));
     }
-    body.appendChild(list);
   }, { handlesEmpty: true });
 }
 

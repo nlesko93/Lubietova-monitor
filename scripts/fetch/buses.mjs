@@ -1,6 +1,7 @@
 // Cestovný poriadok linky 610 (SAD Zvolen / IDS BBSK) — oficiálne PDF.
-// PDF sa prevedie cez `pdftotext -layout` a z riadkov so zastávkou obce
-// (Ľubietová) sa vytiahnu časy odchodov po smeroch.
+// PDF sa prevedie cez `pdftotext -layout`; z riadkov zastávok v obci
+// (formát: "<id> <por> <deň> Ľubietová, <zastávka> HH:MM HH:MM …")
+// sa vytiahnu časy odchodov. Preferuje sa centrálna zastávka „nám.".
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -35,25 +36,34 @@ async function parseLine(bl) {
 
   let text;
   try {
-    text = execFileSync('pdftotext', ['-layout', '-enc', 'UTF-8', pdfPath, '-'], { encoding: 'utf8', maxBuffer: 20e6 });
+    text = execFileSync('pdftotext', ['-layout', '-enc', 'UTF-8', pdfPath, '-'],
+      { encoding: 'utf8', maxBuffer: 20e6, stdio: ['ignore', 'pipe', 'ignore'] });
   } catch (e) {
-    throw new Error(`pdftotext zlyhal: ${e.message.slice(0, 100)}`);
+    if (!e.stdout) throw new Error(`pdftotext zlyhal: ${e.message.slice(0, 100)}`);
+    text = e.stdout.toString(); // flate-warningy idú do stderr, text je OK
   }
 
-  const allLines = text.split(/\r?\n/);
-  const stopLines = allLines.filter(l => STOP.test(l));
-  console.log(`  buses ${bl.line}: PDF ${Math.round(buf.length / 1024)} kB, ${allLines.length} riadkov, ${stopLines.length} so zastávkou obce`);
-  stopLines.slice(0, 6).forEach(l => console.log(`    | ${l.replace(/\s+/g, ' ').trim().slice(0, 300)}`));
-
-  // časy HH:MM alebo HH.MM z riadkov obce
-  const times = new Set();
-  for (const l of stopLines) {
-    for (const m of l.matchAll(/\b([0-2]?\d)[:.]([0-5]\d)\b/g)) {
-      const h = +m[1], min = +m[2];
-      if (h < 24) times.add(`${String(h).padStart(2, '0')}:${m[2]}`);
-    }
+  // riadky obsahujúce zastávku obce + časy
+  const stops = new Map(); // "Ľubietová, nám." -> Set(HH:MM)
+  for (const raw of text.split(/\r?\n/)) {
+    if (!STOP.test(raw)) continue;
+    const times = [...raw.matchAll(/\b([0-2]?\d)[:.]([0-5]\d)\b/g)]
+      .map(m => [+m[1], m[2]]).filter(([h]) => h < 24)
+      .map(([h, mm]) => `${String(h).padStart(2, '0')}:${mm}`);
+    if (!times.length) continue;
+    // názov zastávky: text medzi "Ľubietová" a prvým časom
+    const m = raw.match(/(Ľubietová[^0-9]*?)\s+\d{1,2}[:.]\d{2}/);
+    const stop = (m ? m[1] : 'Ľubietová').replace(/\s+/g, ' ').trim();
+    if (!stops.has(stop)) stops.set(stop, new Set());
+    times.forEach(t => stops.get(stop).add(t));
   }
-  const departures = [...times].sort();
-  if (!departures.length) return { line: bl.line, route: bl.route, pdf: bl.pdf, departures: [] };
-  return { line: bl.line, route: bl.route, pdf: bl.pdf, departures };
+  if (!stops.size) return { line: bl.line, route: bl.route, pdf: bl.pdf, stop: null, departures: [] };
+
+  // preferuj centrálnu zastávku „nám.", inak tú s najviac časmi
+  const entries = [...stops.entries()];
+  const primary = entries.find(([s]) => /n[aá]m/i.test(s)) ||
+    entries.sort((a, b) => b[1].size - a[1].size)[0];
+  const departures = [...primary[1]].sort();
+  console.log(`  buses ${bl.line}: zastávka "${primary[0]}", ${departures.length} odchodov: ${departures.join(' ')}`);
+  return { line: bl.line, route: bl.route, pdf: bl.pdf, stop: primary[0], departures };
 }

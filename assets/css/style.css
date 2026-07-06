@@ -261,6 +261,22 @@ a.item-title:hover { color: var(--accent); }
 .webcam-grid img { width: 100%; border-radius: 8px; display: block; }
 .webcam-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
 
+/* ---------- time chips (odchody autobusov) ---------- */
+.time-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.time-chips .chip {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.time-chips .chip-now {
+  background: var(--series-1);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ---------- gallery ---------- */
 .gallery-img {
   width: 100%;
