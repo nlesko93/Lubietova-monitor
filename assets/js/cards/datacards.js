@@ -1,7 +1,7 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
 import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
-import { setBuses, setTraffic } from './mapcard.js';
+import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
 
 async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false } = {}) {
   const body = document.getElementById(bodyId);
@@ -255,27 +255,49 @@ export function initOutages() {
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
 
-// Odhad polôh autobusov z cestovného poriadku (ak idú načas) — interpolácia
-// medzi susednými zastávkami podľa aktuálneho času.
+// Bod na polyline cesty v danej kumulatívnej vzdialenosti (m).
+function pointAtDist(geom, cum, target) {
+  if (!geom || geom.length < 2 || !cum) return null;
+  const last = cum[cum.length - 1];
+  if (target <= 0) return geom[0];
+  if (target >= last) return geom[geom.length - 1];
+  let lo = 0, hi = cum.length - 1;
+  while (lo < hi - 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= target) lo = mid; else hi = mid; }
+  const seg = cum[hi] - cum[lo] || 1;
+  const f = (target - cum[lo]) / seg;
+  return [geom[lo][0] + (geom[hi][0] - geom[lo][0]) * f, geom[lo][1] + (geom[hi][1] - geom[lo][1]) * f];
+}
+
+// Odhad polôh autobusov z cestovného poriadku (ak idú načas). Odchody z A
+// sa párujú 1:1 s príchodmi do B (FIFO — autobusy sa nepredbiehajú), takže
+// jeden spoj = najviac jeden autobus (žiadne duplikáty). Poloha sa počíta
+// pozdĺž skutočnej geometrie cesty, nie vzdušnou čiarou.
 function busVehicles(lines) {
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   const vehicles = [];
-  for (const l of lines) for (const dir of l.directions || []) {
-    const stops = dir.stops || [];
-    for (let i = 0; i < stops.length - 1; i++) {
-      const A = stops[i], B = stops[i + 1];
-      if (!A.times?.length || !B.times?.length) continue;
-      for (const ta of A.times) {
-        const ma = toMin(ta);
-        const tb = B.times.find(t => toMin(t) > ma);
-        if (!tb) continue;
-        const mb = toMin(tb);
-        if (mb - ma > 25 || mb <= ma) continue; // nespárované (short-turn) → preskoč
-        if (nowMin >= ma && nowMin <= mb) {
+  for (const l of lines) {
+    const geom = l.geometry, cum = l.cum;
+    for (const dir of l.directions || []) {
+      const stops = dir.stops || [];
+      for (let i = 0; i < stops.length - 1; i++) {
+        const A = stops[i], B = stops[i + 1];
+        if (!A.times?.length || !B.times?.length) continue;
+        const bTimes = [...B.times].sort();
+        let bi = 0;
+        for (const ta of [...A.times].sort()) {
+          const ma = toMin(ta);
+          while (bi < bTimes.length && toMin(bTimes[bi]) <= ma) bi++;
+          if (bi >= bTimes.length) break;
+          const tb = bTimes[bi]; const mb = toMin(tb); bi++;   // tento príchod patrí práve tomuto spoju
+          if (mb - ma > 25) continue;                          // nespárované (short-turn) → preskoč
+          if (nowMin < ma || nowMin > mb) continue;
           const f = (nowMin - ma) / (mb - ma);
+          let pos = (A.dist != null && B.dist != null)
+            ? pointAtDist(geom, cum, A.dist + (B.dist - A.dist) * f) : null;
+          if (!pos) pos = [A.lat + (B.lat - A.lat) * f, A.lon + (B.lon - A.lon) * f];
           vehicles.push({
-            lat: A.lat + (B.lat - A.lat) * f, lon: A.lon + (B.lon - A.lon) * f,
+            lat: pos[0], lon: pos[1],
             line: l.line, dirLabel: dir.label, from: A.name, to: B.name, depart: ta, arrive: tb,
           });
         }
@@ -292,6 +314,9 @@ export function initBuses() {
     const lines = (d.lines || []).filter(l => (l.directions || []).some(x => x.departures?.length));
     if (!lines.length) { card.hidden = true; return; }
     card.hidden = false;
+
+    const routeGeom = lines.find(l => l.geometry?.length > 1)?.geometry;
+    if (routeGeom) setBusRoute(routeGeom);
 
     every(30 * 1000, () => {
       renderBuses(body, lines);

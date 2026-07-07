@@ -10,6 +10,7 @@ import { writeResult, CONFIG } from './lib.mjs';
 
 const ROUTE = CONFIG.busRouteStops || [];        // BB → Povrazník poradie
 const OBEC = new RegExp(CONFIG.busStopMatch || 'ubietov', 'i');
+const UA = 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)';
 
 export async function fetchBuses() {
   const lines = [];
@@ -27,7 +28,7 @@ export async function fetchBuses() {
 async function parseLine(bl) {
   const res = await fetch(bl.pdf, {
     signal: AbortSignal.timeout(30000),
-    headers: { 'user-agent': 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)' },
+    headers: { 'user-agent': UA },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
@@ -102,7 +103,58 @@ async function parseLine(bl) {
   // najužitočnejší smer (do BB) ako prvý
   directions.sort((a, b) => (a.dir === 'doBB' ? -1 : 1));
 
-  return { line: bl.line, route: bl.route, pdf: bl.pdf, directions };
+  // geometria cesty (aby autobusy na mape kopírovali cestu, nie vzdušnú čiaru)
+  let geometry = null, cum = null;
+  try {
+    const geo = await roadGeometry(ROUTE);
+    if (geo) {
+      geometry = geo.geometry; cum = geo.cum;
+      for (const d of directions) for (const s of d.stops) {
+        if (geo.distByName[s.name] != null) s.dist = geo.distByName[s.name];
+      }
+    }
+  } catch (e) {
+    console.log(`  buses ${bl.line} geometria: ${e.message.slice(0, 120)}`);
+  }
+
+  return { line: bl.line, route: bl.route, pdf: bl.pdf, geometry, cum, directions };
+}
+
+// Trasa po ceste z OSRM (waypointy = hlavné zastávky). Vráti polyline
+// [[lat,lon],…], kumulatívne vzdialenosti a vzdialenosť každej zastávky
+// pozdĺž cesty — klient tak vie autobus umiestniť priamo na cestu.
+async function roadGeometry(route) {
+  if (route.length < 2) return null;
+  const coords = route.map(s => `${s.lon},${s.lat}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=simplified&geometries=geojson`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'user-agent': UA } });
+  if (!res.ok) throw new Error(`OSRM HTTP ${res.status}`);
+  const d = await res.json();
+  const g = d.routes?.[0]?.geometry?.coordinates;
+  if (!g || g.length < 2) throw new Error('bez geometrie');
+  const geometry = g.map(([lon, lat]) => [round6(lat), round6(lon)]);
+  const cum = [0];
+  for (let i = 1; i < geometry.length; i++) cum[i] = cum[i - 1] + haversine(geometry[i - 1], geometry[i]);
+  const distByName = {};
+  for (const s of route) {
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < geometry.length; i++) {
+      const dd = haversine([s.lat, s.lon], geometry[i]);
+      if (dd < bestD) { bestD = dd; best = i; }
+    }
+    distByName[s.name] = Math.round(cum[best]);
+  }
+  console.log(`  buses geometria: ${geometry.length} bodov, ${Math.round(cum[cum.length - 1])} m po ceste`);
+  return { geometry, cum: cum.map(Math.round), distByName };
+}
+
+const round6 = x => Math.round(x * 1e6) / 1e6;
+
+function haversine(a, b) {
+  const R = 6371000, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(b[0] - a[0]), dLon = toRad(b[1] - a[1]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
 }
 
 const mkDir = () => ({ stops: new Map(), namTimes: new Set() });

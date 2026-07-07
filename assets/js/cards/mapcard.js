@@ -2,8 +2,8 @@
 // cez setPlanes()/setQuakes().
 import { getConfig, setStatus, el, escapeHtml } from '../util.js';
 
-let map, planeLayer, quakeLayer, busLayer, trafficLayer;
-let pendingBuses = null, pendingTraffic = null;
+let map, planeLayer, quakeLayer, busLayer, trafficLayer, busRouteLayer;
+let pendingBuses = null, pendingTraffic = null, pendingRoute = null;
 
 export async function initMap() {
   const cfg = await getConfig();
@@ -19,10 +19,12 @@ export async function initMap() {
   }).addTo(map);
   home.bindPopup(`<b>${escapeHtml(cfg.obec)}</b><br>${cfg.lat.toFixed(4)}, ${cfg.lon.toFixed(4)}`);
 
+  busRouteLayer = L.layerGroup().addTo(map);
   planeLayer = L.layerGroup().addTo(map);
   quakeLayer = L.layerGroup().addTo(map);
   busLayer = L.layerGroup().addTo(map);
   trafficLayer = L.layerGroup().addTo(map);
+  if (pendingRoute) setBusRoute(pendingRoute);
   if (pendingBuses) setBuses(pendingBuses);
   if (pendingTraffic) setTraffic(pendingTraffic);
 
@@ -77,6 +79,17 @@ function busIcon() {
     iconAnchor: [12, 12],
     html: '<div style="background:#199e70;color:#fff;border:2px solid var(--surface-1);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4)">🚌</div>',
   });
+}
+
+// Trasa linky po ceste (jemná čiara pod autobusmi).
+export function setBusRoute(geometry) {
+  pendingRoute = geometry;
+  if (!busRouteLayer) return;
+  busRouteLayer.clearLayers();
+  if (!geometry || geometry.length < 2) return;
+  busRouteLayer.addLayer(L.polyline(geometry, {
+    color: '#199e70', weight: 3, opacity: 0.55, dashArray: '6 6',
+  }));
 }
 
 // Odhadnuté polohy autobusov (počítané v prehliadači z cestovného poriadku).
