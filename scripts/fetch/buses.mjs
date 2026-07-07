@@ -66,12 +66,19 @@ async function parseLine(bl) {
     const D = dirs[key];
 
     for (const stop of ROUTE) {
+      // Jedna hlavná zastávka (napr. Ľubietová) má v PDF viac fyzických
+      // nástupíšť (Huta, nám., Podlipa) — každý spoj by tak pridal 3 časy a
+      // rozbil párovanie odchod↔príchod. Vezmeme len JEDEN reprezentatívny
+      // riadok s najviac časmi (hlavné nástupište), takže 1 spoj = 1 čas.
+      let bestTimes = [];
       for (const l of rows) {
         if (!l.includes(stop.match)) continue;
         const times = extractTimes(l);
-        if (!times.length) continue;
+        if (times.length > bestTimes.length) bestTimes = times;
+      }
+      if (bestTimes.length) {
         if (!D.stops.has(stop.name)) D.stops.set(stop.name, new Set());
-        times.forEach(t => D.stops.get(stop.name).add(t));
+        bestTimes.forEach(t => D.stops.get(stop.name).add(t));
       }
     }
     // odchody z centrálnej zastávky obce (nám.)

@@ -1,5 +1,5 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
-import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime } from '../util.js';
+import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime, haversineKm } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
 import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
 
@@ -291,20 +291,32 @@ function busVehicles(lines) {
           if (bi >= bTimes.length) break;
           const tb = bTimes[bi]; const mb = toMin(tb); bi++;   // tento príchod patrí práve tomuto spoju
           if (mb - ma > 25) continue;                          // nespárované (short-turn) → preskoč
-          if (nowMin < ma || nowMin > mb) continue;
+          if (nowMin < ma || nowMin >= mb) continue;           // polootvorený interval → na zastávke bez zdvojenia
           const f = (nowMin - ma) / (mb - ma);
           let pos = (A.dist != null && B.dist != null)
             ? pointAtDist(geom, cum, A.dist + (B.dist - A.dist) * f) : null;
           if (!pos) pos = [A.lat + (B.lat - A.lat) * f, A.lon + (B.lon - A.lon) * f];
           vehicles.push({
             lat: pos[0], lon: pos[1],
-            line: l.line, dirLabel: dir.label, from: A.name, to: B.name, depart: ta, arrive: tb,
+            line: l.line, dir: dir.dir, dirLabel: dir.label, from: A.name, to: B.name, depart: ta, arrive: tb,
           });
         }
       }
     }
   }
-  return vehicles;
+  return dedupeVehicles(vehicles);
+}
+
+// Poistka: zlúč autobusy rovnakej linky a smeru, ktoré vyšli blízko seba
+// (< 300 m) — jeden fyzický spoj sa nikdy nezobrazí dvakrát.
+function dedupeVehicles(vehicles) {
+  const kept = [];
+  for (const v of vehicles) {
+    const dup = kept.find(k => k.line === v.line && k.dir === v.dir &&
+      haversineKm(k.lat, k.lon, v.lat, v.lon) < 0.3);
+    if (!dup) kept.push(v);
+  }
+  return kept;
 }
 
 export function initBuses() {

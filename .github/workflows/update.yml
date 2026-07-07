@@ -65,4 +65,4 @@ jobs:
           curl -sSf "${url}data/news.json" | head -c 200
           echo
           echo "== kontrola autobusov =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/buses.json'));for(const l of d.lines||[]){console.log('linka',l.line,'geometria bodov:',l.geometry?l.geometry.length:0,'dĺžka cum:',l.cum?l.cum[l.cum.length-1]:'-');for(const dir of l.directions||[])console.log('  smer',dir.dir,'zastávok:',dir.stops.length,'s dist:',dir.stops.filter(s=>s.dist!=null).length,'odchodov:',dir.departures.length);}"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/buses.json'));for(const l of d.lines||[]){console.log('linka',l.line,'geometria bodov:',l.geometry?l.geometry.length:0,'dĺžka cum:',l.cum?l.cum[l.cum.length-1]:'-');for(const dir of l.directions||[]){console.log('  smer',dir.dir,'zastávok:',dir.stops.length,'s dist:',dir.stops.filter(s=>s.dist!=null).length,'odchodov:',dir.departures.length);for(const s of dir.stops)console.log('    -',s.name,'časov:',s.times.length);}}"
