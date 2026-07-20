@@ -46,6 +46,11 @@
       "name": "Šachtičky",
       "page": "https://www.sachticky.sk/",
       "snapshot": ""
+    },
+    {
+      "name": "Slovenská Ľupča (JDnet)",
+      "page": "https://moj.jdnet.net/?Info=JDnet_Kamera",
+      "snapshot": ""
     }
   ]
 }

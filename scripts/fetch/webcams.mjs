@@ -43,11 +43,11 @@ export async function fetchWebcams() {
 async function discoverSnapshot(cam) {
   try {
     const html = await (await get(cam.page, { retries: 0, timeoutMs: 15000 })).text();
-    const urls = [...html.matchAll(/(?:src|href)="([^"]+\.(?:jpe?g|png)(?:\?[^"]*)?)"/gi)]
-      .map(m => m[1])
-      .filter(u => /kamer|webcam|cam\b|snapshot|snimka/i.test(u));
-    const cands = [...new Set(urls)].slice(0, 5)
-      .map(u => u.startsWith('http') ? u : new URL(u, cam.page).href);
+    const abs = u => (u.startsWith('http') ? u : new URL(u, cam.page).href);
+    const all = [...new Set([...html.matchAll(/(?:src|href|data-src)="([^"]+\.(?:jpe?g|png|mjpe?g)(?:\?[^"]*)?)"/gi)].map(m => m[1]))];
+    // diagnostika: všetky nájdené obrázky (aby sa dala kamera odhaliť z logu)
+    console.log(`  webcams ${cam.name}: všetky obrázky: ${all.slice(0, 10).map(abs).join(' , ') || 'žiadne'}`);
+    const cands = all.filter(u => /kamer|webcam|cam\b|snapshot|snimk|live|foto/i.test(u)).slice(0, 5).map(abs);
     console.log(`  webcams ${cam.name}: kandidáti ${cands.join(' , ') || 'žiadni'}`);
     return cands[0] || null;
   } catch (e) {
