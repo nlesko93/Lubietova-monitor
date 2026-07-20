@@ -17,12 +17,15 @@ export async function fetchWebcams() {
       continue;
     }
     let snapshot = cam.snapshot;
+    let found = [];
     // bez explicitnej snapshot URL skús nájsť obrázok kamery na stránke
     if (!snapshot && cam.page) {
-      snapshot = await discoverSnapshot(cam);
+      const d = await discoverSnapshot(cam);
+      snapshot = d.snapshot;
+      found = d.all;
     }
     if (!snapshot) {
-      items.push({ ...cam, ok: false, note: 'snapshot sa nenašiel' });
+      items.push({ ...cam, ok: false, note: 'snapshot sa nenašiel', found });
       continue;
     }
     try {
@@ -47,11 +50,12 @@ async function discoverSnapshot(cam) {
     const all = [...new Set([...html.matchAll(/(?:src|href|data-src)="([^"]+\.(?:jpe?g|png|mjpe?g)(?:\?[^"]*)?)"/gi)].map(m => m[1]))];
     // diagnostika: všetky nájdené obrázky (aby sa dala kamera odhaliť z logu)
     console.log(`  webcams ${cam.name}: všetky obrázky: ${all.slice(0, 10).map(abs).join(' , ') || 'žiadne'}`);
-    const cands = all.filter(u => /kamer|webcam|cam\b|snapshot|snimk|live|foto/i.test(u)).slice(0, 5).map(abs);
+    const absAll = all.map(abs);
+    const cands = absAll.filter(u => /kamer|webcam|cam\b|snapshot|snimk|live|foto/i.test(u)).slice(0, 5);
     console.log(`  webcams ${cam.name}: kandidáti ${cands.join(' , ') || 'žiadni'}`);
-    return cands[0] || null;
+    return { snapshot: cands[0] || null, all: absAll.slice(0, 12) };
   } catch (e) {
     console.log(`  webcams ${cam.name}: stránka nedostupná (${e.message.slice(0, 100)})`);
-    return null;
+    return { snapshot: null, all: [] };
   }
 }

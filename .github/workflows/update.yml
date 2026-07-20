@@ -66,3 +66,6 @@ jobs:
           echo
           echo "== kontrola autobusov =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/buses.json'));for(const l of d.lines||[]){console.log('linka',l.line,'geometria bodov:',l.geometry?l.geometry.length:0,'dĺžka cum:',l.cum?l.cum[l.cum.length-1]:'-');for(const dir of l.directions||[]){console.log('  smer',dir.dir,'zastávok:',dir.stops.length,'s dist:',dir.stops.filter(s=>s.dist!=null).length,'odchodov:',dir.departures.length);for(const s of dir.stops)console.log('    -',s.name,'časov:',s.times.length);}}"
+          echo
+          echo "== kontrola webkamier =="
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/webcams.json'));for(const c of d.items||[]){console.log('-',c.name,'ok='+c.ok,c.snapshot?('snapshot='+c.snapshot):'',c.embed?('embed='+c.embed):'',c.note?('note='+c.note):'');if(c.found&&c.found.length)console.log('    obrázky na stránke:',c.found.join(' , '));}"
