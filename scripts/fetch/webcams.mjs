@@ -5,6 +5,17 @@ import { get, writeResult, CONFIG } from './lib.mjs';
 export async function fetchWebcams() {
   const items = [];
   for (const cam of CONFIG.webcams || []) {
+    // Windy webkamera — vložíme oficiálny embed prehrávač (bez API kľúča),
+    // netreba overovať snapshot.
+    if (cam.windyId) {
+      items.push({
+        name: cam.name,
+        embed: `https://webcams.windy.com/webcams/public/embed/player/${cam.windyId}/day`,
+        page: cam.page || `https://www.windy.com/webcams/${cam.windyId}`,
+        ok: true,
+      });
+      continue;
+    }
     let snapshot = cam.snapshot;
     // bez explicitnej snapshot URL skús nájsť obrázok kamery na stránke
     if (!snapshot && cam.page) {

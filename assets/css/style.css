@@ -267,6 +267,7 @@ a.item-title:hover { color: var(--accent); }
 /* ---------- webcams ---------- */
 .webcam-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .webcam-grid img { width: 100%; border-radius: 8px; display: block; }
+.webcam-embed { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; display: block; }
 .webcam-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
 
 /* ---------- autobusy: smery ---------- */

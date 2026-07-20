@@ -437,10 +437,16 @@ export function initWebcams() {
     card.hidden = false;
     const grid = el('div', { class: 'webcam-grid' });
     for (const c of okCams) {
+      const media = c.embed
+        ? el('iframe', {
+            class: 'webcam-embed', src: c.embed, loading: 'lazy',
+            frameborder: '0', allow: 'fullscreen', title: `Webkamera ${c.name}`,
+          })
+        : el('a', { href: c.page || c.snapshot, target: '_blank', rel: 'noopener' }, [
+            el('img', { src: c.snapshot, alt: `Webkamera ${c.name}`, loading: 'lazy' }),
+          ]);
       grid.appendChild(el('div', {}, [
-        el('a', { href: c.page || c.snapshot, target: '_blank', rel: 'noopener' }, [
-          el('img', { src: c.snapshot, alt: `Webkamera ${c.name}`, loading: 'lazy' }),
-        ]),
+        media,
         el('div', { class: 'webcam-name', text: c.name }),
       ]));
     }
