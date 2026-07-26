@@ -152,47 +152,55 @@ export function initDemo() {
 
 export function initElections() {
   return dataCard('elections', 'elections-body', (body, d) => {
-    const tabs = el('div', { class: 'tab-row', role: 'tablist' });
-    const content = el('div');
-    body.append(tabs, content);
-
-    const show = key => {
-      const e = d.items.find(x => x.key === key);
-      tabs.querySelectorAll('.tab-btn').forEach(b =>
-        b.setAttribute('aria-pressed', String(b.dataset.key === key)));
-      content.innerHTML = '';
-      if (!e) return;
-      const max = Math.max(...e.rows.map(r => r.pct ?? 0), 1);
-      for (const r of e.rows) {
-        content.appendChild(el('div', { class: 'hbar-row' }, [
-          el('span', { class: 'hbar-name', title: r.name, text: r.name }),
-          el('span', { class: 'hbar-val', text: `${r.pct != null ? r.pct.toFixed(1) + ' %' : ''} · ${r.votes.toLocaleString('sk-SK')} hl.` }),
-          el('div', { class: 'hbar-track' }, [
-            el('div', { class: 'hbar-fill', style: `width:${Math.max(2, ((r.pct ?? 0) / max) * 100)}%` }),
-          ]),
-        ]));
-      }
-      content.appendChild(el('p', { class: 'chart-caption', text:
-        `Platné hlasy v obci spolu: ${e.totalVotes.toLocaleString('sk-SK')} · zdroj: ŠÚ SR (volby.statistics.sk / data.gov.sk)` }));
-    };
-
-    for (const e of d.items) {
-      const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.name });
-      b.addEventListener('click', () => show(e.key));
-      tabs.appendChild(b);
-    }
-    show(d.items[0]?.key);
-
-    // odkazy na výsledky, ktoré sa nedajú spoľahlivo rozparsovať (komunálne)
     getConfig().then(cfg => {
-      const links = cfg.electionsLinks || [];
-      if (!links.length) return;
-      const row = el('div', { class: 'link-row' });
-      for (const lk of links) {
-        row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+      // načítané voľby (NRSR/prezident/EP) + statické (komunálne v config.json)
+      const items = [...(d.items || []), ...(cfg.electionsStatic || [])];
+      body.innerHTML = '';
+      if (!items.length) {
+        body.appendChild(el('p', { class: 'empty-note', text: 'Výsledky volieb sa nepodarilo načítať.' }));
+        return;
       }
-      body.appendChild(row);
-    }).catch(() => {});
+      const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+      const content = el('div');
+      body.append(tabs, content);
+
+      const metric = r => r.pct ?? r.votes ?? 0;   // % ak sú, inak hlasy (pre šírku pruhu)
+      const show = key => {
+        const e = items.find(x => x.key === key);
+        tabs.querySelectorAll('.tab-btn').forEach(b =>
+          b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+        content.innerHTML = '';
+        if (!e) return;
+        const max = Math.max(...e.rows.map(metric), 1);
+        for (const r of e.rows) {
+          content.appendChild(el('div', { class: 'hbar-row' }, [
+            el('span', { class: 'hbar-name', title: r.name, text: r.name }),
+            el('span', { class: 'hbar-val', text: `${r.pct != null ? r.pct.toFixed(1) + ' % · ' : ''}${r.votes.toLocaleString('sk-SK')} hl.` }),
+            el('div', { class: 'hbar-track' }, [
+              el('div', { class: 'hbar-fill', style: `width:${Math.max(2, (metric(r) / max) * 100)}%` }),
+            ]),
+          ]));
+        }
+        content.appendChild(el('p', { class: 'chart-caption', text: e.note ||
+          `Platné hlasy v obci spolu: ${(e.totalVotes || 0).toLocaleString('sk-SK')} · zdroj: ŠÚ SR (volby.statistics.sk)` }));
+      };
+
+      for (const e of items) {
+        const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.name });
+        b.addEventListener('click', () => show(e.key));
+        tabs.appendChild(b);
+      }
+      show(items[0]?.key);
+
+      const links = cfg.electionsLinks || [];
+      if (links.length) {
+        const row = el('div', { class: 'link-row' });
+        for (const lk of links) {
+          row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+        }
+        body.appendChild(row);
+      }
+    }).catch(e => showError(body, 'elections', e, 'Výsledky volieb sa nepodarilo načítať.'));
   }, { emptyText: 'Výsledky volieb sa zatiaľ nepodarilo načítať zo ŠÚ SR.' });
 }
 

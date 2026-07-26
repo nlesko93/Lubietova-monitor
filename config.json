@@ -53,6 +53,28 @@
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ],
+  "electionsStatic": [
+    {
+      "key": "komunalne2022_starosta",
+      "name": "Komunálne 2022 · starosta",
+      "note": "Zvolený starosta obce · účasť 65,35 %, 664 platných hlasov · zdroj: ŠÚ SR",
+      "rows": [
+        { "name": "Pavel Zajac", "votes": 402, "pct": 61.56 }
+      ]
+    },
+    {
+      "key": "komunalne2022_poslanci",
+      "name": "Komunálne 2022 · poslanci",
+      "note": "Zvolení poslanci obecného zastupiteľstva 2022 · zdroj: ŠÚ SR",
+      "rows": [
+        { "name": "Peter Kováč", "votes": 349 },
+        { "name": "Miloš Sauka", "votes": 299 },
+        { "name": "Pavol Čuba", "votes": 279 },
+        { "name": "Pavel Zajac", "votes": 277 },
+        { "name": "Peter Černák", "votes": 275 }
+      ]
+    }
+  ],
   "electionsLinks": [
     { "label": "Komunálne voľby 2022 — oficiálne výsledky obce", "url": "https://volby.sme.sk/komunalne-volby/2022/vysledky/banskobystricky-kraj/banska-bystrica/lubietova" }
   ],
