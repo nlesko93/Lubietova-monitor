@@ -15,26 +15,34 @@ export async function fetchFinance() {
   if (!ujId) throw new Error(`RegisterUZ nepozná IČO ${ico}`);
   const uj = await getJSON(`${RUZ}/uctovna-jednotka?id=${ujId}`);
 
-  // účtovné závierky (posledné roky)
+  // účtovné závierky — vezmeme detaily posledných ~16 a zoradíme podľa obdobia
+  const allIds = uj.idUctovnychZavierok || [];
+  console.log(`  registeruz: ${allIds.length} závierok v evidencii`);
   const zavierky = [];
-  for (const zid of (uj.idUctovnychZavierok || []).slice(-8)) {
+  for (const zid of allIds.slice(-16)) {
     try {
       const z = await getJSON(`${RUZ}/uctovna-zavierka?id=${zid}`);
       zavierky.push(z);
     } catch (e) { console.warn(`  registeruz závierka ${zid}: ${e.message}`); }
   }
-  zavierky.sort((a, b) => String(a.obdobieOd || '').localeCompare(String(b.obdobieOd || '')));
+  // rok berieme z konca obdobia (obdobieDo) — tam sedí účtovný rok
+  const rok = z => String(z.obdobieDo || z.obdobieOd || '').slice(0, 4);
+  zavierky.sort((a, b) => rok(a).localeCompare(rok(b)) || String(a.obdobieOd).localeCompare(String(b.obdobieOd)));
+
+  const periods = zavierky.map(z => `${rok(z)}${z.konsolidovana ? 'K' : ''}`);
+  console.log(`  registeruz obdobia: ${periods.join(', ')}`);
 
   const items = zavierky.reverse().map(z => ({
-    title: `Účtovná závierka ${String(z.obdobieOd || '').slice(0, 4)}`,
+    title: `Účtovná závierka ${rok(z)}${z.konsolidovana ? ' (konsolidovaná)' : ''}`,
     type: z.typ || '',
     period: [z.obdobieOd, z.obdobieDo].filter(Boolean).join(' – '),
     link: `https://www.registeruz.sk/cruz-public/domain/accountingentity/show/${ujId}`,
-  }));
+  })).slice(0, 10);
 
   return writeResult('finance', {
     entity: { name: uj.nazovUJ, ico: uj.ico, address: [uj.ulica, uj.mesto].filter(Boolean).join(', ') },
     items,
+    _periods: periods,
   });
 }
 
