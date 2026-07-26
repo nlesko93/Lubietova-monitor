@@ -289,6 +289,22 @@ a.item-title:hover { color: var(--accent); }
 .oh-time { text-align: right; }
 .oh-link { display: inline-block; margin-top: 6px; font-size: 0.75rem; color: var(--series-1); text-decoration: none; }
 .oh-badge.is-open { color: #fff; }
+
+/* Bazoš inzeráty */
+.bazos-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.bazos-item {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: start;
+  padding: 8px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--text-primary); text-decoration: none;
+}
+.bazos-item:hover { border-color: var(--accent); }
+.bazos-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; background: var(--surface-1); }
+.bazos-noimg { display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.bazos-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bazos-title { font-weight: 600; font-size: 0.9rem; line-height: 1.25; }
+.bazos-meta { font-size: 0.72rem; color: var(--text-muted); }
+.bazos-desc { font-size: 0.76rem; color: var(--text-secondary); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.bazos-price { font-weight: 700; font-size: 0.85rem; color: var(--series-4); white-space: nowrap; }
 .webcam-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
 
 /* ---------- autobusy: smery ---------- */

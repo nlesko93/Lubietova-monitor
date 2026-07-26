@@ -15,6 +15,7 @@ import { fetchOutages } from './outages.mjs';
 import { fetchHydro } from './hydro.mjs';
 import { fetchBuses } from './buses.mjs';
 import { fetchTraffic } from './traffic.mjs';
+import { fetchBazos } from './bazos.mjs';
 
 const FETCHERS = [
   ['news', fetchNews],
@@ -31,6 +32,7 @@ const FETCHERS = [
   ['hydro', fetchHydro],
   ['buses', fetchBuses],
   ['traffic', fetchTraffic],
+  ['bazos', fetchBazos],
 ];
 
 const results = await Promise.allSettled(

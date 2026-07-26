@@ -485,3 +485,29 @@ export function initWebcams() {
     }
   });
 }
+
+export function initBazos() {
+  return dataCard('bazos', 'bazos-body', (body, d) => {
+    if (!d.items?.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Momentálne žiadne inzeráty s PSČ 976 55.' }));
+    } else {
+      const list = el('div', { class: 'bazos-list' });
+      for (const it of d.items) {
+        list.appendChild(el('a', { class: 'bazos-item', href: it.link, target: '_blank', rel: 'noopener' }, [
+          it.img
+            ? el('img', { class: 'bazos-thumb', src: it.img, alt: '', loading: 'lazy' })
+            : el('div', { class: 'bazos-thumb bazos-noimg', text: '🛒' }),
+          el('div', { class: 'bazos-info' }, [
+            el('span', { class: 'bazos-title', text: it.title }),
+            el('span', { class: 'bazos-meta', text: [it.location, it.date].filter(Boolean).join(' · ') }),
+            it.desc ? el('span', { class: 'bazos-desc', text: it.desc }) : null,
+          ].filter(Boolean)),
+          it.price ? el('span', { class: 'bazos-price', text: it.price }) : null,
+        ].filter(Boolean)));
+      }
+      body.appendChild(list);
+    }
+    body.appendChild(el('p', { class: 'chart-caption', html:
+      'Zdroj: <a href="https://www.bazos.sk" target="_blank" rel="noopener">Bazoš.sk</a> · inzeráty s PSČ 976 55 · aktualizované hodinovo' }));
+  }, { handlesEmpty: true });
+}

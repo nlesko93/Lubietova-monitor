@@ -53,6 +53,7 @@
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ],
+  "bazos": { "psc": "97655", "radiusKm": 0 },
   "electionsStatic": [
     {
       "key": "komunalne2022_starosta",
