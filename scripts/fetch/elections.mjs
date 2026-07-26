@@ -91,11 +91,12 @@ async function scanZip(elec, zipUrl) {
     if (!matches.length) continue;
     const parsed = parseRows(elec, header, matches);
     console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce, parsed=${parsed ? `kind${parsed.kind}/${parsed.count}` : 'null'}; hlavička: ${header.join('§').slice(0, 200)}`);
-    if (!parsed && /osk|komunal/i.test(elec.key) && matches.length >= 3) {
+    if (/osk|komunal/i.test(elec.key)) {
       DEBUG.push({
         file: path.basename(f),
         header: header.join('|'),
-        sample: matches.slice(0, 4).map(r => r.join('|').slice(0, 200)),
+        n: matches.length,
+        sample: matches.slice(0, 3).map(r => r.join('|').slice(0, 160)),
       });
     }
     if (parsed) {
