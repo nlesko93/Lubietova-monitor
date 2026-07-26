@@ -26,8 +26,6 @@ const ELECTIONS = [
     'https://volby.statistics.sk/osk/osk2022/files/OSK2022_SK_csv.zip'] },
 ];
 
-const DEBUG = [];   // diagnostika komunálnych tabuliek (dočasne v elections.json)
-
 export async function fetchElections() {
   const items = [];
   for (const elec of ELECTIONS) {
@@ -44,7 +42,7 @@ export async function fetchElections() {
       }
     }
   }
-  return writeResult('elections', { items, _debug: DEBUG });
+  return writeResult('elections', { items });
 }
 
 async function scanCsvUrl(elec, url) {
@@ -97,14 +95,6 @@ async function scanZip(elec, zipUrl) {
     if (!matches.length) continue;
     const parsed = parseRows(elec, header, matches);
     console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce, parsed=${parsed ? `kind${parsed.kind}/${parsed.count}` : 'null'}; hlavička: ${header.join('§').slice(0, 200)}`);
-    if (/osk|komunal/i.test(elec.key)) {
-      DEBUG.push({
-        file: path.basename(f),
-        header: header.join('|'),
-        n: matches.length,
-        sample: matches.slice(0, 3).map(r => r.join('|').slice(0, 160)),
-      });
-    }
     if (parsed) {
       // uprednostni súhrnnú tabuľku (strany/kandidáti), pri zhode menej riadkov
       const better = !best || parsed.kind > best.kind ||
@@ -185,31 +175,11 @@ function scanKomunalne(elec, dir, csvs) {
     };
   };
 
-  const starosta = build(/06d\.csv$/i, starNames, 'starosta', 'starosta');
+  // ŠÚ SR export komunálnych volieb neobsahuje menný register kandidátov na
+  // starostu (len poslancov a — zo spojených volieb 2022 — predsedu kraja),
+  // preto starostu zobrazíme len ak sa mená podarí priradiť.
+  const starosta = starNames.size ? build(/06d\.csv$/i, starNames, 'starosta', 'starosta') : null;
   const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
-
-  // diagnostika (dočasne): zoznam všetkých tabuliek s menami kandidátov
-  const menoTables = [];
-  for (const f of csvs) {
-    const rows = read(f); if (rows.length < 2) continue;
-    const h = rows[0];
-    if (!(colOf(h, /^meno$/) >= 0 && colOf(h, /priezvisko/) >= 0)) continue;
-    const body = rows.slice(1);
-    const hasCode = body.some(r => r.includes(CODE));
-    const hasObv = body.some(r => r.some(c => obvody.has(c)));
-    menoTables.push(`${path.basename(f)}[${h[0]}] code=${hasCode} obv=${hasObv} r=${body.length}`);
-  }
-  DEBUG.push({ file: 'meno-tabuľky', header: menoTables.join('  ;  '), n: menoTables.length, sample: [] });
-
-  // diagnostika (dočasne v elections.json): čo sa našlo
-  DEBUG.push({
-    file: 'súhrn', header: `obvody=${[...obvody].join(',')} | starNames=${starNames.size} | poslNames=${poslNames.size}`,
-    n: (starosta ? starosta.count : 0) + (poslanci ? poslanci.count : 0),
-    sample: [
-      starosta ? `starosta: ${starosta.rows.slice(0, 3).map(r => r.name + ':' + r.votes).join(', ')}` : 'starosta: —',
-      poslanci ? `poslanci: ${poslanci.rows.slice(0, 3).map(r => r.name + ':' + r.votes).join(', ')}` : 'poslanci: —',
-    ],
-  });
 
   return [starosta, poslanci].filter(Boolean);
 }
