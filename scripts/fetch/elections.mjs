@@ -149,9 +149,13 @@ function scanKomunalne(elec, dir, csvs) {
     const mi = colOf(h, /^meno$/), pi = colOf(h, /priezvisko/), pci = colOf(h, /^pc_hl$/);
     if (mi < 0 || pi < 0 || pci < 0) continue;
     const vi = colOf(h, /^vobvod$/);
+    const oi = colOf(h, /^obec$/);
     for (const r of rows.slice(1)) {
       if (vi >= 0) { if (obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi)); }
-      else if (r.some(c => obvody.has(c))) starNames.set(r[pci], nameOf(r, mi, pi));
+      // starosta: tabuľka kľúčovaná kódom obce (nie krajom — tab0a je župan)
+      else if ((oi >= 0 && r[oi] === CODE) || (oi < 0 && r.includes(CODE))) {
+        starNames.set(r[pci], nameOf(r, mi, pi));
+      }
     }
   }
 
@@ -184,14 +188,18 @@ function scanKomunalne(elec, dir, csvs) {
   const starosta = build(/06d\.csv$/i, starNames, 'starosta', 'starosta');
   const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
 
-  // diagnostika (dočasne): surové dáta tab0a (kandidáti na starostu)
-  const fa = csvs.find(x => /0a\.csv$/i.test(path.basename(x)));
-  if (fa) {
-    const rows = read(fa); const h = rows[0] || [];
-    const lu = rows.slice(1).filter(r => r.some(c => OBEC_NAME.test(c)));
-    DEBUG.push({ file: 'tab0a-raw', header: h.join('|'), n: rows.length - 1,
-      sample: [...rows.slice(1, 4), ...lu.slice(0, 4)].map(r => r.join('|').slice(0, 120)) });
+  // diagnostika (dočasne): zoznam všetkých tabuliek s menami kandidátov
+  const menoTables = [];
+  for (const f of csvs) {
+    const rows = read(f); if (rows.length < 2) continue;
+    const h = rows[0];
+    if (!(colOf(h, /^meno$/) >= 0 && colOf(h, /priezvisko/) >= 0)) continue;
+    const body = rows.slice(1);
+    const hasCode = body.some(r => r.includes(CODE));
+    const hasObv = body.some(r => r.some(c => obvody.has(c)));
+    menoTables.push(`${path.basename(f)}[${h[0]}] code=${hasCode} obv=${hasObv} r=${body.length}`);
   }
+  DEBUG.push({ file: 'meno-tabuľky', header: menoTables.join('  ;  '), n: menoTables.length, sample: [] });
 
   // diagnostika (dočasne v elections.json): čo sa našlo
   DEBUG.push({
