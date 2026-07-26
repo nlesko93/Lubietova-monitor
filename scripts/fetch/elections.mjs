@@ -150,6 +150,7 @@ function scanKomunalne(elec, dir, csvs) {
     for (const r of rows.slice(1)) {
       if (vi >= 0 && obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi, ti));
       else if (oi >= 0 && r[oi] === CODE) starNames.set(r[pci], nameOf(r, mi, pi, ti));
+      else if (oi < 0 && vi < 0 && r.includes(CODE)) starNames.set(r[pci], nameOf(r, mi, pi, ti));
     }
   }
 
@@ -190,8 +191,14 @@ function scanKomunalne(elec, dir, csvs) {
     if (!(has(/^meno$/) && has(/priezvisko/))) continue;
     const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/);
     const rel = rows.slice(1).filter(r => (oi >= 0 && r[oi] === CODE) || (vi >= 0 && obvody.has(r[vi])));
+    const codeCol = rows.slice(1).find(r => r.includes(CODE));   // je kód obce niekde v riadku?
+    const lubietova = rows.slice(1).filter(r => r.some(c => OBEC_NAME.test(c)));
     DEBUG.push({ file: path.basename(f), header: h.join('|'), n: rel.length,
-      sample: rel.slice(0, 2).map(r => r.join('|').slice(0, 120)) });
+      sample: [
+        ...(rel.length ? rel : rows.slice(1, 3)).slice(0, 2).map(r => r.join('|').slice(0, 120)),
+        `kód obce v riadku: ${codeCol ? 'ÁNO stĺpec#' + codeCol.indexOf(CODE) : 'NIE'} · riadkov s "Ľubietová": ${lubietova.length}`,
+        ...lubietova.slice(0, 2).map(r => 'Ľ: ' + r.join('|').slice(0, 110)),
+      ] });
   }
 
   // diagnostika (dočasne v elections.json): čo sa našlo
