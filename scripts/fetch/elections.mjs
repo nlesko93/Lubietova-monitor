@@ -26,6 +26,8 @@ const ELECTIONS = [
     'https://volby.statistics.sk/osk/osk2022/files/OSK2022_SK_csv.zip'] },
 ];
 
+const DEBUG = [];   // diagnostika komunálnych tabuliek (dočasne v elections.json)
+
 export async function fetchElections() {
   const items = [];
   for (const elec of ELECTIONS) {
@@ -40,7 +42,7 @@ export async function fetchElections() {
       }
     }
   }
-  return writeResult('elections', { items });
+  return writeResult('elections', { items, _debug: DEBUG });
 }
 
 async function scanCsvUrl(elec, url) {
@@ -89,8 +91,12 @@ async function scanZip(elec, zipUrl) {
     if (!matches.length) continue;
     const parsed = parseRows(elec, header, matches);
     console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce, parsed=${parsed ? `kind${parsed.kind}/${parsed.count}` : 'null'}; hlavička: ${header.join('§').slice(0, 200)}`);
-    if (!parsed && /osk|komunal/i.test(elec.key)) {
-      console.log(`  elections ${elec.key}: ${path.basename(f)} VZORKA: ${matches[0].join('§').slice(0, 300)}`);
+    if (!parsed && /osk|komunal/i.test(elec.key) && matches.length >= 3) {
+      DEBUG.push({
+        file: path.basename(f),
+        header: header.join('|'),
+        sample: matches.slice(0, 4).map(r => r.join('|').slice(0, 200)),
+      });
     }
     if (parsed) {
       // uprednostni súhrnnú tabuľku (strany/kandidáti), pri zhode menej riadkov

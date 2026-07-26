@@ -87,13 +87,13 @@
       "subtitle": "potraviny · Nám. V. Dunajského 30",
       "url": "https://www.coopka.sk/predajne/lubietova/coop-jednota-nam-v-dunajskeho-30/",
       "week": [
-        { "d": "Pondelok",    "int": [["6:00", "18:00"]] },
-        { "d": "Utorok",      "int": [["6:00", "18:00"]] },
-        { "d": "Streda",      "int": [["6:00", "18:00"]] },
-        { "d": "Štvrtok",     "int": [["6:00", "18:00"]] },
-        { "d": "Piatok",      "int": [["6:00", "18:00"]] },
-        { "d": "Sobota",      "int": [["6:00", "12:00"]] },
-        { "d": "Nedeľa",      "int": [["8:00", "12:00"]] }
+        { "d": "Pondelok",    "int": [["6:15", "18:00"]] },
+        { "d": "Utorok",      "int": [["6:15", "18:00"]] },
+        { "d": "Streda",      "int": [["6:15", "18:00"]] },
+        { "d": "Štvrtok",     "int": [["6:15", "18:00"]] },
+        { "d": "Piatok",      "int": [["6:15", "18:00"]] },
+        { "d": "Sobota",      "int": [["6:15", "13:00"]] },
+        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
       ]
     }
   ]
