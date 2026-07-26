@@ -53,6 +53,9 @@
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ],
+  "electionsLinks": [
+    { "label": "Komunálne voľby 2022 — oficiálne výsledky obce", "url": "https://volby.sme.sk/komunalne-volby/2022/vysledky/banskobystricky-kraj/banska-bystrica/lubietova" }
+  ],
   "openingHours": [
     {
       "name": "Obecný úrad",

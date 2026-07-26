@@ -1,5 +1,5 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
-import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime, haversineKm } from '../util.js';
+import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
 import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
 
@@ -182,6 +182,17 @@ export function initElections() {
       tabs.appendChild(b);
     }
     show(d.items[0]?.key);
+
+    // odkazy na výsledky, ktoré sa nedajú spoľahlivo rozparsovať (komunálne)
+    getConfig().then(cfg => {
+      const links = cfg.electionsLinks || [];
+      if (!links.length) return;
+      const row = el('div', { class: 'link-row' });
+      for (const lk of links) {
+        row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+      }
+      body.appendChild(row);
+    }).catch(() => {});
   }, { emptyText: 'Výsledky volieb sa zatiaľ nepodarilo načítať zo ŠÚ SR.' });
 }
 
