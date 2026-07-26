@@ -20,7 +20,8 @@ import {
 const root = document.documentElement;
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme) root.dataset.theme = savedTheme;
-else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.dataset.theme = 'light';
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.dataset.theme = 'dark';
+else root.dataset.theme = 'light';
 document.getElementById('theme-toggle').addEventListener('click', () => {
   root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
   localStorage.setItem('theme', root.dataset.theme);

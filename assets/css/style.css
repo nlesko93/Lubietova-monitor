@@ -1,5 +1,5 @@
-/* Ľubietová Monitor — mission-control dashboard
-   Farebné tokeny podľa referenčnej dataviz palety (dark default). */
+/* Ľubietová naživo — živý prehľad obce
+   Svetlá (teplá, prírodná) téma je predvolená; tmavá „mission-control" ostáva. */
 
 :root, :root[data-theme="dark"] {
   --page:           #0d0d0d;
@@ -26,21 +26,26 @@
 }
 
 :root[data-theme="light"] {
-  --page:           #f9f9f7;
-  --surface-1:      #fcfcfb;
-  --surface-2:      #f0efec;
-  --text-primary:   #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted:     #898781;
-  --grid:           #e1e0d9;
-  --baseline:       #c3c2b7;
-  --border:         rgba(11,11,11,0.10);
-  --series-1:       #2a78d6;
-  --series-2:       #1baf7a;
-  --series-3:       #eda100;
-  --series-4:       #008300;
-  --series-5:       #4a3aa7;
-  --series-6:       #e34948;
+  --page:           #f4f1e8;   /* teplá krémová (papier) */
+  --surface-1:      #fffdf7;   /* karta */
+  --surface-2:      #ece6d8;
+  --text-primary:   #221f18;   /* teplá takmer-čierna */
+  --text-secondary: #55503f;
+  --text-muted:     #8a8474;
+  --grid:           #e4ddcc;
+  --baseline:       #ccc4b0;
+  --border:         rgba(40,32,16,0.12);
+  --series-1:       #2f7d4f;   /* lesná zeleň (primárna) */
+  --series-2:       #2a78d6;   /* modrá */
+  --series-3:       #c98a1a;   /* medová/okrová (baníctvo) */
+  --series-4:       #6f9b2e;   /* olivová */
+  --series-5:       #8a5a2b;   /* meď/hnedá */
+  --series-6:       #c0492e;   /* tehlová */
+  --status-good:     #2f8f3f;
+  --status-warning:  #d99413;
+  --status-serious:  #d1703f;
+  --status-critical: #c23a34;
+  --accent:         #2f7d4f;   /* zelený akcent */
   --map-filter: none;
 }
 
