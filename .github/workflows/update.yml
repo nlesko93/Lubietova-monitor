@@ -71,4 +71,4 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/webcams.json'));for(const c of d.items||[]){console.log('-',c.name,'ok='+c.ok,c.snapshot?('snapshot='+c.snapshot):'',c.embed?('embed='+c.embed):'',c.note?('note='+c.note):'');if(c.found&&c.found.length)console.log('    obrázky na stránke:',c.found.join(' , '));}"
           echo
           echo "== kontrola volieb =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const it of d.items||[])console.log('-',it.key,it.name,'|',it.count,'položiek |',it.rows.slice(0,3).map(r=>r.name+':'+r.votes).join(', '));"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const it of d.items||[])console.log('-',it.key,it.name,'|',it.count,'položiek |',it.rows.slice(0,3).map(r=>r.name+':'+r.votes).join(', '));for(const dbg of d._debug||[])console.log('DEBUG',dbg.header);"

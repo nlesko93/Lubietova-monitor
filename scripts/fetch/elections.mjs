@@ -26,6 +26,8 @@ const ELECTIONS = [
     'https://volby.statistics.sk/osk/osk2022/files/OSK2022_SK_csv.zip'] },
 ];
 
+const DEBUG = [];
+
 export async function fetchElections() {
   const items = [];
   for (const elec of ELECTIONS) {
@@ -42,7 +44,7 @@ export async function fetchElections() {
       }
     }
   }
-  return writeResult('elections', { items });
+  return writeResult('elections', { items, _debug: DEBUG });
 }
 
 async function scanCsvUrl(elec, url) {
@@ -108,80 +110,54 @@ async function scanZip(elec, zipUrl) {
   return best;
 }
 
-// Komunálne voľby (OSK): výsledky sú podľa poradového čísla kandidáta,
-// mená sú v samostatnom registri. Spojíme cez poradové číslo v rámci obce
-// (starosta) resp. volebného obvodu obce (poslanci).
+// Komunálne voľby (OSK) — DIAGNOSTIKA väzby obvod↔obec↔kandidát.
+// Dočasne nevytvára položky (aby sa nezobrazovali nesprávne mená), len
+// vypíše, ako sa dáta viažu, aby sa dalo spraviť správne párovanie.
 function scanKomunalne(elec, dir, csvs) {
   const CODE = OBEC_CODE;
   const read = f => { try { return csvRows(decodeBuf(readFileSync(path.join(dir, f)))); } catch { return []; } };
   const colOf = (h, re) => h.map(c => c.toLowerCase().trim()).findIndex(c => re.test(c));
-  const votesOf = v => parseInt(String(v ?? '').replace(/\s/g, '')) || 0;
-  const pctOf = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : null; };
-  const nameOf = (r, mi, pi) => [r[mi], r[pi]].filter(Boolean).join(' ').trim();
+  const base = f => path.basename(f);
+  const dbg = [];
 
-  // 1) volebné obvody obce (OBEC -> VOBVOD) z tab*0dc
+  // tab0dc: OBEC -> VOBVOD, a či je VOBVOD obce zdieľaný viacerými obcami
   const obvody = new Set();
-  for (const f of csvs) {
-    const rows = read(f); if (rows.length < 2) continue;
-    const h = rows[0]; const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/), ni = colOf(h, /nobec/);
-    if (oi < 0 || vi < 0 || ni < 0) continue;           // tab0dc má OBEC, VOBVOD aj NOBEC
-    for (const r of rows.slice(1)) if (r[oi] === CODE) obvody.add(r[vi]);
-  }
-
-  // 2) register mien: PC_HL -> meno. Poslanci sa kľúčujú VOBVOD-om obce,
-  //    starosta OBEC-om. Rozlíšime podľa toho, ktorý stĺpec tabuľka má.
-  // tab0b (poslanci) má stĺpec VOBVOD; tab0a (starosta) ho nemá, ale kód
-  // obvodu obce (601) je v riadku (v stĺpci chybne nazvanom KRAJ).
-  const poslNames = new Map(), starNames = new Map();
-  for (const f of csvs) {
-    const rows = read(f); if (rows.length < 2) continue;
-    const h = rows[0];
-    const mi = colOf(h, /^meno$/), pi = colOf(h, /priezvisko/), pci = colOf(h, /^pc_hl$/);
-    if (mi < 0 || pi < 0 || pci < 0) continue;
-    const vi = colOf(h, /^vobvod$/);
-    const oi = colOf(h, /^obec$/);
-    for (const r of rows.slice(1)) {
-      if (vi >= 0) { if (obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi)); }
-      // starosta: tabuľka kľúčovaná kódom obce (nie krajom — tab0a je župan)
-      else if ((oi >= 0 && r[oi] === CODE) || (oi < 0 && r.includes(CODE))) {
-        starNames.set(r[pci], nameOf(r, mi, pi));
-      }
+  const fdc = csvs.find(x => /0dc\.csv$/i.test(base(x)));
+  if (fdc) {
+    const rows = read(fdc); const h = rows[0];
+    const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/);
+    const luRows = rows.slice(1).filter(r => r[oi] === CODE);
+    for (const r of luRows) obvody.add(r[vi]);
+    dbg.push(`tab0dc[${h.join(',')}] Ľ-riadkov=${luRows.length}: ${luRows.slice(0, 3).map(r => r.join('|')).join(' ;; ')}`);
+    for (const v of obvody) {
+      const shared = rows.slice(1).filter(r => r[vi] === v);
+      dbg.push(`VOBVOD ${v} má v tab0dc ${shared.length} obcí (zdieľaný?): ${shared.slice(0, 4).map(r => r[colOf(h, /nobec/)]).join(', ')}`);
     }
   }
 
-  // 3) výsledky (PC_HL -> hlasy) pre obec a spojenie s menami
-  const build = (fileRe, names, label, subLabel) => {
-    const f = csvs.find(x => fileRe.test(path.basename(x)));
-    if (!f) return null;
-    const rows = read(f); if (rows.length < 2) return null;
-    const h = rows[0];
-    const oi = colOf(h, /^obec$/), pci = colOf(h, /^pc_hl$/), vi = colOf(h, /^p_hl$/), pcti = colOf(h, /^p_hl_pct$/);
-    if (oi < 0 || pci < 0 || vi < 0) return null;
-    const results = rows.slice(1)
-      .filter(r => r[oi] === CODE)
-      .map(r => ({
-        name: names.get(r[pci]) || `kandidát č. ${r[pci]}`,
-        votes: votesOf(r[vi]),
-        pct: pcti >= 0 ? pctOf(r[pcti]) : null,
-      }))
-      .filter(x => x.votes > 0);
-    if (results.length < 2) return null;
-    results.sort((a, b) => b.votes - a.votes);
-    const total = results.reduce((s, x) => s + x.votes, 0);
-    for (const x of results) if (!(x.pct >= 0)) x.pct = Math.round((x.votes / total) * 1000) / 10;
-    return {
-      key: `${elec.key}_${subLabel}`, name: `${elec.name} — ${label}`,
-      totalVotes: total, kind: 2, count: results.length, rows: results.slice(0, 12),
-    };
-  };
+  // tab0b (poslanci mená) — koľko kandidátov v obvode obce a kde bývajú
+  const fb = csvs.find(x => /0b\.csv$/i.test(base(x)));
+  if (fb) {
+    const rows = read(fb); const h = rows[0];
+    const vi = colOf(h, /^vobvod$/), tpi = colOf(h, /tp_nobec|nobec/);
+    const inObv = rows.slice(1).filter(r => obvody.has(r[vi]));
+    const luRes = inObv.filter(r => tpi >= 0 && OBEC_NAME.test(r[tpi] || ''));
+    dbg.push(`tab0b VOBVOD∈{${[...obvody]}}: ${inObv.length} kandidátov, z toho bydlisko Ľubietová=${luRes.length}`);
+    dbg.push(`tab0b vzorka: ${inObv.slice(0, 4).map(r => `PC${r[colOf(h, /^pc_hl$/)]}:${r[colOf(h, /^meno$/)]} ${r[colOf(h, /priezvisko/)]}(${r[tpi]})`).join(' ;; ')}`);
+  }
 
-  // ŠÚ SR export komunálnych volieb neobsahuje menný register kandidátov na
-  // starostu (len poslancov a — zo spojených volieb 2022 — predsedu kraja),
-  // preto starostu zobrazíme len ak sa mená podarí priradiť.
-  const starosta = starNames.size ? build(/06d\.csv$/i, starNames, 'starosta', 'starosta') : null;
-  const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
+  // tab09d (poslanci výsledky) — koľko výsledkov pre obec a rozsah PC
+  const f9 = csvs.find(x => /09d\.csv$/i.test(base(x)));
+  if (f9) {
+    const rows = read(f9); const h = rows[0];
+    const oi = colOf(h, /^obec$/), pci = colOf(h, /^pc_hl$/);
+    const res = rows.slice(1).filter(r => r[oi] === CODE);
+    const pcs = res.map(r => +r[pci]).filter(Number.isFinite);
+    dbg.push(`tab09d OBEC=${CODE}: ${res.length} výsledkov, PC ${Math.min(...pcs)}..${Math.max(...pcs)}`);
+  }
 
-  return [starosta, poslanci].filter(Boolean);
+  DEBUG.push({ file: 'kom-diag', header: dbg.join('   ||   '), n: dbg.length, sample: [] });
+  return [];   // dočasne žiadne komunálne položky, kým nevyriešim správnu väzbu
 }
 
 function decodeBuf(buf) {
