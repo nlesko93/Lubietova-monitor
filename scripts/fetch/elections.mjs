@@ -127,7 +127,7 @@ function scanKomunalne(elec, dir, csvs) {
   const colOf = (h, re) => h.map(c => c.toLowerCase().trim()).findIndex(c => re.test(c));
   const votesOf = v => parseInt(String(v ?? '').replace(/\s/g, '')) || 0;
   const pctOf = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : null; };
-  const nameOf = (r, mi, pi, ti) => [ti >= 0 ? r[ti] : '', r[mi], r[pi]].filter(Boolean).join(' ').trim();
+  const nameOf = (r, mi, pi) => [r[mi], r[pi]].filter(Boolean).join(' ').trim();
 
   // 1) volebné obvody obce (OBEC -> VOBVOD) z tab*0dc
   const obvody = new Set();
@@ -140,17 +140,18 @@ function scanKomunalne(elec, dir, csvs) {
 
   // 2) register mien: PC_HL -> meno. Poslanci sa kľúčujú VOBVOD-om obce,
   //    starosta OBEC-om. Rozlíšime podľa toho, ktorý stĺpec tabuľka má.
+  // tab0b (poslanci) má stĺpec VOBVOD; tab0a (starosta) ho nemá, ale kód
+  // obvodu obce (601) je v riadku (v stĺpci chybne nazvanom KRAJ).
   const poslNames = new Map(), starNames = new Map();
   for (const f of csvs) {
     const rows = read(f); if (rows.length < 2) continue;
     const h = rows[0];
-    const mi = colOf(h, /^meno$/), pi = colOf(h, /priezvisko/), pci = colOf(h, /^pc_hl$/), ti = colOf(h, /^titul$/);
+    const mi = colOf(h, /^meno$/), pi = colOf(h, /priezvisko/), pci = colOf(h, /^pc_hl$/);
     if (mi < 0 || pi < 0 || pci < 0) continue;
-    const vi = colOf(h, /^vobvod$/), oi = colOf(h, /^obec$/);
+    const vi = colOf(h, /^vobvod$/);
     for (const r of rows.slice(1)) {
-      if (vi >= 0 && obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi, ti));
-      else if (oi >= 0 && r[oi] === CODE) starNames.set(r[pci], nameOf(r, mi, pi, ti));
-      else if (oi < 0 && vi < 0 && r.includes(CODE)) starNames.set(r[pci], nameOf(r, mi, pi, ti));
+      if (vi >= 0) { if (obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi)); }
+      else if (r.some(c => obvody.has(c))) starNames.set(r[pci], nameOf(r, mi, pi));
     }
   }
 
@@ -182,24 +183,6 @@ function scanKomunalne(elec, dir, csvs) {
 
   const starosta = build(/06d\.csv$/i, starNames, 'starosta', 'starosta');
   const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
-
-  // diagnostika (dočasne): zoznam tabuliek s menami/OBEC/VOBVOD
-  for (const f of csvs) {
-    const rows = read(f); if (rows.length < 2) continue;
-    const h = rows[0];
-    const has = re => colOf(h, re) >= 0;
-    if (!(has(/^meno$/) && has(/priezvisko/))) continue;
-    const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/);
-    const rel = rows.slice(1).filter(r => (oi >= 0 && r[oi] === CODE) || (vi >= 0 && obvody.has(r[vi])));
-    const codeCol = rows.slice(1).find(r => r.includes(CODE));   // je kód obce niekde v riadku?
-    const lubietova = rows.slice(1).filter(r => r.some(c => OBEC_NAME.test(c)));
-    DEBUG.push({ file: path.basename(f), header: h.join('|'), n: rel.length,
-      sample: [
-        ...(rel.length ? rel : rows.slice(1, 3)).slice(0, 2).map(r => r.join('|').slice(0, 120)),
-        `kód obce v riadku: ${codeCol ? 'ÁNO stĺpec#' + codeCol.indexOf(CODE) : 'NIE'} · riadkov s "Ľubietová": ${lubietova.length}`,
-        ...lubietova.slice(0, 2).map(r => 'Ľ: ' + r.join('|').slice(0, 110)),
-      ] });
-  }
 
   // diagnostika (dočasne v elections.json): čo sa našlo
   DEBUG.push({
