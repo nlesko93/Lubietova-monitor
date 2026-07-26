@@ -89,6 +89,9 @@ async function scanZip(elec, zipUrl) {
     if (!matches.length) continue;
     const parsed = parseRows(elec, header, matches);
     console.log(`  elections ${elec.key}: ${path.basename(f)} -> ${matches.length} riadkov obce, parsed=${parsed ? `kind${parsed.kind}/${parsed.count}` : 'null'}; hlavička: ${header.join('§').slice(0, 200)}`);
+    if (!parsed && /osk|komunal/i.test(elec.key)) {
+      console.log(`  elections ${elec.key}: ${path.basename(f)} VZORKA: ${matches[0].join('§').slice(0, 300)}`);
+    }
     if (parsed) {
       // uprednostni súhrnnú tabuľku (strany/kandidáti), pri zhode menej riadkov
       const better = !best || parsed.kind > best.kind ||
