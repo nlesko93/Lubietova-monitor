@@ -49,5 +49,11 @@ export async function fetchBazos() {
   }
 
   console.log(`  bazos: ${items.length} inzerátov s PSČ ${psc}`);
-  return writeResult('bazos', { items: items.slice(0, 30) });
+  return writeResult('bazos', {
+    items: items.slice(0, 30),
+    _status: res.status,
+    _htmlKb: Math.round(html.length / 1024),
+    _blocks: blocks.length,
+    _sample: (blocks[0] || html.slice(0, 0)).slice(0, 600).replace(/\s+/g, ' '),
+  });
 }
