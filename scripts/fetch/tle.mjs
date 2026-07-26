@@ -15,7 +15,7 @@ export async function fetchTle() {
       const norad = l1.slice(2, 7).trim();
       if (seen.has(norad)) continue;
       seen.add(norad);
-      items.push({ name: name.trim(), l1, l2 });
+      items.push({ name: name.trim(), norad, group, l1, l2 });
     }
   }
   if (items.length < 10) throw new Error(`podozrivo málo TLE záznamov (${items.length})`);
