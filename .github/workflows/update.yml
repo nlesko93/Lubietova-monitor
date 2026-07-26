@@ -77,4 +77,4 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/finance.json'));console.log('obdobia:',(d._periods||[]).join(', '));for(const it of (d.items||[]).slice(0,10))console.log('  -',it.title,'|',it.period);"
           echo
           echo "== kontrola bazos =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,3))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  VZORKA:',(d._sample||'').slice(0,400));"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,4))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  lokality blokov:',d._lok||'-');"

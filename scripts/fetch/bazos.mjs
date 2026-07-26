@@ -27,12 +27,13 @@ export async function fetchBazos() {
 
   const items = [];
   for (const b of blocks) {
-    const a = b.match(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
-    if (!a) continue;
-    const href = a[1];
-    if (!/\/inzerat\//.test(href)) continue;
-    const link = href.startsWith('http') ? href : 'https://www.bazos.sk' + href;
-    const title = stripTags(a[2]);
+    // nadpis je v <h2 class=nadpis><a>…</a>; prvý <a> obaľuje obrázok (prázdny
+    // text) → vezmeme prvý odkaz na /inzerat/ s neprázdnym textom.
+    let link = null, title = null;
+    for (const m of b.matchAll(/<a[^>]+href="([^"]*\/inzerat\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      const t = stripTags(m[2]);
+      if (t) { link = m[1].startsWith('http') ? m[1] : 'https://www.bazos.sk' + m[1]; title = t; break; }
+    }
     if (!title) continue;
 
     const price = stripTags((b.match(/inzeratycena[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || '');
@@ -42,18 +43,22 @@ export async function fetchBazos() {
     if (img && img.startsWith('//')) img = 'https:' + img;
     const date = (b.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})/) || [])[1]?.replace(/\s+/g, '') || null;
 
-    // len inzeráty s naším PSČ (radius môže vrátiť aj okolie)
-    if (!pscRe.test(location) && !pscRe.test(b.slice(0, 2000))) continue;
+    // len inzeráty s naším PSČ (vyhľadávanie podľa lokality môže vrátiť okolie)
+    if (!pscRe.test(location) && !pscRe.test(b)) continue;
 
     items.push({ title, link, price, location, desc, img, date });
   }
 
+  const lokSample = blocks.slice(0, 6)
+    .map(b => stripTags((b.match(/inzeratylok[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || '—').slice(0, 30))
+    .join(' | ');
   console.log(`  bazos: ${items.length} inzerátov s PSČ ${psc}`);
   return writeResult('bazos', {
     items: items.slice(0, 30),
     _status: res.status,
     _htmlKb: Math.round(html.length / 1024),
     _blocks: blocks.length,
-    _sample: (blocks[0] || html.slice(0, 0)).slice(0, 600).replace(/\s+/g, ' '),
+    _lok: lokSample,
+    _sample: (blocks[0] || '').slice(0, 500).replace(/\s+/g, ' '),
   });
 }
