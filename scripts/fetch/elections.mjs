@@ -184,6 +184,15 @@ function scanKomunalne(elec, dir, csvs) {
   const starosta = build(/06d\.csv$/i, starNames, 'starosta', 'starosta');
   const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
 
+  // diagnostika (dočasne): surové dáta tab0a (kandidáti na starostu)
+  const fa = csvs.find(x => /0a\.csv$/i.test(path.basename(x)));
+  if (fa) {
+    const rows = read(fa); const h = rows[0] || [];
+    const lu = rows.slice(1).filter(r => r.some(c => OBEC_NAME.test(c)));
+    DEBUG.push({ file: 'tab0a-raw', header: h.join('|'), n: rows.length - 1,
+      sample: [...rows.slice(1, 4), ...lu.slice(0, 4)].map(r => r.join('|').slice(0, 120)) });
+  }
+
   // diagnostika (dočasne v elections.json): čo sa našlo
   DEBUG.push({
     file: 'súhrn', header: `obvody=${[...obvody].join(',')} | starNames=${starNames.size} | poslNames=${poslNames.size}`,
