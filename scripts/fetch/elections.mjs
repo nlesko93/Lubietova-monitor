@@ -36,7 +36,9 @@ export async function fetchElections() {
         const parsed = /\.zip$/i.test(url)
           ? await scanZip(elec, url)
           : await scanCsvUrl(elec, url);
-        if (parsed) { items.push(parsed); break; }
+        if (Array.isArray(parsed)) {
+          if (parsed.length) { items.push(...parsed); break; }
+        } else if (parsed) { items.push(parsed); break; }
       } catch (e) {
         console.log(`  elections ${elec.key}: ${url.split('/').pop()} -> ${e.message.slice(0, 160)}`);
       }
@@ -79,6 +81,10 @@ async function scanZip(elec, zipUrl) {
   const csvs = readdirSync(dir, { recursive: true }).map(String).filter(f => /\.csv$/i.test(f));
   console.log(`  elections ${elec.key}: ${zipUrl.split('/').pop()} (${Math.round(buf.length / 1024)} kB) -> ${csvs.length} CSV`);
 
+  // komunálne majú iný model (hlasy podľa poradového čísla + samostatný
+  // register mien) — spracujeme ich osobitne, spojením cez poradové číslo.
+  if (/osk|komunal/i.test(elec.key)) return scanKomunalne(elec, dir, csvs);
+
   // kandidátske tabuľky: tie, kde sa obec vyskytuje vo viacerých riadkoch
   let best = null;
   for (const f of csvs) {
@@ -110,6 +116,95 @@ async function scanZip(elec, zipUrl) {
     }
   }
   return best;
+}
+
+// Komunálne voľby (OSK): výsledky sú podľa poradového čísla kandidáta,
+// mená sú v samostatnom registri. Spojíme cez poradové číslo v rámci obce
+// (starosta) resp. volebného obvodu obce (poslanci).
+function scanKomunalne(elec, dir, csvs) {
+  const CODE = OBEC_CODE;
+  const read = f => { try { return csvRows(decodeBuf(readFileSync(path.join(dir, f)))); } catch { return []; } };
+  const colOf = (h, re) => h.map(c => c.toLowerCase().trim()).findIndex(c => re.test(c));
+  const votesOf = v => parseInt(String(v ?? '').replace(/\s/g, '')) || 0;
+  const pctOf = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : null; };
+  const nameOf = (r, mi, pi, ti) => [ti >= 0 ? r[ti] : '', r[mi], r[pi]].filter(Boolean).join(' ').trim();
+
+  // 1) volebné obvody obce (OBEC -> VOBVOD) z tab*0dc
+  const obvody = new Set();
+  for (const f of csvs) {
+    const rows = read(f); if (rows.length < 2) continue;
+    const h = rows[0]; const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/), ni = colOf(h, /nobec/);
+    if (oi < 0 || vi < 0 || ni < 0) continue;           // tab0dc má OBEC, VOBVOD aj NOBEC
+    for (const r of rows.slice(1)) if (r[oi] === CODE) obvody.add(r[vi]);
+  }
+
+  // 2) register mien: PC_HL -> meno. Poslanci sa kľúčujú VOBVOD-om obce,
+  //    starosta OBEC-om. Rozlíšime podľa toho, ktorý stĺpec tabuľka má.
+  const poslNames = new Map(), starNames = new Map();
+  for (const f of csvs) {
+    const rows = read(f); if (rows.length < 2) continue;
+    const h = rows[0];
+    const mi = colOf(h, /^meno$/), pi = colOf(h, /priezvisko/), pci = colOf(h, /^pc_hl$/), ti = colOf(h, /^titul$/);
+    if (mi < 0 || pi < 0 || pci < 0) continue;
+    const vi = colOf(h, /^vobvod$/), oi = colOf(h, /^obec$/);
+    for (const r of rows.slice(1)) {
+      if (vi >= 0 && obvody.has(r[vi])) poslNames.set(r[pci], nameOf(r, mi, pi, ti));
+      else if (oi >= 0 && r[oi] === CODE) starNames.set(r[pci], nameOf(r, mi, pi, ti));
+    }
+  }
+
+  // 3) výsledky (PC_HL -> hlasy) pre obec a spojenie s menami
+  const build = (fileRe, names, label, subLabel) => {
+    const f = csvs.find(x => fileRe.test(path.basename(x)));
+    if (!f) return null;
+    const rows = read(f); if (rows.length < 2) return null;
+    const h = rows[0];
+    const oi = colOf(h, /^obec$/), pci = colOf(h, /^pc_hl$/), vi = colOf(h, /^p_hl$/), pcti = colOf(h, /^p_hl_pct$/);
+    if (oi < 0 || pci < 0 || vi < 0) return null;
+    const results = rows.slice(1)
+      .filter(r => r[oi] === CODE)
+      .map(r => ({
+        name: names.get(r[pci]) || `kandidát č. ${r[pci]}`,
+        votes: votesOf(r[vi]),
+        pct: pcti >= 0 ? pctOf(r[pcti]) : null,
+      }))
+      .filter(x => x.votes > 0);
+    if (results.length < 2) return null;
+    results.sort((a, b) => b.votes - a.votes);
+    const total = results.reduce((s, x) => s + x.votes, 0);
+    for (const x of results) if (!(x.pct >= 0)) x.pct = Math.round((x.votes / total) * 1000) / 10;
+    return {
+      key: `${elec.key}_${subLabel}`, name: `${elec.name} — ${label}`,
+      totalVotes: total, kind: 2, count: results.length, rows: results.slice(0, 12),
+    };
+  };
+
+  const starosta = build(/06d\.csv$/i, starNames, 'starosta', 'starosta');
+  const poslanci = build(/09d\.csv$/i, poslNames, 'poslanci', 'poslanci');
+
+  // diagnostika (dočasne): zoznam tabuliek s menami/OBEC/VOBVOD
+  for (const f of csvs) {
+    const rows = read(f); if (rows.length < 2) continue;
+    const h = rows[0];
+    const has = re => colOf(h, re) >= 0;
+    if (!(has(/^meno$/) && has(/priezvisko/))) continue;
+    const oi = colOf(h, /^obec$/), vi = colOf(h, /^vobvod$/);
+    const rel = rows.slice(1).filter(r => (oi >= 0 && r[oi] === CODE) || (vi >= 0 && obvody.has(r[vi])));
+    DEBUG.push({ file: path.basename(f), header: h.join('|'), n: rel.length,
+      sample: rel.slice(0, 2).map(r => r.join('|').slice(0, 120)) });
+  }
+
+  // diagnostika (dočasne v elections.json): čo sa našlo
+  DEBUG.push({
+    file: 'súhrn', header: `obvody=${[...obvody].join(',')} | starNames=${starNames.size} | poslNames=${poslNames.size}`,
+    n: (starosta ? starosta.count : 0) + (poslanci ? poslanci.count : 0),
+    sample: [
+      starosta ? `starosta: ${starosta.rows.slice(0, 3).map(r => r.name + ':' + r.votes).join(', ')}` : 'starosta: —',
+      poslanci ? `poslanci: ${poslanci.rows.slice(0, 3).map(r => r.name + ':' + r.votes).join(', ')}` : 'poslanci: —',
+    ],
+  });
+
+  return [starosta, poslanci].filter(Boolean);
 }
 
 function decodeBuf(buf) {
