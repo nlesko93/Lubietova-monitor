@@ -48,9 +48,9 @@
       "snapshot": ""
     },
     {
-      "name": "Slovenská Ľupča (JDnet)",
+      "name": "Slovenská Ľupča",
       "page": "https://moj.jdnet.net/?Info=JDnet_Kamera",
-      "snapshot": ""
+      "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ]
 }

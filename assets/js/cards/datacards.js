@@ -436,20 +436,33 @@ export function initWebcams() {
     if (!okCams.length) { card.hidden = true; return; }
     card.hidden = false;
     const grid = el('div', { class: 'webcam-grid' });
+    const liveImgs = [];
     for (const c of okCams) {
-      const media = c.embed
-        ? el('iframe', {
-            class: 'webcam-embed', src: c.embed, loading: 'lazy',
-            frameborder: '0', allow: 'fullscreen', title: `Webkamera ${c.name}`,
-          })
-        : el('a', { href: c.page || c.snapshot, target: '_blank', rel: 'noopener' }, [
-            el('img', { src: c.snapshot, alt: `Webkamera ${c.name}`, loading: 'lazy' }),
-          ]);
+      let media;
+      if (c.embed) {
+        media = el('iframe', {
+          class: 'webcam-embed', src: c.embed, loading: 'lazy',
+          frameborder: '0', allow: 'fullscreen', title: `Webkamera ${c.name}`,
+        });
+      } else {
+        const img = el('img', { src: c.snapshot, alt: `Webkamera ${c.name}`, loading: 'lazy' });
+        liveImgs.push({ img, url: c.snapshot });
+        media = el('a', { href: c.page || c.snapshot, target: '_blank', rel: 'noopener' }, [img]);
+      }
       grid.appendChild(el('div', {}, [
         media,
         el('div', { class: 'webcam-name', text: c.name }),
       ]));
     }
     body.appendChild(grid);
+
+    // živé obnovovanie snímok (cache-busting) — každú minútu
+    if (liveImgs.length) {
+      every(60 * 1000, () => {
+        for (const { img, url } of liveImgs) {
+          img.src = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+        }
+      });
+    }
   });
 }
