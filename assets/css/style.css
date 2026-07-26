@@ -268,6 +268,22 @@ a.item-title:hover { color: var(--accent); }
 .webcam-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .webcam-grid img { width: 100%; border-radius: 8px; display: block; }
 .webcam-embed { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; display: block; }
+
+/* Otváracie hodiny */
+.oh-place { padding: 8px 0; border-top: 1px solid var(--border); }
+.oh-place:first-child { border-top: 0; }
+.oh-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.oh-name { font-weight: 600; }
+.oh-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.oh-status { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 6px; }
+.oh-week { list-style: none; margin: 0; padding: 0; }
+.oh-week li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.82rem; padding: 1px 0; color: var(--text-secondary); }
+.oh-week li.oh-today { color: var(--text-primary); font-weight: 600; }
+.oh-day { color: var(--text-muted); min-width: 2.2em; }
+.oh-week li.oh-today .oh-day { color: var(--text-primary); }
+.oh-time { text-align: right; }
+.oh-link { display: inline-block; margin-top: 6px; font-size: 0.75rem; color: var(--series-1); text-decoration: none; }
+.oh-badge.is-open { color: #fff; }
 .webcam-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
 
 /* ---------- autobusy: smery ---------- */

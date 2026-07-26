@@ -52,5 +52,49 @@
       "page": "https://moj.jdnet.net/?Info=JDnet_Kamera",
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
+  ],
+  "openingHours": [
+    {
+      "name": "Obecný úrad",
+      "subtitle": "úradné (stránkové) hodiny",
+      "url": "https://www.lubietova.sk/samosprava/obecny-urad/",
+      "week": [
+        { "d": "Pondelok",    "int": [["7:30", "12:00"], ["13:00", "16:00"]] },
+        { "d": "Utorok",      "int": [], "label": "nestránkový deň" },
+        { "d": "Streda",      "int": [["7:30", "12:00"], ["13:00", "17:00"]] },
+        { "d": "Štvrtok",     "int": [["7:30", "12:00"], ["13:00", "16:00"]] },
+        { "d": "Piatok",      "int": [["7:30", "12:00"], ["13:00", "14:30"]] },
+        { "d": "Sobota",      "int": [], "label": "zatvorené" },
+        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+      ]
+    },
+    {
+      "name": "Pošta",
+      "subtitle": "Slovenská pošta · Nám. V. Dunajského 2",
+      "url": "https://www.posty.sk/lubietova/",
+      "week": [
+        { "d": "Pondelok",    "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
+        { "d": "Utorok",      "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
+        { "d": "Streda",      "int": [["7:30", "12:00"], ["14:00", "17:00"]] },
+        { "d": "Štvrtok",     "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
+        { "d": "Piatok",      "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
+        { "d": "Sobota",      "int": [], "label": "zatvorené" },
+        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+      ]
+    },
+    {
+      "name": "Jednota (COOP)",
+      "subtitle": "potraviny · Nám. V. Dunajského 30",
+      "url": "https://www.coopka.sk/predajne/lubietova/coop-jednota-nam-v-dunajskeho-30/",
+      "week": [
+        { "d": "Pondelok",    "int": [["6:00", "18:00"]] },
+        { "d": "Utorok",      "int": [["6:00", "18:00"]] },
+        { "d": "Streda",      "int": [["6:00", "18:00"]] },
+        { "d": "Štvrtok",     "int": [["6:00", "18:00"]] },
+        { "d": "Piatok",      "int": [["6:00", "18:00"]] },
+        { "d": "Sobota",      "int": [["6:00", "12:00"]] },
+        { "d": "Nedeľa",      "int": [["8:00", "12:00"]] }
+      ]
+    }
   ]
 }
