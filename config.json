@@ -121,6 +121,20 @@
         { "d": "Sobota",      "int": [["6:15", "13:00"]] },
         { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
       ]
+    },
+    {
+      "name": "Lekáreň",
+      "subtitle": "Lekáreň PLUS (Ľubka) · Nám. V. Dunajského",
+      "url": "https://pluslekaren.sk/lekaren/lubka/",
+      "week": [
+        { "d": "Pondelok",    "int": [["8:00", "15:30"]] },
+        { "d": "Utorok",      "int": [["8:00", "15:30"]] },
+        { "d": "Streda",      "int": [["8:00", "15:30"]] },
+        { "d": "Štvrtok",     "int": [["8:00", "15:30"]] },
+        { "d": "Piatok",      "int": [["8:00", "15:30"]] },
+        { "d": "Sobota",      "int": [], "label": "zatvorené" },
+        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+      ]
     }
   ]
 }
