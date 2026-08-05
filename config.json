@@ -124,7 +124,7 @@
     },
     {
       "name": "Lekáreň",
-      "subtitle": "Lekáreň PLUS (Ľubka) · Nám. V. Dunajského",
+      "subtitle": "Lekáreň PLUS · Nám. V. Dunajského",
       "url": "https://pluslekaren.sk/lekaren/lubka/",
       "week": [
         { "d": "Pondelok",    "int": [["8:00", "15:30"]] },
