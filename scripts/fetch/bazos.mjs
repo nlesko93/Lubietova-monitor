@@ -6,6 +6,17 @@ import { get, writeResult, stripTags, CONFIG } from './lib.mjs';
 const BROWSER_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
+// Dátum pridania inzerátu = najnovší dátum v bloku, ktorý nie je v budúcnosti
+// (Bazoš pri TOP inzerátoch uvádza aj budúci dátum „platí do…").
+function bestDate(block) {
+  const today = new Date(); today.setHours(23, 59, 59, 999);
+  const dates = [...block.matchAll(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/g)]
+    .map(m => ({ str: `${m[1]}.${m[2]}.${m[3]}`, d: new Date(+m[3], +m[2] - 1, +m[1]) }))
+    .filter(x => !isNaN(x.d) && x.d <= today)
+    .sort((a, b) => b.d - a.d);
+  return dates[0]?.str || null;
+}
+
 export async function fetchBazos() {
   const cfg = CONFIG.bazos || {};
   const psc = String(cfg.psc || '97655').replace(/\s/g, '');
@@ -41,7 +52,7 @@ export async function fetchBazos() {
     const desc = stripTags((b.match(/class="popis"[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || '').slice(0, 160);
     let img = (b.match(/<img[^>]+src="([^"]+)"/i) || [])[1] || null;
     if (img && img.startsWith('//')) img = 'https:' + img;
-    const date = (b.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})/) || [])[1]?.replace(/\s+/g, '') || null;
+    const date = bestDate(b);
 
     // len inzeráty s naším PSČ (vyhľadávanie podľa lokality môže vrátiť okolie)
     if (!pscRe.test(location) && !pscRe.test(b)) continue;
