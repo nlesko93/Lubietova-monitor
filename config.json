@@ -99,11 +99,11 @@
       "subtitle": "Slovenská pošta · Nám. V. Dunajského 2",
       "url": "https://www.posty.sk/lubietova/",
       "week": [
-        { "d": "Pondelok",    "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
-        { "d": "Utorok",      "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
-        { "d": "Streda",      "int": [["7:30", "12:00"], ["14:00", "17:00"]] },
-        { "d": "Štvrtok",     "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
-        { "d": "Piatok",      "int": [["7:30", "12:00"], ["14:00", "15:30"]] },
+        { "d": "Pondelok",    "int": [["7:30", "11:00"]] },
+        { "d": "Utorok",      "int": [["7:30", "11:00"]] },
+        { "d": "Streda",      "int": [["13:30", "16:30"]] },
+        { "d": "Štvrtok",     "int": [["7:30", "11:00"]] },
+        { "d": "Piatok",      "int": [["7:30", "11:00"]] },
         { "d": "Sobota",      "int": [], "label": "zatvorené" },
         { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
       ]
