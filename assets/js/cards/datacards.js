@@ -518,9 +518,22 @@ export async function initFootball() {
   try {
     const cfg = await getConfig();
     const f = cfg.football;
-    if (!f || !(f.links || []).length) { card.hidden = true; return; }
+    if (!f || (!(f.links || []).length && !f.widgetHtml)) { card.hidden = true; return; }
     body.innerHTML = '';
     if (f.league) body.appendChild(el('p', { class: 'chart-caption', text: f.league }));
+
+    // Oficiálny živý widget Futbalnetu (embed snippet z Futbalnetu).
+    if (f.widgetHtml) {
+      const wrap = el('div', { class: 'football-widget' });
+      wrap.innerHTML = f.widgetHtml;               // kontajner s data-atribútmi
+      body.appendChild(wrap);
+      if (f.widgetScript) {                        // <script> vloženej cez innerHTML sa nespustí → pridáme ho korektne
+        const s = document.createElement('script');
+        s.src = f.widgetScript; s.async = true;
+        body.appendChild(s);
+      }
+    }
+
     const row = el('div', { class: 'link-row' });
     for (const lk of f.links) {
       row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));

@@ -76,8 +76,5 @@ jobs:
           echo "== kontrola hospodárenia =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/finance.json'));console.log('obdobia:',(d._periods||[]).join(', '));for(const it of (d.items||[]).slice(0,10))console.log('  -',it.title,'|',it.period);"
           echo
-          echo "== sonda futbal =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/football.json'));console.log(JSON.stringify(d._diag,null,1).slice(0,2600));"
-          echo
           echo "== kontrola bazos =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,4))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  lokality blokov:',d._lok||'-');"
