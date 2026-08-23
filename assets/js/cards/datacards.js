@@ -511,3 +511,25 @@ export function initBazos() {
       'Zdroj: <a href="https://www.bazos.sk" target="_blank" rel="noopener">Bazoš.sk</a> · inzeráty s PSČ 976 55 · aktualizované hodinovo' }));
   }, { handlesEmpty: true });
 }
+
+export async function initFootball() {
+  const card = document.getElementById('card-football');
+  const body = document.getElementById('football-body');
+  try {
+    const cfg = await getConfig();
+    const f = cfg.football;
+    if (!f || !(f.links || []).length) { card.hidden = true; return; }
+    body.innerHTML = '';
+    if (f.league) body.appendChild(el('p', { class: 'chart-caption', text: f.league }));
+    const row = el('div', { class: 'link-row' });
+    for (const lk of f.links) {
+      row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+    }
+    body.appendChild(row);
+    body.appendChild(el('p', { class: 'chart-caption', html:
+      'Zdroj: <a href="https://sportnet.sme.sk/futbalnet/" target="_blank" rel="noopener">Futbalnet (SPORTNET)</a> — tabuľka, výsledky, súpisky aj štatistiky hráčov.' }));
+    setStatus('football', 'odkazy');
+  } catch (e) {
+    showError(body, 'football', e, 'Odkazy sa nepodarilo načítať.');
+  }
+}

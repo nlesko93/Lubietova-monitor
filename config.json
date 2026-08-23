@@ -54,6 +54,15 @@
     }
   ],
   "bazos": { "psc": "97655", "radiusKm": 0 },
+  "football": {
+    "club": "FK Baník Ľubietová",
+    "league": "7. liga ObFZ Banská Bystrica",
+    "links": [
+      { "label": "Klub na Futbalnete", "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/" },
+      { "label": "Muži „A\" — výsledky a súpiska", "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/tim/dospeli-m-a/vysledky/" },
+      { "label": "Tabuľka 7. ligy ObFZ BB", "url": "https://sportnet.sme.sk/futbalnet/z/obfz-banska-bystrica/s/7-liga/" }
+    ]
+  },
   "electionsStatic": [
     {
       "key": "komunalne2022_starosta",
