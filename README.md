@@ -1,11 +1,13 @@
 # Ľubietová naživo 🛰️
 
+### 👉 Beží tu: **<https://nlesko93.github.io/Lubietova-monitor/>**
+
+[![Otvoriť dashboard](https://img.shields.io/badge/Otvori%C5%A5-dashboard-2f7d4f?style=for-the-badge)](https://nlesko93.github.io/Lubietova-monitor/)
+
 Nezávislý „živý" prehľad obce **Ľubietová** (okres Banská Bystrica) —
 všetky voľne dostupné (OSINT) údaje o obci na jednom mieste, v reálnom čase.
 Svetlá, prírodná téma je predvolená; tmavý „mission-control" režim je na
 prepínač (aj podľa nastavenia systému).
-
-**Naživo:** <https://nlesko93.github.io/Lubietova-monitor/>
 
 ## Čo zobrazuje
 
