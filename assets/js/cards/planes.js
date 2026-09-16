@@ -9,6 +9,7 @@ export async function initPlanes() {
   const body = document.getElementById('planes-body');
   const r = cfg.planes?.radiusNm ?? 25;
   const sources = [
+    { name: 'adsb.fi', url: `https://opendata.adsb.fi/api/v2/lat/${cfg.lat}/lon/${cfg.lon}/dist/${r}` },
     { name: 'adsb.lol', url: `https://api.adsb.lol/v2/point/${cfg.lat}/${cfg.lon}/${r}` },
     { name: 'airplanes.live', url: `https://api.airplanes.live/v2/point/${cfg.lat}/${cfg.lon}/${r}` },
   ];
@@ -25,7 +26,7 @@ export async function initPlanes() {
         return;
       } catch (e) { lastErr = e; }
     }
-    showError(body, 'planes', lastErr);
+    showError(body, 'planes', lastErr, 'Verejné ADS-B zdroje sú momentálne nedostupné (zmena API / limit). Skúsim znova o chvíľu.');
   });
 }
 
