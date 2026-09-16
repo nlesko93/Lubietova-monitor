@@ -8,17 +8,23 @@ export async function initPlanes() {
   const cfg = await getConfig();
   const body = document.getElementById('planes-body');
   const r = cfg.planes?.radiusNm ?? 25;
+  // Verejné ADS-B API prestali posielať CORS hlavičku (dáta vracajú, ale
+  // prehliadač ich priamo volať nesmie), airplanes.live navyše blokuje.
+  // Preto ich voláme cez verejný CORS proxy; priame URL ostávajú ako záloha.
+  const adsbLol = `https://api.adsb.lol/v2/point/${cfg.lat}/${cfg.lon}/${r}`;
+  const adsbFi = `https://opendata.adsb.fi/api/v2/lat/${cfg.lat}/lon/${cfg.lon}/dist/${r}`;
+  const viaProxy = u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`;
   const sources = [
-    { name: 'adsb.fi', url: `https://opendata.adsb.fi/api/v2/lat/${cfg.lat}/lon/${cfg.lon}/dist/${r}` },
-    { name: 'adsb.lol', url: `https://api.adsb.lol/v2/point/${cfg.lat}/${cfg.lon}/${r}` },
-    { name: 'airplanes.live', url: `https://api.airplanes.live/v2/point/${cfg.lat}/${cfg.lon}/${r}` },
+    { name: 'adsb.lol', url: viaProxy(adsbLol) },
+    { name: 'adsb.fi', url: viaProxy(adsbFi) },
+    { name: 'adsb.lol (priamo)', url: adsbLol },
   ];
 
   every((cfg.planes?.refreshSeconds ?? 45) * 1000, async () => {
     let lastErr;
     for (const src of sources) {
       try {
-        const d = await fetchJSON(src.url, { timeoutMs: 9000 });
+        const d = await fetchJSON(src.url, { timeoutMs: 12000 });
         const planes = normalize(d.ac || d.aircraft || [], cfg);
         render(body, planes, r);
         setPlanes(planes);
