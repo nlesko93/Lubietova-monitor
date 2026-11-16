@@ -1,9 +1,10 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
-import { loadData, setStatus, showError, el, timeAgo, updatedLabel, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
+import { loadData, setStatus, showError, el, timeAgo, updatedLabel, freshness, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
 import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
 
-async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false } = {}) {
+// maxAgeH: po koľkých hodinách sa dáta označia ako staré (denné zdroje majú 36 h)
+async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false, maxAgeH = 3 } = {}) {
   const body = document.getElementById(bodyId);
   try {
     const d = await loadData(key);
@@ -14,7 +15,7 @@ async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne po
     } else {
       renderFn(body, d);
     }
-    setStatus(key === 'demographics' ? 'demo' : key, updatedLabel(d.updated));
+    setStatus(key === 'demographics' ? 'demo' : key, ...freshness(d.updated, maxAgeH));
   } catch (e) {
     showError(body, key === 'demographics' ? 'demo' : key, e,
       'Dáta sa ešte nevygenerovali alebo je zdroj nedostupný.');
@@ -316,7 +317,7 @@ export async function initElections() {
     }
     body.appendChild(row);
   }
-  setStatus('elections', d.updated ? updatedLabel(d.updated) : 'uložené výsledky');
+  setStatus('elections', d.updated ? 'zdroj: ŠÚ SR' : 'uložené výsledky');
 }
 
 // Druh odpadu podľa kľúčových slov v názve udalosti → emoji + farba badge.
@@ -468,7 +469,7 @@ export function initBuses() {
       renderBuses(body, lines);
       setBuses(busVehicles(lines));
     });
-    setStatus('buses', updatedLabel(d.updated), 'live');
+    setStatus('buses', updatedLabel(d.updated), 'live');   // cestovný poriadok — denná aktualizácia stačí
   }).catch(e => showError(body, 'buses', e, 'Cestovný poriadok sa nepodarilo načítať.'));
 }
 

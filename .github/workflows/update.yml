@@ -2,7 +2,11 @@ name: Aktualizácia dát a nasadenie
 
 on:
   schedule:
-    - cron: '17 * * * *'   # každú hodinu
+    # GitHub naplánované behy pri vyťažení odkladá alebo vynecháva (v praxi
+    # sa hodinový cron spúšťal len raz za 4–8 h). Tri pokusy za hodinu mimo
+    # celej hodiny zvyšujú šancu; pomalé zdroje sa berú z cache (lib.mjs →
+    # cached), takže to zdroje nezaťažuje. Spoľahlivý externý spúšťač: README.
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
   push:
     branches: [main, claude/lubietova-osint-dashboard-reycfe]

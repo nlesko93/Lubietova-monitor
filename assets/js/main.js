@@ -10,6 +10,7 @@ import { initQuakes } from './cards/quakes.js';
 import { initWiki } from './cards/wiki.js';
 import { initGallery } from './cards/gallery.js';
 import { initHours } from './cards/hours.js';
+import { initToday } from './cards/today.js';
 import {
   initNews, initObec, initAlerts, initContracts,
   initFinance, initDemo, initWebcams, initWaste, initElections,
@@ -44,26 +45,46 @@ try {
     `☀ ${rise ? fmtTime(rise.date) : '—'} → ${set ? fmtTime(set.date) : '—'}`;
 } catch (e) { console.warn(e); }
 
-// --- rýchla navigácia: odkaz na každú tematickú sekciu ---
+// --- rýchla navigácia + zbaliteľné sekcie ---
+// Sekcie sa dajú zbaliť klikom na nadpis; voľba sa pamätá v prehliadači.
 const nav = document.getElementById('section-nav');
-if (nav) {
-  const add = (target, label) => {
-    const a = document.createElement('a');
-    a.href = `#${target.id}`;
-    a.textContent = label;
-    nav.appendChild(a);
-  };
-  add(document.getElementById('card-map'), '🗺️ Mapa');
-  document.querySelectorAll('main .theme').forEach((sec, i) => {
-    sec.id ||= `sekcia-${i + 1}`;
-    const t = sec.querySelector('.theme-title')?.textContent.trim();
-    if (t) add(sec, t.replace(/\s*\(.*\)$/, ''));
-  });
-}
+const slug = t => t.normalize('NFD').replace(/[^a-zA-Z0-9 ]/g, '').trim().toLowerCase().replace(/\s+/g, '-');
+let collapsed = [];
+try { collapsed = JSON.parse(localStorage.getItem('collapsedSections') || '[]'); } catch { /* ignore */ }
+const setCollapsed = (sec, on) => {
+  sec.classList.toggle('collapsed', on);
+  sec.querySelector('.theme-title')?.setAttribute('aria-expanded', String(!on));
+  collapsed = collapsed.filter(id => id !== sec.id);
+  if (on) collapsed.push(sec.id);
+  try { localStorage.setItem('collapsedSections', JSON.stringify(collapsed)); } catch { /* ignore */ }
+};
+const addNav = (target, label) => {
+  const a = document.createElement('a');
+  a.href = `#${target.id}`;
+  a.textContent = label;
+  a.addEventListener('click', () => { if (target.classList.contains('collapsed')) setCollapsed(target, false); });
+  nav?.appendChild(a);
+};
+addNav(document.getElementById('today'), '📌 Dnes');
+addNav(document.getElementById('card-map'), '🗺️ Mapa');
+document.querySelectorAll('main .theme').forEach(sec => {
+  const title = sec.querySelector('.theme-title');
+  const label = title?.textContent.trim().replace(/\s*\(.*\)$/, '');
+  if (!label) return;
+  sec.id ||= `sekcia-${slug(sec.getAttribute('aria-label') || label)}`;
+  addNav(sec, label);
+  title.setAttribute('role', 'button');
+  title.tabIndex = 0;
+  title.title = 'Zbaliť / rozbaliť sekciu';
+  const toggle = () => setCollapsed(sec, !sec.classList.contains('collapsed'));
+  title.addEventListener('click', toggle);
+  title.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  if (collapsed.includes(sec.id)) setCollapsed(sec, true); else title.setAttribute('aria-expanded', 'true');
+});
 
 // --- karty: každá beží nezávisle, chyba jednej nezhodí ostatné ---
 const cards = [
-  initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
+  initToday, initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
   initWiki, initNews, initObec, initAlerts, initContracts, initFinance,
   initDemo, initWebcams, initWaste, initElections,
   initOutages, initBuses, initHydro, initGallery, initTraffic, initHours, initBazos, initFootball,

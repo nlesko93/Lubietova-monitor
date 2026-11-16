@@ -1,6 +1,6 @@
 // Spustí všetky fetchery; chyba jedného zdroja nezhodí ostatné.
 // Vždy končí kódom 0 — dashboard zobrazí error stav z data/*.json.
-import { writeFailure } from './lib.mjs';
+import { writeFailure, writeResult } from './lib.mjs';
 import { fetchNews } from './news.mjs';
 import { fetchObec } from './obec.mjs';
 import { fetchAlerts } from './alerts.mjs';
@@ -48,4 +48,6 @@ const results = await Promise.allSettled(
 );
 
 const okCount = results.filter(r => r.status === 'fulfilled' && r.value?.ok).length;
+// časová značka behu — stránka podľa nej ukáže, aké staré sú dáta
+await writeResult('_meta', { sources: FETCHERS.length, okCount });
 console.log(`\nHotovo: ${okCount}/${FETCHERS.length} zdrojov OK`);

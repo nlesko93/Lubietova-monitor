@@ -10,7 +10,7 @@ const toMin = t => { const [h, m] = t.split(':'); return (+h) * 60 + (+m); };
 const fmt = t => t.replace(/^(\d):/, '0$1:');   // 7:30 → 07:30
 
 // aktuálny deň (0=Po) a minúta dňa v čase obce
-function nowInObec() {
+export function nowInObec() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
     timeZone: TZ, weekday: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }).formatToParts(new Date()).map(x => [x.type, x.value]));
@@ -18,7 +18,7 @@ function nowInObec() {
 }
 
 // stav miesta teraz: { open, text }
-function statusNow(place, now) {
+export function statusNow(place, now) {
   const today = place.week[now.day];
   if (today && today.int.length) {
     for (const [o, c] of today.int) {

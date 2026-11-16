@@ -48,6 +48,31 @@ export async function writeResult(name, payload) {
   return out;
 }
 
+// Pomalé / zriedka sa meniace zdroje (voľby, účtovné závierky, zmluvy…)
+// netreba ťahať pri každom behu. Ako cache slúži naposledy nasadená stránka:
+// ak je tam data/<name>.json v poriadku, mladší než maxAgeH a v rovnakej
+// verzii formátu (_v), prevezme sa bez volania zdroja. Inak sa spustí fn().
+// fn() musí vrátiť payload (objekt), nie výsledok writeResult.
+export async function cached(name, maxAgeH, version, fn) {
+  const site = (CONFIG.siteUrl || '').replace(/\/$/, '');
+  if (site && process.env.NO_CACHE !== '1') {
+    try {
+      const res = await fetch(`${site}/data/${name}.json?t=${Date.now()}`, { signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const prev = await res.json();
+        const ageH = (Date.now() - new Date(prev.updated).getTime()) / 3600e3;
+        if (prev.ok && prev._v === version && ageH >= 0 && ageH < maxAgeH) {
+          await mkdir(DATA_DIR, { recursive: true });
+          await writeFile(path.join(DATA_DIR, `${name}.json`), JSON.stringify(prev, null, 1));
+          console.log(`✔ ${name} (z cache, ${ageH.toFixed(1)} h staré)`);
+          return prev;
+        }
+      }
+    } catch { /* cache nedostupná → stiahni nanovo */ }
+  }
+  return writeResult(name, { _v: version, ...(await fn()) });
+}
+
 export async function writeFailure(name, err) {
   await mkdir(DATA_DIR, { recursive: true });
   const out = { updated: new Date().toISOString(), ok: false, error: String(err?.message || err) };

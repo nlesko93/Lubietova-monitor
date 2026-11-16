@@ -38,15 +38,57 @@ export function setStatus(key, text, kind = '') {
   if (!s) return;
   s.textContent = text;
   s.className = `card-status ${kind}`;
+  if (kind !== 'err') markUnavailable(key, false);
 }
 
 export function showError(bodyEl, key, err, note = 'Zdroj je momentálne nedostupný.') {
   console.warn(`[${key}]`, err);
   setStatus(key, 'nedostupné', 'err');
-  if (bodyEl && !bodyEl.querySelector(':scope > :not(.placeholder)')) {
+  // karta, ktorá už niečo zobrazila, ostáva (prechodný výpadok obnovy);
+  // prázdna karta sa presunie do súhrnného riadku „nedostupné zdroje"
+  if (bodyEl && !bodyEl.querySelector(':scope > :not(.placeholder):not(.error-note)')) {
     bodyEl.innerHTML = '';
     bodyEl.appendChild(el('p', { class: 'error-note', text: note }));
+    markUnavailable(key, true);
   }
+}
+
+// --- nedostupné zdroje: namiesto prázdnych kariet jeden súhrnný riadok ---
+const unavailable = new Map();   // key -> názov karty
+function markUnavailable(key, on) {
+  const card = document.querySelector(`[data-status="${key}"]`)?.closest('.card');
+  if (!card || card.id === 'card-map') return;
+  if (on === card.classList.contains('is-unavailable')) return;
+  card.classList.toggle('is-unavailable', on);
+  if (on) unavailable.set(key, card.querySelector('h2')?.textContent.trim() || key);
+  else unavailable.delete(key);
+  renderUnavailable();
+}
+
+function renderUnavailable() {
+  const box = document.getElementById('unavailable');
+  if (!box) return;
+  box.hidden = unavailable.size === 0;
+  if (box.hidden) { document.body.classList.remove('show-unavailable'); return; }
+  const shown = document.body.classList.contains('show-unavailable');
+  box.innerHTML = '';
+  box.appendChild(el('span', { text: `⚠ Momentálne nedostupné zdroje (${unavailable.size}): ${[...unavailable.values()].join(' · ')}` }));
+  const btn = el('button', { class: 'linklike', type: 'button', text: shown ? 'skryť karty' : 'zobraziť karty' });
+  btn.addEventListener('click', () => {
+    document.body.classList.toggle('show-unavailable');
+    renderUnavailable();
+  });
+  box.appendChild(btn);
+}
+
+// Stav čerstvosti dát z Actions: [text, trieda]. Po prekročení limitu
+// (predvolene 3 h) sa karta označí ako „staré dáta".
+export function freshness(iso, maxAgeH = 3) {
+  if (!iso) return ['', ''];
+  const ageH = (Date.now() - new Date(iso).getTime()) / 3600e3;
+  return ageH > maxAgeH
+    ? [`⚠ staré dáta · ${timeAgo(iso)}`, 'stale']
+    : [`aktualizované ${timeAgo(iso)}`, ''];
 }
 
 export function fmtTime(d, opts = {}) {

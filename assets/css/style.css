@@ -390,7 +390,7 @@ details[open] > .oh-head .oh-name::after { content: " ▴"; }
   color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border);
 }
 .section-nav a:hover { color: var(--text-primary); border-color: var(--accent); text-decoration: none; }
-.theme, #card-map { scroll-margin-top: 52px; }
+.theme, .today, #card-map, .card { scroll-margin-top: 52px; }
 @media (max-width: 700px) { .section-nav { padding: 8px 12px; } }
 
 /* voľby — zvolení vs. nezvolení, podsekcie */
@@ -404,3 +404,42 @@ details[open] > .oh-head .oh-name::after { content: " ▴"; }
 .more-rows > summary { cursor: pointer; font-size: 0.8rem; color: var(--accent); padding: 4px 0; }
 .check-row { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; margin: 0 0 6px; }
 .check-row input { accent-color: var(--accent); margin: 0; }
+
+/* ---------- Dnes v obci ---------- */
+.today-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.today-tile {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-width: 0;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text-primary);
+}
+.today-tile:hover { text-decoration: none; border-color: var(--accent); }
+.today-tile[data-tone="soon"] { border-color: var(--accent); }
+.today-tile[data-tone="warn"] { border-color: var(--status-serious); background: color-mix(in srgb, var(--status-serious) 8%, var(--surface-1)); }
+.today-icon { font-size: 1.5rem; line-height: 1; flex: none; }
+.today-text { display: flex; flex-direction: column; min-width: 0; }
+.today-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.today-value { font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-sub { font-size: 0.75rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-foot { margin: 8px 0 0; font-size: 0.75rem; color: var(--text-muted); }
+.today-foot.stale, .card-status.stale { color: var(--status-serious); }
+.today-foot:empty { display: none; }
+
+/* ---------- zbaliteľné sekcie ---------- */
+.theme > .theme-title { cursor: pointer; user-select: none; }
+.theme > .theme-title::after { content: "▾"; float: right; font-size: 0.9rem; }
+.theme.collapsed > .theme-title::after { content: "▸"; }
+.theme.collapsed > .theme-title { margin-bottom: 0; }
+.theme.collapsed > .theme-grid { display: none; }
+
+/* ---------- nedostupné zdroje v jednom riadku ---------- */
+.card.is-unavailable { display: none; }
+body.show-unavailable .card.is-unavailable { display: block; }
+body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidden]))) { display: none; }
+.unavailable {
+  margin: 0; padding: 8px 12px; font-size: 0.8rem; color: var(--text-secondary);
+  border: 1px dashed var(--border); border-radius: 10px;
+  display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
+}
+.unavailable[hidden] { display: none; }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; }
+.linklike:hover { text-decoration: underline; }

@@ -41,6 +41,11 @@ function render(body, d) {
   body.innerHTML = '';
   const c = d.current;
   const [desc, icon] = wmo(c.weather_code);
+  // pás „Dnes v obci" si aktuálne počasie berie odtiaľto (bez druhého volania API)
+  document.dispatchEvent(new CustomEvent('lm:weather', { detail: {
+    temp: Math.round(c.temperature_2m), desc, icon,
+    max: Math.round(d.daily?.temperature_2m_max?.[0]), min: Math.round(d.daily?.temperature_2m_min?.[0]),
+  } }));
 
   body.appendChild(el('div', { class: 'hero-row' }, [
     el('span', { class: 'hero-emoji', text: icon }),
