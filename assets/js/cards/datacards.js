@@ -81,13 +81,33 @@ export function initContracts() {
     const tabs = el('div', { class: 'tab-row', role: 'tablist' });
     const info = el('p', { class: 'chart-caption' });
     const list = el('ul', { class: 'item-list' });
-    body.append(tabs, info, list);
+
+    // Nájmy hrobových miest: početná špecifická kategória → dá sa skryť
+    // (predvolene skryté, voľba sa pamätá v prehliadači).
+    const isGrave = it => it.grave ?? /hrob|cintor/i.test(it.title);
+    const graveCount = d.items.filter(isGrave).length;
+    let hideGraves = true;
+    try { hideGraves = localStorage.getItem('contracts.hideGraves') !== '0'; } catch { /* súkromný režim */ }
+    let current = 'all';
+    const check = el('input', { type: 'checkbox', id: 'contracts-hide-graves' });
+    check.checked = hideGraves;
+    check.addEventListener('change', () => {
+      hideGraves = check.checked;
+      try { localStorage.setItem('contracts.hideGraves', hideGraves ? '1' : '0'); } catch { /* ignore */ }
+      show(current);
+    });
+    const toggle = el('label', { class: 'check-row', for: 'contracts-hide-graves' }, [
+      check, ` Skryť zmluvy na hrobové miesta (${graveCount})`,
+    ]);
+    body.append(...[tabs, graveCount ? toggle : null, info, list].filter(Boolean));
 
     const show = key => {
+      current = key;
       tabs.querySelectorAll('.tab-btn').forEach(b =>
         b.setAttribute('aria-pressed', String(b.dataset.key === key)));
-      const items = d.items.filter(it =>
-        key === 'all' ? true : key === 'internal' ? it.internal : it.roles?.[key]);
+      const items = d.items
+        .filter(it => (key === 'all' ? true : key === 'internal' ? it.internal : it.roles?.[key]))
+        .filter(it => !(hideGraves && isGrave(it)));
       const c = d.counts?.[key];
       info.textContent = key === 'internal'
         ? 'Zmluvy, kde sú na oboch stranách obec alebo jej firmy (napr. obecné lesy ↔ obecná píla).'

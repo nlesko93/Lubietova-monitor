@@ -402,3 +402,5 @@ details[open] > .oh-head .oh-name::after { content: " ▴"; }
 .hbar-row.is-out .hbar-fill { background: var(--text-muted); opacity: 0.45; }
 .more-rows { margin-top: 6px; }
 .more-rows > summary { cursor: pointer; font-size: 0.8rem; color: var(--accent); padding: 4px 0; }
+.check-row { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; margin: 0 0 6px; }
+.check-row input { accent-color: var(--accent); margin: 0; }

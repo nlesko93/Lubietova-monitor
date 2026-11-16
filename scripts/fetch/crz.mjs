@@ -47,7 +47,9 @@ export async function fetchContracts() {
     const keys = Object.keys(it.roles);
     // zmluva medzi dvoma „našimi" subjektmi (napr. obec ↔ obecné lesy)
     const internal = keys.length > 1 || Object.values(it.roles).includes('obe');
-    return { ...it, entities: keys, internal, partner: partnerOf(it, keys) };
+    // nájmy hrobových miest sú početná špecifická kategória — dá sa v karte skryť
+    const grave = /hrob|cintor/i.test(it.title);
+    return { ...it, entities: keys, internal, grave, partner: partnerOf(it, keys) };
   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const counts = {};
@@ -60,7 +62,7 @@ export async function fetchContracts() {
     };
   }
   console.log('  crz:', diag.join(' | '));
-  console.log('  crz roly:', JSON.stringify(counts), '· interné:', items.filter(i => i.internal).length);
+  console.log('  crz roly:', JSON.stringify(counts), '· interné:', items.filter(i => i.internal).length, '· hrobové miesta:', items.filter(i => i.grave).length);
 
   return writeResult('contracts', {
     items: items.slice(0, 120),
