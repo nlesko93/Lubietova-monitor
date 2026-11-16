@@ -74,8 +74,8 @@ export function initContracts() {
   return dataCard('contracts', 'contracts-body', (body, d) => {
     const ents = d.entities || [];
     const ROLE = {
-      objednavatel: ['platí', 'var(--series-6)', 'subjekt je objednávateľ (platí dodávateľovi)'],
-      dodavatel: ['prijíma', 'var(--accent)', 'subjekt je dodávateľ / prijímateľ'],
+      objednavatel: ['objednávateľ', 'var(--series-6)', 'v registri uvedený ako objednávateľ'],
+      dodavatel: ['dodávateľ', 'var(--accent)', 'v registri uvedený ako dodávateľ / prijímateľ'],
       obe: ['obe strany', 'var(--series-3)', 'subjekt je na oboch stranách zmluvy'],
     };
     const tabs = el('div', { class: 'tab-row', role: 'tablist' });
@@ -90,9 +90,9 @@ export function initContracts() {
         key === 'all' ? true : key === 'internal' ? it.internal : it.roles?.[key]);
       const c = d.counts?.[key];
       info.textContent = key === 'internal'
-        ? 'Zmluvy, kde sú na oboch stranách obec a jej firmy (napr. obec ↔ obecné lesy).'
-        : c ? `Z posledných zmlúv v registri: ${c.objednavatel}× ako objednávateľ (platí), ${c.dodavatel}× ako dodávateľ / prijímateľ.`
-          : 'Najnovšie zmluvy obce a jej firiem — obe strany zmluvy.';
+        ? 'Zmluvy, kde sú na oboch stranách obec alebo jej firmy (napr. obecné lesy ↔ obecná píla).'
+        : c ? `Posledných ${c.total} zmlúv v registri: ${c.objednavatel}× ako objednávateľ, ${c.dodavatel}× ako dodávateľ / prijímateľ.`
+          : 'Najnovšie zmluvy obce a jej firiem — kde sú objednávateľom aj kde sú dodávateľom.';
       list.innerHTML = '';
       if (!items.length) {
         list.appendChild(el('li', {}, [el('span', { class: 'item-meta', text: 'V registri sa nenašli žiadne zmluvy.' })]));
@@ -104,7 +104,7 @@ export function initContracts() {
           const [label, color, title] = ROLE[it.roles[k]] || [];
           const short = ents.find(e => e.key === k)?.short || k;
           badges.appendChild(el('span', { class: 'role-badge', style: `--badge-color:${color}`, title,
-            text: `${short} ${label}` }));
+            text: `${short}: ${label}` }));
         }
         list.appendChild(el('li', {}, [
           it.link
@@ -203,58 +203,100 @@ export function initDemo() {
   });
 }
 
-export function initElections() {
-  return dataCard('elections', 'elections-body', (body, d) => {
-    getConfig().then(cfg => {
-      // načítané voľby (NRSR/prezident/EP) + statické (komunálne v config.json)
-      const items = [...(d.items || []), ...(cfg.electionsStatic || [])];
-      body.innerHTML = '';
-      if (!items.length) {
-        body.appendChild(el('p', { class: 'empty-note', text: 'Výsledky volieb sa nepodarilo načítať.' }));
-        return;
-      }
-      const tabs = el('div', { class: 'tab-row', role: 'tablist' });
-      const content = el('div');
-      body.append(tabs, content);
+export async function initElections() {
+  const body = document.getElementById('elections-body');
+  const cfg = await getConfig();
+  // Načítané voľby (komunálne 2026, NRSR, prezident, EP) + statická záloha
+  // z config.json. Ak zdroj ŠÚ SR vypadne, statické výsledky ostanú viditeľné.
+  let d = { items: [] };
+  try {
+    d = await loadData('elections');
+    if (!d.ok) d = { items: [] };
+  } catch (e) { console.warn('[elections]', e); }
+  const items = [...(d.items || [])];
+  for (const st of cfg.electionsStatic || []) {
+    if (!items.some(x => x.key === st.key)) items.push(st);
+  }
+  // komunálne voľby dopredu (najnovšie prvé), potom ostatné
+  const rank = e => (/^komunalne/.test(e.key) ? 0 : 1);
+  items.sort((x, y) => rank(x) - rank(y) || (/^komunalne/.test(x.key) ? y.key.localeCompare(x.key) : 0));
 
-      const metric = r => r.pct ?? r.votes ?? 0;   // % ak sú, inak hlasy (pre šírku pruhu)
-      const show = key => {
-        const e = items.find(x => x.key === key);
-        tabs.querySelectorAll('.tab-btn').forEach(b =>
-          b.setAttribute('aria-pressed', String(b.dataset.key === key)));
-        content.innerHTML = '';
-        if (!e) return;
-        const max = Math.max(...e.rows.map(metric), 1);
-        for (const r of e.rows) {
-          content.appendChild(el('div', { class: 'hbar-row' }, [
-            el('span', { class: 'hbar-name', title: r.name, text: r.name }),
-            el('span', { class: 'hbar-val', text: `${r.pct != null ? r.pct.toFixed(1) + ' % · ' : ''}${r.votes.toLocaleString('sk-SK')} hl.` }),
-            el('div', { class: 'hbar-track' }, [
-              el('div', { class: 'hbar-fill', style: `width:${Math.max(2, (metric(r) / max) * 100)}%` }),
-            ]),
-          ]));
-        }
-        content.appendChild(el('p', { class: 'chart-caption', text: e.note ||
-          `Platné hlasy v obci spolu: ${(e.totalVotes || 0).toLocaleString('sk-SK')} · zdroj: ŠÚ SR (volby.statistics.sk)` }));
-      };
+  body.innerHTML = '';
+  if (!items.length) {
+    showError(body, 'elections', new Error('bez dát'), 'Výsledky volieb sa nepodarilo načítať.');
+    return;
+  }
+  const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+  const content = el('div');
+  body.append(tabs, content);
 
-      for (const e of items) {
-        const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.name });
-        b.addEventListener('click', () => show(e.key));
-        tabs.appendChild(b);
-      }
-      show(items[0]?.key);
+  const metric = r => r.pct ?? r.votes ?? 0;   // % ak sú, inak hlasy (pre šírku pruhu)
+  const renderRows = (rows, { marks }) => {
+    const box = el('div');
+    const max = Math.max(...rows.map(metric), 1);
+    const row = r => {
+      const out = marks && !r.elected;   // v komunálnych voľbách: nezvolený / náhradník
+      return el('div', { class: `hbar-row${out ? ' is-out' : ''}` }, [
+        el('span', { class: 'hbar-name', title: [r.name, r.party].filter(Boolean).join(' · ') }, [
+          marks && r.elected ? el('span', { class: 'hbar-check', title: 'zvolený', text: '✓ ' }) : null,
+          r.name,
+          r.party ? el('span', { class: 'hbar-party', text: ` · ${r.party}` }) : null,
+        ]),
+        el('span', { class: 'hbar-val', text: `${r.pct != null ? r.pct.toFixed(1).replace('.', ',') + ' % · ' : ''}${r.votes.toLocaleString('sk-SK')} hl.` }),
+        el('div', { class: 'hbar-track' }, [
+          el('div', { class: 'hbar-fill', style: `width:${Math.max(2, (metric(r) / max) * 100)}%` }),
+        ]),
+      ]);
+    };
+    // dlhý zoznam kandidátov: zvolení hneď, ostatní po rozkliknutí
+    const rest = marks && rows.length > 6 ? rows.filter(r => !r.elected) : [];
+    for (const r of rows) if (!rest.includes(r)) box.appendChild(row(r));
+    if (rest.length) {
+      box.appendChild(el('details', { class: 'more-rows' }, [
+        el('summary', { text: `Nezvolení kandidáti / náhradníci (${rest.length})` }),
+        ...rest.map(row),
+      ]));
+    }
+    return box;
+  };
 
-      const links = cfg.electionsLinks || [];
-      if (links.length) {
-        const row = el('div', { class: 'link-row' });
-        for (const lk of links) {
-          row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
-        }
-        body.appendChild(row);
+  const show = key => {
+    const e = items.find(x => x.key === key);
+    tabs.querySelectorAll('.tab-btn').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+    content.innerHTML = '';
+    if (!e) return;
+    if (e.sections) {
+      for (const sec of e.sections) {
+        content.appendChild(el('h3', { class: 'sub-title', text: sec.title }));
+        const marks = sec.rows.some(r => r.elected != null);
+        content.appendChild(renderRows(sec.rows, { marks }));
       }
-    }).catch(e => showError(body, 'elections', e, 'Výsledky volieb sa nepodarilo načítať.'));
-  }, { emptyText: 'Výsledky volieb sa zatiaľ nepodarilo načítať zo ŠÚ SR.' });
+      content.appendChild(el('p', { class: 'chart-caption', text:
+        `✓ = zvolený, sivé = nezvolený / náhradník. ${e.note || ''}` }));
+    } else {
+      content.appendChild(renderRows(e.rows, { marks: false }));
+      content.appendChild(el('p', { class: 'chart-caption', text: e.note ||
+        `Platné hlasy v obci spolu: ${(e.totalVotes || 0).toLocaleString('sk-SK')} · zdroj: ŠÚ SR (volby.statistics.sk)` }));
+    }
+  };
+
+  for (const e of items) {
+    const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.name });
+    b.addEventListener('click', () => show(e.key));
+    tabs.appendChild(b);
+  }
+  show(items[0].key);
+
+  const links = cfg.electionsLinks || [];
+  if (links.length) {
+    const row = el('div', { class: 'link-row' });
+    for (const lk of links) {
+      row.appendChild(el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', text: lk.label + ' →' }));
+    }
+    body.appendChild(row);
+  }
+  setStatus('elections', d.updated ? updatedLabel(d.updated) : 'uložené výsledky');
 }
 
 // Druh odpadu podľa kľúčových slov v názve udalosti → emoji + farba badge.

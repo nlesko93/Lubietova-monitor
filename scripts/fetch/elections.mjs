@@ -6,7 +6,7 @@ import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { writeResult, CONFIG } from './lib.mjs';
-import { probeOso } from './oso.mjs';
+import { fetchOso2026 } from './oso.mjs';
 
 const OBEC_NAME = /ľubietová/i;
 const OBEC_CODE = (CONFIG.obecStatCode || '508748').trim();
@@ -23,11 +23,8 @@ const ELECTIONS = [
     'https://volby.statistics.sk/prez/prez2024/files/kolo1/PREZ2024_kolo1_SK_csv.zip'] },
   { key: 'ep2024', name: 'Európsky parlament 2024', zips: [
     'https://volby.statistics.sk/ep/ep2024/files/EP2024_SK_csv.zip'] },
-  // Komunálne 2022 (OSK2022) sme vynechali: spojené voľby obsahujú len
-  // krajské menné registre (predseda a poslanci VÚC) a kód „volebného
-  // obvodu" je v skutočnosti okres zdieľaný ~42 obcami, takže mená obecných
-  // poslancov/starostu Ľubietovej sa z tohto exportu nedajú spoľahlivo
-  // priradiť. V karte namiesto toho odkazujeme na oficiálne výsledky.
+  // Komunálne voľby 2026 rieši oso.mjs (samostatný export ŠÚ SR za obce);
+  // komunálne 2022 sú statické v config.json (electionsStatic).
 ];
 
 export async function fetchElections() {
@@ -44,9 +41,14 @@ export async function fetchElections() {
       }
     }
   }
-  let _oso = [];
-  try { _oso = await probeOso(); } catch (e) { _oso = [`sonda zlyhala: ${e.message}`]; }
-  return writeResult('elections', { items, _oso });
+  // komunálne voľby 2026 (starosta + poslanci) — ako prvé, sú pre obec najdôležitejšie
+  try {
+    const oso = await fetchOso2026();
+    if (oso) items.unshift(oso);
+  } catch (e) {
+    console.log(`  elections komunalne2026: ${e.message.slice(0, 160)}`);
+  }
+  return writeResult('elections', { items });
 }
 
 async function scanCsvUrl(elec, url) {

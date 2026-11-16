@@ -25,8 +25,8 @@ prepínač (aj podľa nastavenia systému).
 | Otváracie hodiny (obecný úrad, pošta, Jednota, lekáreň) | statické v `config.json` + „otvorené teraz" v prehliadači | 1 min (výpočet) |
 | Obecný úrad — aktuality a úradná tabuľa | [lubietova.sk](https://www.lubietova.sk/) | hodinovo |
 | Správy o obci | Google News RSS | hodinovo |
-| Voľby v obci (NRSR 2023, prezident 2024, EP 2024, komunálne 2022) | [volby.statistics.sk](https://volby.statistics.sk/) + komunálne staticky v `config.json` | hodinovo |
-| Zmluvy obce | [CRZ](https://www.crz.gov.sk/) | hodinovo |
+| Voľby v obci (komunálne 2026 — starosta + všetci kandidáti na poslancov, NRSR 2023, prezident 2024, EP 2024, komunálne 2022) | [volby.statistics.sk](https://volby.statistics.sk/) (CSV exporty) + statická záloha v `config.json` | hodinovo |
+| Zmluvy obce, Obecných lesov a Obecnej píly — kde sú objednávateľom aj dodávateľom, vrátane zmlúv medzi sebou | [CRZ](https://www.crz.gov.sk/) | hodinovo |
 | Hospodárenie (účtovné závierky) | [RegisterUZ](https://www.registeruz.sk/) | hodinovo |
 | Počet obyvateľov + pohyb obyvateľstva | [ŠÚ SR DataCube](https://data.statistics.sk/) | hodinovo |
 

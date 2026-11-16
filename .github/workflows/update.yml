@@ -71,7 +71,7 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/webcams.json'));for(const c of d.items||[]){console.log('-',c.name,'ok='+c.ok,c.snapshot?('snapshot='+c.snapshot):'',c.embed?('embed='+c.embed):'',c.note?('note='+c.note):'');if(c.found&&c.found.length)console.log('    obrázky na stránke:',c.found.join(' , '));}"
           echo
           echo "== kontrola volieb =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const it of d.items||[])console.log('-',it.key,it.name,'|',it.count,'položiek |',it.rows.slice(0,3).map(r=>r.name+':'+r.votes).join(', '));"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const it of d.items||[]){const rows=it.rows||it.sections.flatMap(s=>s.rows);console.log('-',it.key,it.name,'|',rows.length,'položiek |',rows.slice(0,3).map(r=>r.name+':'+r.votes).join(', '));}"
           echo
           echo "== kontrola hospodárenia =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/finance.json'));console.log('obdobia:',(d._periods||[]).join(', '));for(const it of (d.items||[]).slice(0,10))console.log('  -',it.title,'|',it.period);"
@@ -80,7 +80,4 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,4))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  lokality blokov:',d._lok||'-');"
           echo
           echo "== kontrola zmlúv =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/contracts.json'));console.log((d._diag||[]).join(' | '));console.log('roly:',JSON.stringify(d.counts));console.log('vzor:',d._sample);for(const it of (d.items||[]).slice(0,12))console.log('  -',it.date,'|',it.title.slice(0,50),'|',it.value,'| D:',it.supplier.slice(0,40),'| O:',it.client.slice(0,40),'|',JSON.stringify(it.roles),it.internal?'INT':'');"
-          echo
-          echo "== sonda OSO 2026 =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const l of d._oso||[])console.log(l);"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/contracts.json'));console.log((d._diag||[]).join(' | '));console.log('roly:',JSON.stringify(d.counts),'spolu',(d.items||[]).length);for(const it of (d.items||[]).slice(0,5))console.log('  -',it.date,'|',it.title.slice(0,50),'|',it.value,'| D:',it.supplier.slice(0,40),'| O:',it.client.slice(0,40),'|',JSON.stringify(it.roles),it.internal?'INT':'');"

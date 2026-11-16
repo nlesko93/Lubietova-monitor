@@ -10,14 +10,14 @@ const ENTITIES = CONFIG.contractEntities?.length ? CONFIG.contractEntities : [
   { key: 'obec', short: 'Obec', name: CONFIG.icoSearchName || 'Obec Ľubietová', ico: CONFIG.icoObce || '00313564', match: 'obec\\s+[ľl]ubietov' },
 ];
 const SEARCH = 'https://www.crz.gov.sk/2171273-sk/centralny-register-zmluv/';
-// polia formulára CRZ: IČO na strane dodávateľa / objednávateľa
+// polia formulára CRZ: art_ico = IČO dodávateľa, art_ico1 = IČO objednávateľa
+// (overené v Actions behu č. 1232; stránka vracia 20 najnovších zmlúv)
 const ICO_FIELDS = ['art_ico', 'art_ico1'];
 const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, 'máj': 5, maj: 5, 'jún': 6, jun: 6, 'júl': 7, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
 
 export async function fetchContracts() {
   const diag = [];
   const byLink = new Map();
-  let sampleRow = null;
 
   for (const ent of ENTITIES) {
     const re = new RegExp(ent.match || escapeRe(ent.name), 'i');
@@ -26,9 +26,7 @@ export async function fetchContracts() {
       try {
         const html = await getText(url, { retries: 1, timeoutMs: 20000 });
         const rows = parseRows(html);
-        if (!sampleRow && rows.raw) sampleRow = rows.raw;
-        const total = (stripTags(html).match(/(?:Počet|Nájden)[^0-9]{0,40}(\d[\d\s]*)/i) || [])[1]?.trim() || '?';
-        diag.push(`${ent.key}/${field}: ${rows.items.length} riadkov (spolu ${total})`);
+        diag.push(`${ent.key}/${field}: ${rows.items.length}`);
         for (const it of rows.items) {
           const isSup = re.test(it.supplier), isCli = re.test(it.client);
           // vyhľadávanie podľa IČO môže vrátiť aj cudzie zhody — ber len
@@ -63,24 +61,25 @@ export async function fetchContracts() {
   }
   console.log('  crz:', diag.join(' | '));
   console.log('  crz roly:', JSON.stringify(counts), '· interné:', items.filter(i => i.internal).length);
-  if (sampleRow) console.log('  crz vzor riadku:', sampleRow.slice(0, 600).replace(/\s+/g, ' '));
 
   return writeResult('contracts', {
-    items: items.slice(0, 60),
+    items: items.slice(0, 120),
     entities: ENTITIES.map(e => ({ key: e.key, short: e.short || e.name, name: e.name, ico: e.ico })),
     counts,
     _diag: diag,
-    _sample: sampleRow ? sampleRow.slice(0, 900).replace(/\s+/g, ' ') : null,
   });
 }
 
-// Protistrana z pohľadu „našich" subjektov.
+// Protistrana z pohľadu „našich" subjektov (bez adresy — len názov).
 function partnerOf(it, keys) {
+  if (keys.length > 1) return '';   // obe strany sú „naše", vidno ich z odznakov
   const role = it.roles[keys[0]];
-  if (role === 'objednavatel') return it.supplier;
-  if (role === 'dodavatel') return it.client;
-  return it.supplier === it.client ? it.supplier : `${it.supplier} ↔ ${it.client}`;
+  return shortName(role === 'dodavatel' ? it.client : it.supplier);
 }
+
+// „NB Consult s.r.o., Horná 14199/101, 974 01 Banská Bystrica" → „NB Consult s.r.o."
+// (odreže sa prvá časť za čiarkou, ktorá obsahuje číslo = adresa)
+const shortName = s => s.split(/,\s+(?=[^,]*\d)/)[0].trim();
 
 // Tabuľka výsledkov: dátum | názov + číslo | cena | dodávateľ | objednávateľ.
 function parseRows(html) {

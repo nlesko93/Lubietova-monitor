@@ -10,88 +10,140 @@
   "icoObce": "00313564",
   "icoSearchName": "Obec Ľubietová",
   "contractEntities": [
-    { "key": "obec", "short": "Obec", "name": "Obec Ľubietová", "ico": "00313564", "match": "obec\\s+[ľl]ubietov" },
-    { "key": "lesy", "short": "Obecné lesy", "name": "Obecné lesy Ľubietová, spol. s r.o.", "ico": "31579043", "match": "obecn[ée]\\s+lesy" },
-    { "key": "pila", "short": "Obecná píla", "name": "Obecná píla Ľubietová, spol. s r.o.", "ico": "31605397", "match": "obecn[áa]\\s+p[íi]la" }
+    {"key": "obec", "short": "Obec", "name": "Obec Ľubietová", "ico": "00313564", "match": "obec\\s+[ľl]ubietov"},
+    {
+      "key": "lesy",
+      "short": "Obecné lesy",
+      "name": "Obecné lesy Ľubietová, spol. s r.o.",
+      "ico": "31579043",
+      "match": "obecn[ée]\\s+lesy"
+    },
+    {
+      "key": "pila",
+      "short": "Obecná píla",
+      "name": "Obecná píla Ľubietová, spol. s r.o.",
+      "ico": "31605397",
+      "match": "obecn[áa]\\s+p[íi]la"
+    }
   ],
   "wasteIcs": "https://calendar.google.com/calendar/ical/584b83aabc25df783476ea01cbf78f22d42ce49643975e42afc42d506797ba84%40group.calendar.google.com/public/basic.ics",
   "busLines": [
-    { "line": "610", "route": "Banská Bystrica – Slovenská Ľupča – Lučatín – Ľubietová – Strelníky – Povrazník", "pdf": "https://www.sadzv.sk/cp/aktualne/primestske/060610.pdf" }
+    {
+      "line": "610",
+      "route": "Banská Bystrica – Slovenská Ľupča – Lučatín – Ľubietová – Strelníky – Povrazník",
+      "pdf": "https://www.sadzv.sk/cp/aktualne/primestske/060610.pdf"
+    }
   ],
   "busStopMatch": "ubietov",
   "busRouteStops": [
-    { "match": "Banská Bystrica", "name": "Banská Bystrica", "lat": 48.7355, "lon": 19.1560 },
-    { "match": "Slovenská Ľupča", "name": "Slovenská Ľupča", "lat": 48.7616, "lon": 19.2540 },
-    { "match": "Lučatín", "name": "Lučatín", "lat": 48.7830, "lon": 19.3050 },
-    { "match": "Ľubietová", "name": "Ľubietová", "lat": 48.7478, "lon": 19.3625 },
-    { "match": "Strelníky", "name": "Strelníky", "lat": 48.7350, "lon": 19.3820 },
-    { "match": "Povrazník", "name": "Povrazník", "lat": 48.7060, "lon": 19.3900 }
+    {"match": "Banská Bystrica", "name": "Banská Bystrica", "lat": 48.7355, "lon": 19.156},
+    {"match": "Slovenská Ľupča", "name": "Slovenská Ľupča", "lat": 48.7616, "lon": 19.254},
+    {"match": "Lučatín", "name": "Lučatín", "lat": 48.783, "lon": 19.305},
+    {"match": "Ľubietová", "name": "Ľubietová", "lat": 48.7478, "lon": 19.3625},
+    {"match": "Strelníky", "name": "Strelníky", "lat": 48.735, "lon": 19.382},
+    {"match": "Povrazník", "name": "Povrazník", "lat": 48.706, "lon": 19.39}
   ],
   "traffic": {
-    "from": { "name": "Banská Bystrica", "lat": 48.7355, "lon": 19.1560 },
-    "to": { "name": "Ľubietová", "lat": 48.7478, "lon": 19.3625 },
-    "bbox": { "top": 48.80, "bottom": 48.70, "left": 19.14, "right": 19.40 }
+    "from": {"name": "Banská Bystrica", "lat": 48.7355, "lon": 19.156},
+    "to": {"name": "Ľubietová", "lat": 48.7478, "lon": 19.3625},
+    "bbox": {"top": 48.8, "bottom": 48.7, "left": 19.14, "right": 19.4}
   },
-  "planes": {
-    "radiusNm": 25,
-    "refreshSeconds": 45
-  },
-  "quakes": {
-    "radiusKm": 150,
-    "days": 30,
-    "minMagnitude": 1.5
-  },
+  "planes": {"radiusNm": 25, "refreshSeconds": 45},
+  "quakes": {"radiusKm": 150, "days": 30, "minMagnitude": 1.5},
   "webcams": [
-    {
-      "name": "Donovaly",
-      "page": "https://www.parksnow.sk/zima/",
-      "snapshot": ""
-    },
-    {
-      "name": "Šachtičky",
-      "page": "https://www.sachticky.sk/",
-      "snapshot": ""
-    },
+    {"name": "Donovaly", "page": "https://www.parksnow.sk/zima/", "snapshot": ""},
+    {"name": "Šachtičky", "page": "https://www.sachticky.sk/", "snapshot": ""},
     {
       "name": "Slovenská Ľupča",
       "page": "https://moj.jdnet.net/?Info=JDnet_Kamera",
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ],
-  "bazos": { "psc": "97655", "radiusKm": 0 },
+  "bazos": {"psc": "97655", "radiusKm": 0},
   "football": {
     "club": "FK Baník Ľubietová",
     "league": "7. liga ObFZ Banská Bystrica",
     "links": [
-      { "label": "Klub na Futbalnete", "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/" },
-      { "label": "Muži „A\" — výsledky a súpiska", "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/tim/dospeli-m-a/vysledky/" },
-      { "label": "Tabuľka 7. ligy ObFZ BB", "url": "https://sportnet.sme.sk/futbalnet/z/obfz-banska-bystrica/s/7-liga/" }
+      {"label": "Klub na Futbalnete", "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/"},
+      {
+        "label": "Muži „A\" — výsledky a súpiska",
+        "url": "https://sportnet.sme.sk/futbalnet/k/fk-banik-lubietova/tim/dospeli-m-a/vysledky/"
+      },
+      {
+        "label": "Tabuľka 7. ligy ObFZ BB",
+        "url": "https://sportnet.sme.sk/futbalnet/z/obfz-banska-bystrica/s/7-liga/"
+      }
     ]
   },
   "electionsStatic": [
     {
-      "key": "komunalne2022_starosta",
-      "name": "Komunálne 2022 · starosta",
-      "note": "Zvolený starosta obce · účasť 65,35 %, 664 platných hlasov · zdroj: ŠÚ SR",
-      "rows": [
-        { "name": "Pavel Zajac", "votes": 402, "pct": 61.56 }
+      "key": "komunalne2026",
+      "name": "Komunálne 2026",
+      "note": "Účasť 54,05 % (553 z 1 023 zapísaných voličov) · zdroj: ŠÚ SR",
+      "sections": [
+        {
+          "title": "Starosta obce",
+          "rows": [
+            {"name": "Pavel Zajac", "party": "REPUBLIKA", "votes": 398, "pct": 76.53, "elected": true},
+            {"name": "Miroslava Vyhničková", "party": "SNS", "votes": 122, "pct": 23.46, "elected": false}
+          ]
+        },
+        {
+          "title": "Obecné zastupiteľstvo — 9 poslancov",
+          "rows": [
+            {"name": "Igor Hudec", "party": "NEKA", "votes": 311, "pct": 9.63, "elected": true},
+            {"name": "Peter Kováč", "party": "NEKA", "votes": 286, "pct": 8.86, "elected": true},
+            {"name": "Pavel Zajac", "party": "SaS", "votes": 258, "pct": 7.99, "elected": true},
+            {"name": "Miloš Sauka", "party": "HLAS - sociálna demokracia", "votes": 228, "pct": 7.06, "elected": true},
+            {"name": "Peter Černák", "party": "REPUBLIKA", "votes": 226, "pct": 7.0, "elected": true},
+            {"name": "Ján Kútny", "party": "SaS", "votes": 225, "pct": 6.97, "elected": true},
+            {"name": "Pavol Čuba", "party": "REPUBLIKA", "votes": 216, "pct": 6.69, "elected": true},
+            {"name": "Jana Majerová", "party": "SMER - SD", "votes": 209, "pct": 6.47, "elected": true},
+            {"name": "Linda Mandyčevská", "party": "REPUBLIKA", "votes": 178, "pct": 5.51, "elected": true},
+            {
+              "name": "Zuzana Krištofičová",
+              "party": "Progresívne Slovensko",
+              "votes": 178,
+              "pct": 5.51,
+              "elected": false
+            },
+            {"name": "Peter Sedláček", "party": "SNS", "votes": 171, "pct": 5.29, "elected": false},
+            {"name": "Ľudovít Ďurian", "party": "NEKA", "votes": 163, "pct": 5.05, "elected": false},
+            {"name": "Miroslava Tornyosová", "party": "NEKA", "votes": 127, "pct": 3.94, "elected": false},
+            {"name": "Peter Štefanovský", "party": "REPUBLIKA", "votes": 118, "pct": 3.66, "elected": false},
+            {"name": "Radovan Januška", "party": "SaS", "votes": 115, "pct": 3.56, "elected": false},
+            {"name": "Peter Šotik", "party": "REPUBLIKA", "votes": 101, "pct": 3.13, "elected": false},
+            {"name": "Marek Mesík", "party": "SNS", "votes": 79, "pct": 2.44, "elected": false},
+            {"name": "Bohumír Chládek", "party": "SV", "votes": 38, "pct": 1.17, "elected": false}
+          ]
+        }
       ]
     },
     {
-      "key": "komunalne2022_poslanci",
-      "name": "Komunálne 2022 · poslanci",
-      "note": "Zvolení poslanci obecného zastupiteľstva 2022 · zdroj: ŠÚ SR",
-      "rows": [
-        { "name": "Peter Kováč", "votes": 349 },
-        { "name": "Miloš Sauka", "votes": 299 },
-        { "name": "Pavol Čuba", "votes": 279 },
-        { "name": "Pavel Zajac", "votes": 277 },
-        { "name": "Peter Černák", "votes": 275 }
+      "key": "komunalne2022",
+      "name": "Komunálne 2022",
+      "note": "Účasť 65,35 %, 664 platných hlasov · uvedení sú len zvolení · zdroj: ŠÚ SR",
+      "sections": [
+        {"title": "Starosta obce", "rows": [{"name": "Pavel Zajac", "votes": 402, "pct": 61.56, "elected": true}]},
+        {
+          "title": "Zvolení poslanci",
+          "rows": [
+            {"name": "Peter Kováč", "votes": 349, "elected": true},
+            {"name": "Miloš Sauka", "votes": 299, "elected": true},
+            {"name": "Pavol Čuba", "votes": 279, "elected": true},
+            {"name": "Pavel Zajac", "votes": 277, "elected": true},
+            {"name": "Peter Černák", "votes": 275, "elected": true}
+          ]
+        }
       ]
     }
   ],
   "electionsLinks": [
-    { "label": "Komunálne voľby 2022 — oficiálne výsledky obce", "url": "https://volby.sme.sk/komunalne-volby/2022/vysledky/banskobystricky-kraj/banska-bystrica/lubietova" }
+    {
+      "label": "Komunálne voľby 2026 — výsledky obce",
+      "url": "https://volby.sme.sk/komunalne-volby/2026/vysledky/banskobystricky-kraj/banska-bystrica/lubietova"
+    },
+    {"label": "Oficiálne výsledky ŠÚ SR", "url": "https://volby.statistics.sk/oso/oso2026/sk/"}
   ],
   "openingHours": [
     {
@@ -99,13 +151,13 @@
       "subtitle": "úradné (stránkové) hodiny",
       "url": "https://www.lubietova.sk/samosprava/obecny-urad/",
       "week": [
-        { "d": "Pondelok",    "int": [["7:30", "12:00"], ["13:00", "16:00"]] },
-        { "d": "Utorok",      "int": [], "label": "nestránkový deň" },
-        { "d": "Streda",      "int": [["7:30", "12:00"], ["13:00", "17:00"]] },
-        { "d": "Štvrtok",     "int": [["7:30", "12:00"], ["13:00", "16:00"]] },
-        { "d": "Piatok",      "int": [["7:30", "12:00"], ["13:00", "14:30"]] },
-        { "d": "Sobota",      "int": [], "label": "zatvorené" },
-        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+        {"d": "Pondelok", "int": [["7:30", "12:00"], ["13:00", "16:00"]]},
+        {"d": "Utorok", "int": [], "label": "nestránkový deň"},
+        {"d": "Streda", "int": [["7:30", "12:00"], ["13:00", "17:00"]]},
+        {"d": "Štvrtok", "int": [["7:30", "12:00"], ["13:00", "16:00"]]},
+        {"d": "Piatok", "int": [["7:30", "12:00"], ["13:00", "14:30"]]},
+        {"d": "Sobota", "int": [], "label": "zatvorené"},
+        {"d": "Nedeľa", "int": [], "label": "zatvorené"}
       ]
     },
     {
@@ -113,13 +165,13 @@
       "subtitle": "Slovenská pošta · Nám. V. Dunajského 2",
       "url": "https://www.posty.sk/lubietova/",
       "week": [
-        { "d": "Pondelok",    "int": [["7:30", "11:00"]] },
-        { "d": "Utorok",      "int": [["7:30", "11:00"]] },
-        { "d": "Streda",      "int": [["13:30", "16:30"]] },
-        { "d": "Štvrtok",     "int": [["7:30", "11:00"]] },
-        { "d": "Piatok",      "int": [["7:30", "11:00"]] },
-        { "d": "Sobota",      "int": [], "label": "zatvorené" },
-        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+        {"d": "Pondelok", "int": [["7:30", "11:00"]]},
+        {"d": "Utorok", "int": [["7:30", "11:00"]]},
+        {"d": "Streda", "int": [["13:30", "16:30"]]},
+        {"d": "Štvrtok", "int": [["7:30", "11:00"]]},
+        {"d": "Piatok", "int": [["7:30", "11:00"]]},
+        {"d": "Sobota", "int": [], "label": "zatvorené"},
+        {"d": "Nedeľa", "int": [], "label": "zatvorené"}
       ]
     },
     {
@@ -127,13 +179,13 @@
       "subtitle": "potraviny · Nám. V. Dunajského 30",
       "url": "https://www.coopka.sk/predajne/lubietova/coop-jednota-nam-v-dunajskeho-30/",
       "week": [
-        { "d": "Pondelok",    "int": [["6:15", "18:00"]] },
-        { "d": "Utorok",      "int": [["6:15", "18:00"]] },
-        { "d": "Streda",      "int": [["6:15", "18:00"]] },
-        { "d": "Štvrtok",     "int": [["6:15", "18:00"]] },
-        { "d": "Piatok",      "int": [["6:15", "18:00"]] },
-        { "d": "Sobota",      "int": [["6:15", "13:00"]] },
-        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+        {"d": "Pondelok", "int": [["6:15", "18:00"]]},
+        {"d": "Utorok", "int": [["6:15", "18:00"]]},
+        {"d": "Streda", "int": [["6:15", "18:00"]]},
+        {"d": "Štvrtok", "int": [["6:15", "18:00"]]},
+        {"d": "Piatok", "int": [["6:15", "18:00"]]},
+        {"d": "Sobota", "int": [["6:15", "13:00"]]},
+        {"d": "Nedeľa", "int": [], "label": "zatvorené"}
       ]
     },
     {
@@ -141,13 +193,13 @@
       "subtitle": "Lekáreň PLUS · Nám. V. Dunajského",
       "url": "https://pluslekaren.sk/lekaren/lubka/",
       "week": [
-        { "d": "Pondelok",    "int": [["8:00", "15:30"]] },
-        { "d": "Utorok",      "int": [["8:00", "15:30"]] },
-        { "d": "Streda",      "int": [["8:00", "15:30"]] },
-        { "d": "Štvrtok",     "int": [["8:00", "15:30"]] },
-        { "d": "Piatok",      "int": [["8:00", "15:30"]] },
-        { "d": "Sobota",      "int": [], "label": "zatvorené" },
-        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+        {"d": "Pondelok", "int": [["8:00", "15:30"]]},
+        {"d": "Utorok", "int": [["8:00", "15:30"]]},
+        {"d": "Streda", "int": [["8:00", "15:30"]]},
+        {"d": "Štvrtok", "int": [["8:00", "15:30"]]},
+        {"d": "Piatok", "int": [["8:00", "15:30"]]},
+        {"d": "Sobota", "int": [], "label": "zatvorené"},
+        {"d": "Nedeľa", "int": [], "label": "zatvorené"}
       ]
     }
   ]
