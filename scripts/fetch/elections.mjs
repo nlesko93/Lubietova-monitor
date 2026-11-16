@@ -6,6 +6,7 @@ import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { writeResult, CONFIG } from './lib.mjs';
+import { probeOso } from './oso.mjs';
 
 const OBEC_NAME = /ľubietová/i;
 const OBEC_CODE = (CONFIG.obecStatCode || '508748').trim();
@@ -43,7 +44,9 @@ export async function fetchElections() {
       }
     }
   }
-  return writeResult('elections', { items });
+  let _oso = [];
+  try { _oso = await probeOso(); } catch (e) { _oso = [`sonda zlyhala: ${e.message}`]; }
+  return writeResult('elections', { items, _oso });
 }
 
 async function scanCsvUrl(elec, url) {

@@ -9,6 +9,11 @@
   "obecStatCode": "508748",
   "icoObce": "00313564",
   "icoSearchName": "Obec Ľubietová",
+  "contractEntities": [
+    { "key": "obec", "short": "Obec", "name": "Obec Ľubietová", "ico": "00313564", "match": "obec\\s+[ľl]ubietov" },
+    { "key": "lesy", "short": "Obecné lesy", "name": "Obecné lesy Ľubietová, spol. s r.o.", "ico": "31579043", "match": "obecn[ée]\\s+lesy" },
+    { "key": "pila", "short": "Obecná píla", "name": "Obecná píla Ľubietová, spol. s r.o.", "ico": "31605397", "match": "obecn[áa]\\s+p[íi]la" }
+  ],
   "wasteIcs": "https://calendar.google.com/calendar/ical/584b83aabc25df783476ea01cbf78f22d42ce49643975e42afc42d506797ba84%40group.calendar.google.com/public/basic.ics",
   "busLines": [
     { "line": "610", "route": "Banská Bystrica – Slovenská Ľupča – Lučatín – Ľubietová – Strelníky – Povrazník", "pdf": "https://www.sadzv.sk/cp/aktualne/primestske/060610.pdf" }

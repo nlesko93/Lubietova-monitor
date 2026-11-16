@@ -78,3 +78,9 @@ jobs:
           echo
           echo "== kontrola bazos =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,4))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  lokality blokov:',d._lok||'-');"
+          echo
+          echo "== kontrola zmlúv =="
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/contracts.json'));console.log((d._diag||[]).join(' | '));console.log('roly:',JSON.stringify(d.counts));console.log('vzor:',d._sample);for(const it of (d.items||[]).slice(0,12))console.log('  -',it.date,'|',it.title.slice(0,50),'|',it.value,'| D:',it.supplier.slice(0,40),'| O:',it.client.slice(0,40),'|',JSON.stringify(it.roles),it.internal?'INT':'');"
+          echo
+          echo "== sonda OSO 2026 =="
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const l of d._oso||[])console.log(l);"
