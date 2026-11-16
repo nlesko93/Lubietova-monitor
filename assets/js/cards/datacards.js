@@ -72,13 +72,66 @@ export function initAlerts() {
 
 export function initContracts() {
   return dataCard('contracts', 'contracts-body', (body, d) => {
-    body.appendChild(linkList(d.items.slice(0, 7), {
-      metaFn: it => [
-        it.partner,
-        it.value != null ? `${Number(it.value).toLocaleString('sk-SK')} €` : null,
-        it.date,
-      ].filter(Boolean).join(' · '),
-    }));
+    const ents = d.entities || [];
+    const ROLE = {
+      objednavatel: ['platí', 'var(--series-6)', 'subjekt je objednávateľ (platí dodávateľovi)'],
+      dodavatel: ['prijíma', 'var(--accent)', 'subjekt je dodávateľ / prijímateľ'],
+      obe: ['obe strany', 'var(--series-3)', 'subjekt je na oboch stranách zmluvy'],
+    };
+    const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+    const info = el('p', { class: 'chart-caption' });
+    const list = el('ul', { class: 'item-list' });
+    body.append(tabs, info, list);
+
+    const show = key => {
+      tabs.querySelectorAll('.tab-btn').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+      const items = d.items.filter(it =>
+        key === 'all' ? true : key === 'internal' ? it.internal : it.roles?.[key]);
+      const c = d.counts?.[key];
+      info.textContent = key === 'internal'
+        ? 'Zmluvy, kde sú na oboch stranách obec a jej firmy (napr. obec ↔ obecné lesy).'
+        : c ? `Z posledných zmlúv v registri: ${c.objednavatel}× ako objednávateľ (platí), ${c.dodavatel}× ako dodávateľ / prijímateľ.`
+          : 'Najnovšie zmluvy obce a jej firiem — obe strany zmluvy.';
+      list.innerHTML = '';
+      if (!items.length) {
+        list.appendChild(el('li', {}, [el('span', { class: 'item-meta', text: 'V registri sa nenašli žiadne zmluvy.' })]));
+        return;
+      }
+      for (const it of items.slice(0, 8)) {
+        const badges = el('span', { class: 'role-badges' });
+        for (const k of it.entities || []) {
+          const [label, color, title] = ROLE[it.roles[k]] || [];
+          const short = ents.find(e => e.key === k)?.short || k;
+          badges.appendChild(el('span', { class: 'role-badge', style: `--badge-color:${color}`, title,
+            text: `${short} ${label}` }));
+        }
+        list.appendChild(el('li', {}, [
+          it.link
+            ? el('a', { class: 'item-title', href: it.link, target: '_blank', rel: 'noopener', text: it.title })
+            : el('span', { class: 'item-title', text: it.title }),
+          el('span', { class: 'item-meta' }, [
+            badges,
+            document.createTextNode(' ' + [
+              it.partner,
+              it.value ? `${Number(it.value).toLocaleString('sk-SK')} €` : null,
+              it.date ? new Date(it.date).toLocaleDateString('sk-SK') : null,
+            ].filter(Boolean).join(' · ')),
+          ]),
+        ]));
+      }
+    };
+
+    const defs = [['all', 'Všetko'], ...ents.map(e => [e.key, e.short])];
+    if (d.items.some(it => it.internal)) defs.push(['internal', 'Medzi sebou']);
+    if (defs.length > 2) {
+      for (const [key, label] of defs) {
+        const b = el('button', { class: 'tab-btn', 'data-key': key, text: label });
+        b.addEventListener('click', () => show(key));
+        tabs.appendChild(b);
+      }
+    }
+    show('all');
     body.appendChild(el('p', { class: 'chart-caption', html:
       'Zdroj: <a href="https://www.crz.gov.sk/" target="_blank" rel="noopener">Centrálny register zmlúv</a>' }));
   }, { emptyText: 'V registri sa nenašli žiadne zmluvy obce.' });

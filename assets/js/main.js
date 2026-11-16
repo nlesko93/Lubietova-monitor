@@ -44,6 +44,23 @@ try {
     `☀ ${rise ? fmtTime(rise.date) : '—'} → ${set ? fmtTime(set.date) : '—'}`;
 } catch (e) { console.warn(e); }
 
+// --- rýchla navigácia: odkaz na každú tematickú sekciu ---
+const nav = document.getElementById('section-nav');
+if (nav) {
+  const add = (target, label) => {
+    const a = document.createElement('a');
+    a.href = `#${target.id}`;
+    a.textContent = label;
+    nav.appendChild(a);
+  };
+  add(document.getElementById('card-map'), '🗺️ Mapa');
+  document.querySelectorAll('main .theme').forEach((sec, i) => {
+    sec.id ||= `sekcia-${i + 1}`;
+    const t = sec.querySelector('.theme-title')?.textContent.trim();
+    if (t) add(sec, t.replace(/\s*\(.*\)$/, ''));
+  });
+}
+
 // --- karty: každá beží nezávisle, chyba jednej nezhodí ostatné ---
 const cards = [
   initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,

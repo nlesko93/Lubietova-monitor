@@ -53,13 +53,20 @@ export async function initHours() {
   const places = cfg.openingHours || [];
   if (!places.length) { card.hidden = true; return; }
 
+  // Kompaktne: jeden riadok na miesto (stav + dnešné hodiny), celý týždeň
+  // sa rozbalí kliknutím. Rozbalené miesta si pamätáme medzi obnoveniami.
+  const opened = new Set();
   const render = () => {
     const now = nowInObec();
     body.innerHTML = '';
     for (const place of places) {
       const st = statusNow(place, now);
-      const head = el('div', { class: 'oh-head' }, [
-        el('span', { class: 'oh-name', text: place.name }),
+      const today = place.week[now.day];
+      const summary = el('summary', { class: 'oh-head' }, [
+        el('span', { class: 'oh-main' }, [
+          el('span', { class: 'oh-name', text: place.name }),
+          el('span', { class: 'oh-status', text: `dnes ${today ? dayHours(today) : '—'} · ${st.text.replace(/^(otvorené|zatvorené) · /, '')}` }),
+        ]),
         el('span', {
           class: `badge oh-badge ${st.open ? 'is-open' : 'is-closed'}`,
           style: `--badge-color: ${st.open ? 'var(--status-good)' : 'var(--status-critical)'}`,
@@ -73,12 +80,15 @@ export async function initHours() {
           el('span', { class: 'oh-time', text: dayHours(entry) }),
         ]));
       });
-      const block = el('div', { class: 'oh-place' }, [
-        head,
+      const block = el('details', { class: 'oh-place' }, [
+        summary,
         place.subtitle ? el('div', { class: 'oh-sub', text: place.subtitle }) : null,
-        el('div', { class: 'oh-status', text: st.text }),
         week,
       ].filter(Boolean));
+      if (opened.has(place.name)) block.open = true;
+      block.addEventListener('toggle', () => {
+        if (block.open) opened.add(place.name); else opened.delete(place.name);
+      });
       if (place.url) {
         block.appendChild(el('a', {
           class: 'oh-link', href: place.url, target: '_blank', rel: 'noopener', text: 'zdroj →',
@@ -86,6 +96,7 @@ export async function initHours() {
       }
       body.appendChild(block);
     }
+    body.appendChild(el('p', { class: 'chart-caption', text: 'Kliknutím na riadok sa zobrazí celý týždeň.' }));
   };
 
   every(60 * 1000, render);

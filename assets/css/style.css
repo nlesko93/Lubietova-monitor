@@ -277,10 +277,14 @@ a.item-title:hover { color: var(--accent); }
 /* Otváracie hodiny */
 .oh-place { padding: 8px 0; border-top: 1px solid var(--border); }
 .oh-place:first-child { border-top: 0; }
-.oh-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.oh-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; }
+.oh-head::-webkit-details-marker { display: none; }
+.oh-main { display: flex; flex-direction: column; min-width: 0; }
 .oh-name { font-weight: 600; }
-.oh-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-.oh-status { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 6px; }
+.oh-name::after { content: " ▾"; color: var(--text-muted); font-weight: 400; font-size: 0.8em; }
+details[open] > .oh-head .oh-name::after { content: " ▴"; }
+.oh-sub { font-size: 0.75rem; color: var(--text-muted); margin: 6px 0 4px; }
+.oh-status { font-size: 0.8rem; color: var(--text-secondary); }
 .oh-week { list-style: none; margin: 0; padding: 0; }
 .oh-week li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.82rem; padding: 1px 0; color: var(--text-secondary); }
 .oh-week li.oh-today { color: var(--text-primary); font-weight: 600; }
@@ -361,3 +365,30 @@ a.item-title:hover { color: var(--accent); }
   .forecast-strip { grid-template-columns: repeat(4, 1fr); }
   .forecast-strip .forecast-day:nth-child(n+5) { display: none; }
 }
+
+/* zmluvy — rola subjektu v zmluve */
+.role-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
+.role-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 600;
+  color: var(--badge-color, var(--text-secondary));
+  border: 1px solid color-mix(in srgb, var(--badge-color, var(--text-muted)) 55%, transparent);
+  background: color-mix(in srgb, var(--badge-color, var(--text-muted)) 10%, transparent);
+}
+
+/* rýchla navigácia po sekciách */
+.section-nav {
+  position: sticky; top: 0; z-index: 900;
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  padding: 8px 24px; margin-bottom: 4px;
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--grid);
+}
+.section-nav::-webkit-scrollbar { display: none; }
+.section-nav a {
+  flex: none; padding: 4px 11px; border-radius: 999px; font-size: 0.8rem; white-space: nowrap;
+  color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border);
+}
+.section-nav a:hover { color: var(--text-primary); border-color: var(--accent); text-decoration: none; }
+.theme, #card-map { scroll-margin-top: 52px; }
+@media (max-width: 700px) { .section-nav { padding: 8px 12px; } }
