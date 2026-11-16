@@ -23,11 +23,11 @@ prepínač (aj podľa nastavenia systému).
 | Zber odpadu (kalendár) | Google Calendar ICS (v `config.json`) | hodinovo |
 | Odstávky elektriny | [SSD](https://www.ssd.sk/) / oznamy obce | hodinovo |
 | Otváracie hodiny (obecný úrad, pošta, Jednota, lekáreň) | statické v `config.json` + „otvorené teraz" v prehliadači | 1 min (výpočet) |
-| Obecný úrad — aktuality a úradná tabuľa | [lubietova.sk](https://www.lubietova.sk/) | hodinovo |
+| Úradná tabuľa, oznamy, podujatia a dokumenty zastupiteľstva | [lubietova.sk](https://www.lubietova.sk/) | pri každom behu |
 | Správy o obci | Google News RSS | hodinovo |
 | Voľby v obci (komunálne 2026 — starosta + všetci kandidáti na poslancov, NRSR 2023, prezident 2024, EP 2024, komunálne 2022) | [volby.statistics.sk](https://volby.statistics.sk/) (CSV exporty) + statická záloha v `config.json` | hodinovo |
-| Zmluvy obce, Obecných lesov a Obecnej píly — kde sú objednávateľom aj dodávateľom, vrátane zmlúv medzi sebou | [CRZ](https://www.crz.gov.sk/) | hodinovo |
-| Hospodárenie (účtovné závierky) | [RegisterUZ](https://www.registeruz.sk/) | hodinovo |
+| Zmluvy obce, Obecných lesov a Obecnej píly — kde sú objednávateľom aj dodávateľom, zmluvy medzi sebou, ročné súčty, najväčší dodávatelia, skrytie hrobových miest | [CRZ](https://www.crz.gov.sk/) | 3 h |
+| Hospodárenie obce, Obecných lesov a Obecnej píly — výnosy / čistý obrat, výsledok hospodárenia, majetok po rokoch | [RegisterUZ](https://www.registeruz.sk/) | denne |
 | Počet obyvateľov + pohyb obyvateľstva | [ŠÚ SR DataCube](https://data.statistics.sk/) | hodinovo |
 
 ### 🌤 Počasie a príroda
@@ -57,13 +57,46 @@ prepínač (aj podľa nastavenia systému).
 ## Architektúra
 
 - **Statická stránka** (vanilla JS, žiadny build) hosťovaná na **GitHub Pages**.
-- **GitHub Actions** (`.github/workflows/update.yml`) každú hodinu stiahne dáta
-  zo zdrojov bez CORS do `data/*.json` a nasadí čerstvý Pages artifact.
+- **GitHub Actions** (`.github/workflows/update.yml`) stiahne dáta zo zdrojov
+  bez CORS do `data/*.json` a nasadí čerstvý Pages artifact.
   Runner má `poppler-utils` (`pdftotext` na cestovné poriadky) a `unzip`
   (CSV zipy volieb).
 - CORS-friendly API (počasie, lietadlá, zemetrasenia, satelity…) volá prehliadač
   priamo; polohy autobusov a satelitov sa počítajú v prehliadači.
-- Každý zdroj zlyháva samostatne — výpadok jedného nezhodí dashboard.
+- Každý zdroj zlyháva samostatne — výpadok jedného nezhodí dashboard. Karty
+  bez dát sa zlúčia do riadku „nedostupné zdroje" a karty so starými dátami
+  (viac než 3 h) sa označia.
+- **Cache pomalých zdrojov:** účtovné závierky, voľby, demografia (24 h),
+  cestovný poriadok (12 h), zmluvy a dráhy satelitov (3 h) sa neťahajú pri
+  každom behu — ako cache slúži naposledy nasadená stránka (`lib.mjs → cached`).
+  Vynútiť čerstvé stiahnutie: spustiť workflow ručne so zaškrtnutým „no_cache" alebo zvýšiť
+  číslo verzie pri volaní `cached()`.
+
+### Ako často sa dáta obnovujú
+
+Workflow má tri pokusy za hodinu (`cron: '7,27,47 * * * *'`), ale GitHub
+naplánované behy pri vyťažení odkladá alebo vynecháva — v praxi to bývalo
+raz za niekoľko hodín. Stránka preto v páse „Dnes v obci" ukazuje, kedy
+prebehla posledná aktualizácia.
+
+**Spoľahlivé hodinové obnovovanie** sa dá zabezpečiť externým spúšťačom,
+ktorý zavolá `workflow_dispatch`:
+
+1. Na GitHube vytvor *fine-grained personal access token* len pre tento
+   repozitár s oprávnením **Actions: Read and write**.
+2. V bezplatnej službe typu [cron-job.org](https://cron-job.org/) nastav
+   každých 30–60 minút požiadavku:
+
+   ```
+   POST https://api.github.com/repos/nlesko93/Lubietova-monitor/actions/workflows/update.yml/dispatches
+   Authorization: Bearer <token>
+   Accept: application/vnd.github+json
+   Content-Type: application/json
+
+   {"ref":"claude/lubietova-osint-dashboard-reycfe"}
+   ```
+
+Token nikdy neukladaj do repozitára.
 
 ## Lokálny vývoj
 
