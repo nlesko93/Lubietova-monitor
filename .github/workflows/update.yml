@@ -81,3 +81,6 @@ jobs:
           echo
           echo "== kontrola zmlúv =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/contracts.json'));console.log((d._diag||[]).join(' | '));console.log('roly:',JSON.stringify(d.counts),'spolu',(d.items||[]).length);for(const it of (d.items||[]).slice(0,5))console.log('  -',it.date,'|',it.title.slice(0,50),'|',it.value,'| D:',it.supplier.slice(0,40),'| O:',it.client.slice(0,40),'|',JSON.stringify(it.roles),it.internal?'INT':'');"
+          echo
+          echo "== SONDA =="
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/_probe.json'));for(const l of d.log||[d.error])console.log(l);"
