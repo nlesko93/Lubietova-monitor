@@ -4,42 +4,64 @@
 // z config.contractEntities (obec, Obecné lesy, Obecná píla) hľadáme OBE
 // strany zmluvy: subjekt ako objednávateľ aj subjekt ako dodávateľ.
 // Rolu pri každej zmluve potom určíme zo stĺpcov Dodávateľ / Objednávateľ.
-import { getText, writeResult, stripTags, CONFIG } from './lib.mjs';
+import { getText, cached, stripTags, CONFIG } from './lib.mjs';
 
 const ENTITIES = CONFIG.contractEntities?.length ? CONFIG.contractEntities : [
   { key: 'obec', short: 'Obec', name: CONFIG.icoSearchName || 'Obec Ľubietová', ico: CONFIG.icoObce || '00313564', match: 'obec\\s+[ľl]ubietov' },
 ];
 const SEARCH = 'https://www.crz.gov.sk/2171273-sk/centralny-register-zmluv/';
 // polia formulára CRZ: art_ico = IČO dodávateľa, art_ico1 = IČO objednávateľa
-// (overené v Actions behu č. 1232; stránka vracia 20 najnovších zmlúv)
+// (overené v Actions behu č. 1232)
 const ICO_FIELDS = ['art_ico', 'art_ico1'];
 const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, 'máj': 5, maj: 5, 'jún': 6, jun: 6, 'júl': 7, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
 
-export async function fetchContracts() {
+// Stránkovanie CRZ: &page=N (0 = prvá strana, 20 zmlúv na stranu; overené
+// v Actions behu č. 1236). Čítame najviac MAX_PAGES strán na hľadanie alebo
+// kým neprejdeme pred 1. január minulého roka — to stačí na ročné súčty.
+const MAX_PAGES = 8;
+const PAGE_SIZE = 20;
+
+export const fetchContracts = () => cached('contracts', 3, 3, load, prev => (prev.items || []).length > 0);
+
+async function load() {
   const diag = [];
   const byLink = new Map();
+  const coverage = {};
+  const stopBefore = `${new Date().getFullYear() - 1}-01-01`;
 
   for (const ent of ENTITIES) {
     const re = new RegExp(ent.match || escapeRe(ent.name), 'i');
+    coverage[ent.key] = {};
     for (const field of ICO_FIELDS) {
-      const url = `${SEARCH}?${field}=${encodeURIComponent(ent.ico)}`;
+      const role = field === 'art_ico1' ? 'objednavatel' : 'dodavatel';
+      let count = 0, oldest = null, complete = false, pages = 0;
       try {
-        const html = await getText(url, { retries: 1, timeoutMs: 20000 });
-        const rows = parseRows(html);
-        diag.push(`${ent.key}/${field}: ${rows.items.length}`);
-        for (const it of rows.items) {
-          const isSup = re.test(it.supplier), isCli = re.test(it.client);
-          // vyhľadávanie podľa IČO môže vrátiť aj cudzie zhody — ber len
-          // riadky, kde subjekt naozaj vystupuje
-          if (!isSup && !isCli) continue;
-          const prev = byLink.get(it.link);
-          const roles = prev?.roles || {};
-          roles[ent.key] = isSup && isCli ? 'obe' : isCli ? 'objednavatel' : 'dodavatel';
-          byLink.set(it.link, { ...it, roles });
+        for (let page = 0; page < MAX_PAGES; page++) {
+          const url = `${SEARCH}?${field}=${encodeURIComponent(ent.ico)}${page ? `&page=${page}` : ''}`;
+          const html = await getText(url, { retries: 1, timeoutMs: 20000 });
+          const rows = parseRows(html).items;
+          pages++;
+          for (const it of rows) {
+            const isSup = re.test(it.supplier), isCli = re.test(it.client);
+            // vyhľadávanie podľa IČO môže vrátiť aj cudzie zhody — ber len
+            // riadky, kde subjekt naozaj vystupuje
+            if (!isSup && !isCli) continue;
+            const prev = byLink.get(it.link);
+            const roles = prev?.roles || {};
+            roles[ent.key] = isSup && isCli ? 'obe' : isCli ? 'objednavatel' : 'dodavatel';
+            byLink.set(it.link, { ...it, roles });
+            count++;
+            if (it.date && (!oldest || it.date < oldest)) oldest = it.date;
+          }
+          if (rows.length < PAGE_SIZE) { complete = true; break; }   // posledná strana
+          if (oldest && oldest < stopBefore) break;                   // máme celý minulý rok
+          await new Promise(r => setTimeout(r, 300));                 // šetrne k serveru
         }
+        diag.push(`${ent.key}/${role}: ${count} (${pages} str., od ${oldest || '?'}${complete ? ', všetko' : ''})`);
       } catch (e) {
-        diag.push(`${ent.key}/${field}: ${e.message.slice(0, 100)}`);
+        diag.push(`${ent.key}/${role}: ${count} + chyba ${e.message.slice(0, 80)}`);
       }
+      coverage[ent.key][role] = { count, oldest, complete };
     }
   }
 
@@ -49,7 +71,11 @@ export async function fetchContracts() {
     const internal = keys.length > 1 || Object.values(it.roles).includes('obe');
     // nájmy hrobových miest sú početná špecifická kategória — dá sa v karte skryť
     const grave = /hrob|cintor/i.test(it.title);
-    return { ...it, entities: keys, internal, grave, partner: partnerOf(it, keys) };
+    // do výstupu len to, čo karta potrebuje (zmlúv môžu byť stovky)
+    return {
+      title: it.title, value: it.value, date: it.date, link: it.link, roles: it.roles,
+      entities: keys, internal, grave, partner: partnerOf(it, keys),
+    };
   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const counts = {};
@@ -62,14 +88,15 @@ export async function fetchContracts() {
     };
   }
   console.log('  crz:', diag.join(' | '));
+  if (!items.length) throw new Error(`CRZ: žiadne zmluvy (${diag.join(' | ')})`);
   console.log('  crz roly:', JSON.stringify(counts), '· interné:', items.filter(i => i.internal).length, '· hrobové miesta:', items.filter(i => i.grave).length);
 
-  return writeResult('contracts', {
-    items: items.slice(0, 120),
+  return {
+    items,
     entities: ENTITIES.map(e => ({ key: e.key, short: e.short || e.name, name: e.name, ico: e.ico })),
-    counts,
+    counts, coverage,
     _diag: diag,
-  });
+  };
 }
 
 // Protistrana z pohľadu „našich" subjektov (bez adresy — len názov).

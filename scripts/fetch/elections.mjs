@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { writeResult, CONFIG } from './lib.mjs';
+import { cached, CONFIG } from './lib.mjs';
 import { fetchOso2026 } from './oso.mjs';
 
 const OBEC_NAME = /ľubietová/i;
@@ -27,7 +27,9 @@ const ELECTIONS = [
   // komunálne 2022 sú statické v config.json (electionsStatic).
 ];
 
-export async function fetchElections() {
+export const fetchElections = () => cached('elections', 24, 2, load, prev => (prev.items || []).length >= 5);
+
+async function load() {
   const items = [];
   for (const elec of ELECTIONS) {
     for (const url of [...(elec.zips || []), ...(elec.csvs || [])]) {
@@ -48,7 +50,7 @@ export async function fetchElections() {
   } catch (e) {
     console.log(`  elections komunalne2026: ${e.message.slice(0, 160)}`);
   }
-  return writeResult('elections', { items });
+  return { items };
 }
 
 async function scanCsvUrl(elec, url) {

@@ -1,9 +1,11 @@
 // TLE dráhové elementy — CelesTrak (stanice + vizuálne najjasnejšie satelity).
-import { getText, writeResult } from './lib.mjs';
+import { getText, cached } from './lib.mjs';
 
 const GROUPS = ['stations', 'visual'];
 
-export async function fetchTle() {
+export const fetchTle = () => cached('tle', 3, 1, load, prev => (prev.items || []).length >= 10);
+
+async function load() {
   const seen = new Set();
   const items = [];
   for (const group of GROUPS) {
@@ -19,5 +21,5 @@ export async function fetchTle() {
     }
   }
   if (items.length < 10) throw new Error(`podozrivo málo TLE záznamov (${items.length})`);
-  return writeResult('tle', { items });
+  return { items };
 }

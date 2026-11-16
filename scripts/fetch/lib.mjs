@@ -52,8 +52,9 @@ export async function writeResult(name, payload) {
 // netreba ťahať pri každom behu. Ako cache slúži naposledy nasadená stránka:
 // ak je tam data/<name>.json v poriadku, mladší než maxAgeH a v rovnakej
 // verzii formátu (_v), prevezme sa bez volania zdroja. Inak sa spustí fn().
-// fn() musí vrátiť payload (objekt), nie výsledok writeResult.
-export async function cached(name, maxAgeH, version, fn) {
+// fn() musí vrátiť payload (objekt), nie výsledok writeResult. valid(prev)
+// môže cache odmietnuť (napr. keď minulý beh načítal len časť zdrojov).
+export async function cached(name, maxAgeH, version, fn, valid = () => true) {
   const site = (CONFIG.siteUrl || '').replace(/\/$/, '');
   if (site && process.env.NO_CACHE !== '1') {
     try {
@@ -61,7 +62,7 @@ export async function cached(name, maxAgeH, version, fn) {
       if (res.ok) {
         const prev = await res.json();
         const ageH = (Date.now() - new Date(prev.updated).getTime()) / 3600e3;
-        if (prev.ok && prev._v === version && ageH >= 0 && ageH < maxAgeH) {
+        if (prev.ok && prev._v === version && ageH >= 0 && ageH < maxAgeH && valid(prev)) {
           await mkdir(DATA_DIR, { recursive: true });
           await writeFile(path.join(DATA_DIR, `${name}.json`), JSON.stringify(prev, null, 1));
           console.log(`✔ ${name} (z cache, ${ageH.toFixed(1)} h staré)`);

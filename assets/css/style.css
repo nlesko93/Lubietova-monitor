@@ -443,3 +443,14 @@ body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidd
 .unavailable[hidden] { display: none; }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; }
 .linklike:hover { text-decoration: underline; }
+
+/* ---------- hospodárenie ---------- */
+.fin-hero { font-size: 1.6rem; white-space: nowrap; }
+.fin-hero.is-loss, .fin-table td.neg { color: var(--status-critical); }
+.fin-hero.is-profit, .fin-table td.pos { color: var(--status-good); }
+.fin-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.fin-table th { text-align: right; font-weight: 600; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 0 3px 8px; }
+.fin-table td { text-align: right; padding: 3px 0 3px 8px; border-top: 1px solid var(--grid); white-space: nowrap; }
+.fin-table th:first-child, .fin-table td:first-child { text-align: left; padding-left: 0; }
+.contract-stats { margin: 4px 0 10px; }
+.contract-stats:empty { display: none; }

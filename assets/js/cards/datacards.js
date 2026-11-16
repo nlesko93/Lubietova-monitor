@@ -45,11 +45,34 @@ export function initNews() {
 
 export function initObec() {
   return dataCard('obec', 'obec-body', (body, d) => {
-    body.appendChild(linkList(d.items.slice(0, 8), {
-      metaFn: it => [it.section, it.date].filter(Boolean).join(' · '),
-    }));
-    body.appendChild(el('p', { class: 'chart-caption', html:
-      'Zdroj: <a href="https://www.lubietova.sk/" target="_blank" rel="noopener">lubietova.sk</a>' }));
+    const secs = (d.sections || []).filter(s => s.items?.length || s.key === 'podujatia');
+    const fmtD = iso => (iso ? new Date(iso).toLocaleDateString('sk-SK') : null);
+    const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+    const content = el('div');
+    body.append(tabs, content);
+    const show = key => {
+      const s = secs.find(x => x.key === key);
+      tabs.querySelectorAll('.tab-btn').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+      content.innerHTML = '';
+      if (!s.items.length) {
+        content.appendChild(el('p', { class: 'empty-note', text: s.key === 'podujatia'
+          ? 'V kalendári obce teraz nie sú žiadne podujatia (termíny zberu odpadu sú v karte Zber odpadu).'
+          : 'Žiadne položky.' }));
+      } else {
+        content.appendChild(linkList(s.items.slice(0, 7), {
+          metaFn: it => [fmtD(it.date), it.meta].filter(Boolean).join(' · '),
+        }));
+      }
+      content.appendChild(el('p', { class: 'chart-caption', html:
+        `Zdroj: <a href="${s.url}" target="_blank" rel="noopener">lubietova.sk — ${escapeHtml(s.title.toLowerCase())}</a>` }));
+    };
+    for (const s of secs) {
+      const b = el('button', { class: 'tab-btn', 'data-key': s.key, text: `${s.title}${s.items.length ? ` (${s.items.length})` : ''}` });
+      b.addEventListener('click', () => show(s.key));
+      tabs.appendChild(b);
+    }
+    if (secs.length) show(secs[0].key);
   });
 }
 
@@ -100,9 +123,74 @@ export function initContracts() {
     const toggle = el('label', { class: 'check-row', for: 'contracts-hide-graves' }, [
       check, ` Skryť zmluvy na hrobové miesta (${graveCount})`,
     ]);
-    body.append(...[tabs, graveCount ? toggle : null, info, list].filter(Boolean));
+    const stats = el('div', { class: 'contract-stats' });
+    body.append(...[tabs, graveCount ? toggle : null, info, stats, list].filter(Boolean));
 
-    const show = key => {
+    // Súčty za rok a najväčší dodávatelia z načítaných zmlúv (rešpektuje
+    // zvolený subjekt aj skrytie hrobových miest).
+    const eur = v => `${Math.round(v).toLocaleString('sk-SK')} €`;
+    const renderStats = (key, items) => {
+      stats.innerHTML = '';
+      if (key === 'internal' || !items.length) return;
+      const keys = key === 'all' ? ents.map(e => e.key) : [key];
+      const years = new Map();       // rok -> { out, outN, inc, incN }
+      const partners = new Map();    // dodávateľ -> suma
+      for (const it of items) {
+        if (key === 'all' && it.internal) continue;   // presuny medzi vlastnými subjektmi nerátaj dvakrát
+        const y = (it.date || '').slice(0, 4);
+        if (!y) continue;
+        for (const k of keys) {
+          const role = it.roles?.[k];
+          if (!role || role === 'obe') continue;
+          const row = years.get(y) || { out: 0, outN: 0, inc: 0, incN: 0 };
+          if (role === 'objednavatel') {
+            row.out += it.value || 0; row.outN++;
+            if (it.value && it.partner) partners.set(it.partner, (partners.get(it.partner) || 0) + it.value);
+          } else { row.inc += it.value || 0; row.incN++; }
+          years.set(y, row);
+        }
+      }
+      const ys = [...years.keys()].sort().reverse().slice(0, 3);
+      if (!ys.length) return;
+      // rok je úplný, ak sme pre všetky dotknuté hľadania došli pred 1. január
+      const cov = d.coverage || {};
+      const complete = y => keys.every(k => ['objednavatel', 'dodavatel'].every(r => {
+        const c = cov[k]?.[r];
+        return !c || c.complete || (c.oldest && c.oldest < `${y}-01-01`);
+      }));
+      const partial = ys.filter(y => !complete(y));
+      stats.appendChild(el('table', { class: 'fin-table' }, [
+        el('thead', {}, [el('tr', {}, ['Rok', 'Ako objednávateľ', 'Ako dodávateľ'].map(h => el('th', { text: h })))]),
+        el('tbody', {}, ys.map(y => {
+          const r = years.get(y);
+          return el('tr', {}, [
+            el('td', { text: y + (partial.includes(y) ? ' *' : '') }),
+            el('td', { text: `${eur(r.out)} · ${r.outN}×` }),
+            el('td', { text: `${eur(r.inc)} · ${r.incN}×` }),
+          ]);
+        })),
+      ]));
+      const top = [...partners.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if (top.length) {
+        const max = top[0][1];
+        const box = el('details', { class: 'more-rows' }, [
+          el('summary', { text: 'Najväčší dodávatelia (podľa sumy zmlúv)' }),
+          ...top.map(([name, sum]) => el('div', { class: 'hbar-row' }, [
+            el('span', { class: 'hbar-name', title: name, text: name }),
+            el('span', { class: 'hbar-val', text: eur(sum) }),
+            el('div', { class: 'hbar-track' }, [el('div', { class: 'hbar-fill', style: `width:${Math.max(2, (sum / max) * 100)}%` })]),
+          ])),
+        ]);
+        stats.appendChild(box);
+      }
+      stats.appendChild(el('p', { class: 'chart-caption', text:
+        'Súčet súm uvedených v registri pri načítaných zmluvách (rámcové zmluvy často uvádzajú 0 €).' +
+        (partial.length ? ' * rok nie je načítaný celý.' : '') }));
+    };
+
+    let limit = 8;
+    const show = (key, keepLimit = false) => {
+      if (!keepLimit) limit = 8;
       current = key;
       tabs.querySelectorAll('.tab-btn').forEach(b =>
         b.setAttribute('aria-pressed', String(b.dataset.key === key)));
@@ -112,14 +200,15 @@ export function initContracts() {
       const c = d.counts?.[key];
       info.textContent = key === 'internal'
         ? 'Zmluvy, kde sú na oboch stranách obec alebo jej firmy (napr. obecné lesy ↔ obecná píla).'
-        : c ? `Posledných ${c.total} zmlúv v registri: ${c.objednavatel}× ako objednávateľ, ${c.dodavatel}× ako dodávateľ / prijímateľ.`
+        : c ? `Načítaných ${c.total} najnovších zmlúv: ${c.objednavatel}× ako objednávateľ, ${c.dodavatel}× ako dodávateľ / prijímateľ.`
           : 'Najnovšie zmluvy obce a jej firiem — kde sú objednávateľom aj kde sú dodávateľom.';
+      renderStats(key, items);
       list.innerHTML = '';
       if (!items.length) {
         list.appendChild(el('li', {}, [el('span', { class: 'item-meta', text: 'V registri sa nenašli žiadne zmluvy.' })]));
         return;
       }
-      for (const it of items.slice(0, 8)) {
+      for (const it of items.slice(0, limit)) {
         const badges = el('span', { class: 'role-badges' });
         for (const k of it.entities || []) {
           const [label, color, title] = ROLE[it.roles[k]] || [];
@@ -141,6 +230,11 @@ export function initContracts() {
           ]),
         ]));
       }
+      if (items.length > limit) {
+        const more = el('button', { class: 'linklike', type: 'button', text: `Zobraziť ďalšie (${items.length - limit}) →` });
+        more.addEventListener('click', () => { limit += 20; show(key, true); });
+        list.appendChild(el('li', {}, [more]));
+      }
     };
 
     const defs = [['all', 'Všetko'], ...ents.map(e => [e.key, e.short])];
@@ -160,28 +254,75 @@ export function initContracts() {
 
 export function initFinance() {
   return dataCard('finance', 'finance-body', (body, d) => {
-    if (d.entity) {
-      body.appendChild(el('p', { class: 'chart-caption', text:
-        `${d.entity.name} · IČO ${d.entity.ico}${d.entity.pocetZamestnancov ? ' · zamestnancov: ' + d.entity.pocetZamestnancov : ''}` }));
+    const ents = d.entities || [];
+    if (!ents.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'Údaje o hospodárení sa nepodarilo načítať.' }));
+      return;
     }
-    if (d.series?.length) {
-      const box = el('div');
-      body.appendChild(box);
-      barChart(box, d.series.map(s => ({
-        label: String(s.year),
-        value: s.value,
-        tooltip: `<div class="tt-title">${s.year}</div><div class="tt-row">${escapeHtml(s.label)}: <b>${Number(s.value).toLocaleString('sk-SK')} €</b></div>`,
-      })), {});
-      body.appendChild(el('p', { class: 'chart-caption', text: d.seriesLabel || '' }));
+    const eur = v => (v == null ? '–' : `${Math.round(v).toLocaleString('sk-SK')} €`);
+    const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+    const content = el('div');
+    body.append(tabs, content);
+
+    const show = key => {
+      const e = ents.find(x => x.key === key);
+      tabs.querySelectorAll('.tab-btn').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+      content.innerHTML = '';
+      const revLabel = e.kind === 'ropo' ? 'Výnosy' : 'Čistý obrat';
+      const s = e.series || [];
+      const last = s.at(-1);
+      if (last) {
+        const loss = last.profit != null && last.profit < 0;
+        content.appendChild(el('div', { class: 'hero-row' }, [
+          el('span', { class: `hero-figure fin-hero ${loss ? 'is-loss' : 'is-profit'}`, text: eur(last.profit) }),
+          el('span', { class: 'hero-side', html:
+            `${loss ? 'strata' : 'zisk'} za rok ${last.year}<br>${revLabel.toLowerCase()} ${escapeHtml(eur(last.revenue))}` }),
+        ]));
+        const rev = s.filter(x => x.revenue != null);
+        if (rev.length > 1) {
+          const box = el('div');
+          content.appendChild(box);
+          barChart(box, rev.map(x => ({
+            label: String(x.year), value: x.revenue,
+            tooltip: `<div class="tt-title">${x.year}</div><div class="tt-row">${revLabel}: <b>${eur(x.revenue)}</b></div><div class="tt-row">Výsledok: <b>${eur(x.profit)}</b></div>`,
+          })), { height: 140, yFmt: v => (v >= 1e6 ? (v / 1e6).toLocaleString('sk-SK') + ' mil.' : Math.round(v / 1000) + ' tis.') });
+          content.appendChild(el('p', { class: 'chart-caption', text: `${revLabel} podľa rokov (€)` }));
+        }
+        const table = el('table', { class: 'fin-table' }, [
+          el('thead', {}, [el('tr', {}, ['Rok', revLabel, 'Výsledok', 'Majetok'].map(h => el('th', { text: h })))]),
+          el('tbody', {}, [...s].reverse().map(x => el('tr', {}, [
+            el('td', { text: String(x.year) }),
+            el('td', { text: eur(x.revenue) }),
+            el('td', { class: x.profit < 0 ? 'neg' : 'pos', text: eur(x.profit) }),
+            el('td', { text: eur(x.assets) }),
+          ]))),
+        ]);
+        content.appendChild(table);
+        content.appendChild(el('p', { class: 'chart-caption', text:
+          'Výsledok = výsledok hospodárenia po zdanení (účtovný, nie rozpočtový). Majetok = aktíva spolu (netto). Z individuálnych účtovných závierok.' }));
+      } else {
+        content.appendChild(el('p', { class: 'empty-note', text: 'Čísla z výkazov nie sú v registri dostupné.' }));
+      }
+      if (e.items?.length) {
+        content.appendChild(el('details', { class: 'more-rows' }, [
+          el('summary', { text: `Účtovné závierky v registri (${e.items.length})` }),
+          linkList(e.items, { metaFn: it => [it.type, it.period].filter(Boolean).join(' · ') }),
+        ]));
+      }
+      content.appendChild(el('p', { class: 'chart-caption', html:
+        `${escapeHtml(e.name)} · IČO ${escapeHtml(e.ico)} · zdroj: <a href="${e.link}" target="_blank" rel="noopener">Register účtovných závierok</a>` }));
+    };
+
+    if (ents.length > 1) {
+      for (const e of ents) {
+        const b = el('button', { class: 'tab-btn', 'data-key': e.key, text: e.short });
+        b.addEventListener('click', () => show(e.key));
+        tabs.appendChild(b);
+      }
     }
-    if (d.items?.length) {
-      body.appendChild(linkList(d.items.slice(0, 5), {
-        metaFn: it => [it.type, it.period].filter(Boolean).join(' · '),
-      }));
-    }
-    body.appendChild(el('p', { class: 'chart-caption', html:
-      'Zdroj: <a href="https://www.registeruz.sk/" target="_blank" rel="noopener">Register účtovných závierok</a>' }));
-  }, { handlesEmpty: true });
+    show(ents[0].key);
+  }, { handlesEmpty: true, maxAgeH: 36 });
 }
 
 export function initDemo() {
@@ -221,7 +362,7 @@ export function initDemo() {
       }
       body.appendChild(el('p', { class: 'chart-caption', text: ex.label || '' }));
     }
-  });
+  }, { maxAgeH: 36 });
 }
 
 export async function initElections() {

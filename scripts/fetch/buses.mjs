@@ -6,13 +6,15 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { writeResult, CONFIG } from './lib.mjs';
+import { cached, CONFIG } from './lib.mjs';
 
 const ROUTE = CONFIG.busRouteStops || [];        // BB → Povrazník poradie
 const OBEC = new RegExp(CONFIG.busStopMatch || 'ubietov', 'i');
 const UA = 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)';
 
-export async function fetchBuses() {
+export const fetchBuses = () => cached('buses', 12, 1, load, prev => (prev.lines || []).some(l => l.geometry && l.directions?.length));
+
+async function load() {
   const lines = [];
   for (const bl of CONFIG.busLines || []) {
     try {
@@ -22,7 +24,7 @@ export async function fetchBuses() {
       console.log(`  buses ${bl.line}: ${e.message.slice(0, 160)}`);
     }
   }
-  return writeResult('buses', { lines });
+  return { lines };
 }
 
 async function parseLine(bl) {

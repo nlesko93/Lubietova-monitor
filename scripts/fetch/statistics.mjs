@@ -1,11 +1,13 @@
 // Počet obyvateľov obce — ŠÚ SR DataCube API (data.statistics.sk).
 // Kód obce sa hľadá v číselníku dimenzie kocky om7101rr.
-import { getJSON, writeResult, CONFIG } from './lib.mjs';
+import { getJSON, cached, CONFIG } from './lib.mjs';
 
 const API = 'https://data.statistics.sk/api/v2';
 const CUBE = 'om7101rr'; // stav trvale bývajúceho obyvateľstva podľa obcí
 
-export async function fetchDemographics() {
+export const fetchDemographics = () => cached('demographics', 24, 1, load, prev => (prev.items || []).length > 0);
+
+async function load() {
   // 1) nájdi kód obce v číselníku dimenzie
   const dims = [`${CUBE}_obc`, 'nuts15', 'obc'];
   let obecCode = null, dimUsed = null;
@@ -55,7 +57,7 @@ export async function fetchDemographics() {
       console.log(`  statistics kocka ${cube}: ${e.message.slice(0, 160)}`);
     }
   }
-  return writeResult('demographics', { items: population.items, obecCode, via: population.via, extra });
+  return { items: population.items, obecCode, via: population.via, extra };
 }
 
 // Obecné kocky overené v Actions behu č. 13 + filter zaujímavých sérií.
