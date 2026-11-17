@@ -454,3 +454,4 @@ body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidd
 .fin-table th:first-child, .fin-table td:first-child { text-align: left; padding-left: 0; }
 .contract-stats { margin: 4px 0 10px; }
 .contract-stats:empty { display: none; }
+.hero-small { font-size: 1.8rem; }
