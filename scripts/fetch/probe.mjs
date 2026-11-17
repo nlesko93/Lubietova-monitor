@@ -5,6 +5,8 @@ const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Geck
 const cut = (s, n) => String(s ?? '').replace(/\s+/g, ' ').slice(0, n);
 const BASE = 'https://orchideakvet.rajce.idnes.cz';
 
+const why = e => `${e.message}${e.cause ? ' · ' + (e.cause.code || e.cause.message) : ''}`.slice(0, 200);
+
 async function get(url, headers = {}) {
   const res = await fetch(url, { signal: AbortSignal.timeout(20000), redirect: 'follow', headers: { 'user-agent': UA, ...headers } });
   return { res, text: /image|octet/.test(res.headers.get('content-type') || '') ? '' : await res.text() };
@@ -12,6 +14,28 @@ async function get(url, headers = {}) {
 
 export async function fetchProbe() {
   const log = [];
+  // AirGradient história — varianty ciest (token sa nevypisuje)
+  const tok = process.env.AIRGRADIENT_TOKEN;
+  if (tok) {
+    const z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    const from = z(new Date(Date.now() - 24 * 3600e3)), to = z(new Date());
+    const B = 'https://api.airgradient.com/public/api/v1/locations/180253/measures';
+    for (const path of ['/last/buckets/60', '/last/buckets/1h', '/last/buckets', `/past?from=${from}&to=${to}`,
+      `/raw?from=${from}&to=${to}`, `/past?from=${from}`, '/past', '/last/raw', `/buckets/60?from=${from}&to=${to}`]) {
+      try {
+        const sep = path.includes('?') ? '&' : '?';
+        const r = await fetch(`${B}${path}${sep}token=${encodeURIComponent(tok)}`, { signal: AbortSignal.timeout(30000) });
+        const t = (await r.text()).replaceAll(tok, '***');
+        log.push(`AG ${path.replace(/from=[^&]+/, 'from=…').replace(/to=[^&]+/, 'to=…')} → ${r.status} · ${t.length} B · ${t.slice(0, 220).replace(/\s+/g, ' ')}`);
+      } catch (e) { log.push(`AG ${path}: ${why(e)}`); }
+    }
+  }
+  for (const u of ['https://orchideakvet.rajce.idnes.cz/', 'http://orchideakvet.rajce.idnes.cz/', 'https://www.rajce.idnes.cz/orchideakvet', 'https://www.rajce.idnes.cz/']) {
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(20000), redirect: 'manual', headers: { 'user-agent': UA } });
+      log.push(`rajce ${u} → ${r.status} ${r.headers.get('location') || ''} · ${r.headers.get('server') || ''}`);
+    } catch (e) { log.push(`rajce ${u}: ${why(e)}`); }
+  }
   try {
     const { res, text } = await get(BASE + '/');
     log.push(`profil ${res.status} ${res.url} · ${text.length} B · ${res.headers.get('content-type')}`);
@@ -46,6 +70,6 @@ export async function fetchProbe() {
         }
       }
     }
-  } catch (e) { log.push(`chyba: ${e.message.slice(0, 200)}`); }
+  } catch (e) { log.push(`chyba: ${why(e)}`); }
   return writeResult('_probe', { log });
 }
