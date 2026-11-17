@@ -101,6 +101,14 @@ export function fmtDate(d, opts = {}) {
     .format(d instanceof Date ? d : new Date(d));
 }
 
+// Dnešný dátum v čase obce (RRRR-MM-DD) a počet dní od dneška po daný dátum.
+export function todayIso() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+}
+export function daysFromToday(isoDate) {
+  return Math.round((Date.parse(`${isoDate}T00:00:00Z`) - Date.parse(`${todayIso()}T00:00:00Z`)) / 86400e3);
+}
+
 export function timeAgo(iso) {
   if (!iso) return '';
   const s = (Date.now() - new Date(iso).getTime()) / 1000;

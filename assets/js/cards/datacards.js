@@ -1,5 +1,5 @@
 // Karty kreslené z data/*.json, ktoré hodinovo generuje GitHub Actions.
-import { loadData, setStatus, showError, el, timeAgo, updatedLabel, freshness, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
+import { loadData, setStatus, showError, el, timeAgo, updatedLabel, freshness, daysFromToday, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
 import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
 
@@ -476,11 +476,16 @@ const wasteKind = title => WASTE_KINDS.find(([re]) => re.test(title)) || [null, 
 
 export function initWaste() {
   return dataCard('waste', 'waste-body', (body, d) => {
-    const dayMs = 86400e3;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const daysTo = iso => Math.round((new Date(iso + 'T00:00:00') - today) / dayMs);
-    const dayLabel = n => n <= 0 ? 'dnes' : n === 1 ? 'zajtra' : `o ${n} dní`;
+    // Dáta môžu byť niekoľko hodín staré → termíny, ktoré už prešli, vyhoď tu
+    // (inak by včerajší zvoz svietil ako „dnes").
+    const daysTo = daysFromToday;
+    const dayLabel = n => n === 0 ? 'dnes' : n === 1 ? 'zajtra' : `o ${n} dní`;
     const dateFmt = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric' });
+    d = { ...d, items: d.items.filter(it => daysTo(it.date) >= 0) };
+    if (!d.items.length) {
+      body.appendChild(el('p', { class: 'empty-note', text: 'V kalendári nie sú žiadne najbližšie termíny zvozu.' }));
+      return;
+    }
 
     const next = d.items[0];
     const [, emoji, color, kind] = wasteKind(next.title);

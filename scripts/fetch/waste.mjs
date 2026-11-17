@@ -12,12 +12,15 @@ export async function fetchWaste() {
   const events = parseIcs(ics);
   console.log(`  waste: ${events.length} VEVENT blokov v kalendári`);
 
-  const now = Date.now() - 86400e3; // dnešný zvoz ešte ukazuj celý deň
+  // Dnešný zvoz ukazuj celý deň, včerajší už nie. „Dnes" = dátum v čase obce
+  // (celodenné udalosti sa parsujú na 12:00 UTC, takže stačí porovnať dátumy).
+  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bratislava' }).format(new Date());
+  const now = Date.parse(`${todayIso}T00:00:00Z`);
   const horizon = Date.now() + HORIZON_DAYS * 86400e3;
 
   const upcoming = events
     .flatMap(ev => expand(ev, now, horizon))
-    .filter(ev => ev.ts >= now && ev.ts <= horizon)
+    .filter(ev => new Date(ev.ts).toISOString().slice(0, 10) >= todayIso && ev.ts <= horizon)
     .sort((a, b) => a.ts - b.ts)
     .slice(0, MAX_ITEMS)
     .map(ev => ({ date: new Date(ev.ts).toISOString().slice(0, 10), title: ev.title }));

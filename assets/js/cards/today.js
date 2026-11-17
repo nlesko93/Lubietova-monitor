@@ -2,7 +2,7 @@
 // autobus, zber odpadu, čo je otvorené, výstrahy a odstávky. Každá dlaždica
 // je odkaz na príslušnú kartu. Dlaždice sa plnia nezávisle; chýbajúci zdroj
 // svoju dlaždicu jednoducho nezobrazí.
-import { loadData, getConfig, el, every, timeAgo } from '../util.js';
+import { loadData, getConfig, el, every, timeAgo, daysFromToday } from '../util.js';
 import { nowInObec, statusNow } from './hours.js';
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
@@ -72,11 +72,11 @@ export async function initToday() {
 
   // najbližší zber odpadu
   loadData('waste').then(d => {
-    const next = (d.items || [])[0];
+    // prvý termín, ktorý ešte neprešiel (dáta môžu byť pár hodín staré)
+    const next = (d.items || []).find(it => daysFromToday(it.date) >= 0);
     if (!next) return;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const n = Math.round((new Date(next.date + 'T00:00:00') - today) / 86400e3);
-    const when = n <= 0 ? 'dnes' : n === 1 ? 'zajtra' : `o ${n} dní`;
+    const n = daysFromToday(next.date);
+    const when = n === 0 ? 'dnes' : n === 1 ? 'zajtra' : `o ${n} dní`;
     const date = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(new Date(next.date));
     set('waste', {
       icon: '♻️', label: 'Zber odpadu', value: `${when} · ${next.title}`, sub: date,
