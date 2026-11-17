@@ -85,7 +85,7 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/elections.json'));for(const it of d.items||[]){const rows=it.rows||it.sections.flatMap(s=>s.rows);console.log('-',it.key,it.name,'|',rows.length,'položiek |',rows.slice(0,3).map(r=>r.name+':'+r.votes).join(', '));}"
           echo
           echo "== kontrola hospodárenia =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/finance.json'));if(!d.ok)console.log('CHYBA',d.error);for(const e of d.entities||[])console.log('-',e.key,e.name,'| závierok',e.items.length,'|',(e.series||[]).map(s=>s.year+': V '+s.revenue+' N '+s.costs+' VH '+s.profit+' M '+s.assets).join(' ; '));"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/finance.json'));if(!d.ok)console.log('CHYBA',d.error);for(const e of d.entities||[])console.log('-',e.key,e.name,'| závierok',e.items.length,'|',(e.series||[]).map(s=>s.year+': V '+s.revenue+' VH '+s.profit+' M '+s.assets).join(' ; '));"
           echo
           echo "== kontrola bazos =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/bazos.json'));console.log('status',d._status,'html',d._htmlKb+'kB','blokov',d._blocks,'inzerátov',(d.items||[]).length);for(const it of (d.items||[]).slice(0,4))console.log('  -',it.title,'|',it.price,'|',it.location,'|',it.date);console.log('  lokality blokov:',d._lok||'-');"
@@ -95,6 +95,3 @@ jobs:
           echo
           echo "== kontrola webu obce =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/obec.json'));if(!d.ok)console.log('CHYBA',d.error);console.log((d._diag||[]).join(' | '));for(const s of d.sections||[]){console.log('-',s.key,s.title,'|',s.items.length);for(const it of s.items.slice(0,3))console.log('    ',it.date,'|',it.title.slice(0,70),'|',(it.meta||'').slice(0,60),'|',it.link.slice(0,90));}"
-          echo
-          echo "== SONDA =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/_probe.json'));for(const l of d.log||[d.error])console.log(l);"

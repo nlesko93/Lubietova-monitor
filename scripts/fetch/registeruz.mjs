@@ -39,8 +39,6 @@ const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); retu
 const WANTED = [
   ['revenue', /^čistý obrat/i, /ziskov a strát/i],
   ['revenue', /účtová trieda 6.*(spolu|súčet)/i, /výnosy/i],
-  ['costs', /účtová trieda 5.*(spolu|súčet)/i, /náklady/i],
-  ['costs', /náklady na hospodársku činnosť spolu/i, /ziskov a strát/i],
   ['profit', /výsledok hospodárenia (za účtovné obdobie )?po zdanení/i, /ziskov a strát|výnosy/i],
   ['assets', /^spolu majetok/i, /aktív/i],
 ];

@@ -1,10 +1,10 @@
 // Web obce (lubietova.sk, CMS Galileo) — úradná tabuľa, oznamy, podujatia
 // a dokumenty obecného zastupiteľstva. Štruktúra overená v Actions behoch
-// č. 1235–1236:
+// č. 1235–1238:
 //   /zverejnovanie/uradna-tabula/   odkazy <slug>-<id>.html (dátum berieme z RSS)
 //   /aktualne/oznamy/               <a class="event-link"> s h3.event-name a „Dátum: d. m. rrrr"
 //   /aktualne/kalendar/             to isté, „Kedy: d. m. rrrr …" (väčšinou zber odpadu)
-//   /zverejnovanie/uznesenia/, /zverejnovanie/zvukove-zaznamy-a-zapisnice/
+//   /zverejnovanie/uznesenia/, /zverejnovanie/zvukove-zaznamy-a-zapisnice/  súbory (file-storage)
 import { getText, writeResult, xmlBlocks, xmlValue, stripTags, decodeEntities } from './lib.mjs';
 
 const BASE = 'https://www.lubietova.sk';
@@ -49,8 +49,8 @@ export async function fetchObec() {
       items: events(kalendarHtml).filter(e => !/zber\s.*odpad/i.test(e.title)) },
     { key: 'zastupitelstvo', title: 'Zastupiteľstvo', url: `${BASE}/zverejnovanie/uznesenia/`,
       items: [
-        ...documents(uznHtml, '/zverejnovanie/uznesenia/', 'uznesenie'),
-        ...documents(zapHtml, '/zverejnovanie/zvukove-zaznamy-a-zapisnice/', 'zápisnica / záznam'),
+        ...documents(uznHtml, 'uznesenia'),
+        ...documents(zapHtml, 'zápisnica / zvukový záznam'),
       ].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 14) },
   ];
   console.log('  obec:', sections.map(s => `${s.key}=${s.items.length}`).join(' '), '|', diag.join(' | '));
@@ -86,7 +86,8 @@ function events(html) {
 function sectionLinks(html, path, rssDates) {
   const out = [];
   const seen = new Set();
-  const re = new RegExp(`<a\\s[^>]*href="((?:${BASE})?${path}[^"?#]+\\.html)"[^>]*>([\\s\\S]*?)</a>`, 'gi');
+  // odkaz môže mať za .html ešte query (?…) — tú z adresy vynecháme
+  const re = new RegExp(`<a\\s[^>]*href="((?:${BASE})?${path}[^"?#]+\\.html)[^"]*"[^>]*>([\\s\\S]*?)</a>`, 'gi');
   for (const m of html.matchAll(re)) {
     const link = abs(m[1]);
     const title = stripTags((m[2].match(/<h\d[^>]*>([\s\S]*?)<\/h\d>/i) || [])[1] || m[2]);
@@ -99,22 +100,22 @@ function sectionLinks(html, path, rssDates) {
   return out.slice(0, 12);
 }
 
-// Dokumenty zastupiteľstva: položky sekcie alebo priamo súbory na stiahnutie.
-function documents(html, path, kind) {
-  const main = html.slice(Math.max(0, html.search(/class="gcm-main"/)));
-  const out = sectionLinks(main, path, new Map()).map(d => ({ ...d, meta: kind }));
-  if (out.length) return out;
+// Dokumenty zastupiteľstva — modul „file-storage" CMS Galileo:
+//   <div class="file-row"><h3><a class="link-small"
+//      href="/modules/file_storage/download.php?file=…" download="Uznesenia 22.09.2026.pdf">
+//      Uznesenia z 32. zasadania OcZ 22.9.2026</a></h3>…
+// Dátum zasadnutia je v názve (alebo v názve súboru).
+function documents(html, kind) {
+  const out = [];
   const seen = new Set();
-  for (const m of main.matchAll(/<a\s[^>]*href="([^"]*(?:e_download\.php|\.pdf|\.docx?|\.mp3)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+  const re = /<a\s[^>]*href="([^"]*\/modules\/file_storage\/download\.php[^"]*)"([^>]*)>([\s\S]*?)<\/a>/gi;
+  for (const m of html.matchAll(re)) {
     const link = abs(m[1]);
-    let title = stripTags(m[2]);
-    if (!title) title = decodeURIComponent((m[1].match(/original=([^&"]+)/) || [])[1] || '').replace(/\.\w{3,4}$/, '');
-    if (!title || title.length < 4 || seen.has(link) || /mini\d+sk/.test(m[1])) continue;   // mini* = bannery v bočnom paneli
+    const file = decodeEntities((m[2].match(/download="([^"]*)"/) || [])[1] || '');
+    const title = stripTags(m[3]) || file.replace(/\.\w{3,4}$/, '');
+    if (!title || seen.has(link)) continue;
     seen.add(link);
-    const near = stripTags(html.slice(Math.max(0, m.index - 300), m.index + m[0].length + 200));
-    out.push({ title, link, date: isoDate(title) || isoDate(near), meta: kind });
+    out.push({ title, link, date: isoDate(title) || isoDate(file), meta: kind });
   }
   return out.slice(0, 12);
 }
-
-export const _test = { events, sectionLinks, documents };
