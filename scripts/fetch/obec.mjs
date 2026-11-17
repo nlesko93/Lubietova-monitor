@@ -42,7 +42,8 @@ export async function fetchObec() {
 
   const sections = [
     { key: 'tabula', title: 'Úradná tabuľa', url: `${BASE}/zverejnovanie/uradna-tabula/`,
-      items: sectionLinks(tabulaHtml, '/zverejnovanie/uradna-tabula/', rssDates) },
+      items: sectionLinks(tabulaHtml, '/zverejnovanie/uradna-tabula/', rssDates)
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '')) },
     { key: 'oznamy', title: 'Oznamy', url: `${BASE}/aktualne/oznamy/`, items: events(oznamyHtml) },
     // zber odpadu má vlastnú kartu — v podujatiach ho nezobrazujeme
     { key: 'podujatia', title: 'Podujatia', url: `${BASE}/aktualne/kalendar/`,
