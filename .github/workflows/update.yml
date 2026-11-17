@@ -103,6 +103,3 @@ jobs:
           echo
           echo "== merané ovzdušie =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/airsensor.json'));if(!d.ok)console.log('CHYBA',d.error);for(const l of d._diag||[])console.log(l);console.log('história:',(d.history||[]).length,'bodov, senzor',d.historyId);for(const i of d.items||[])console.log('  -',i.source,i.own?'(vlastný)':'','|',i.name,'|',i.owner,'|',i.distKm,'km |',i.lat,i.lon,'| PM2.5',i.pm25,'(raw',i.pm25raw+') PM10',i.pm10,'| T',i.temp,'RH',i.rh,'|',i.ts,'| id',i.id);"
-          echo
-          echo "== SONDA =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/_probe.json'));for(const l of d.log||[d.error])console.log(l);"

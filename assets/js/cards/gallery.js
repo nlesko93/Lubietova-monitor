@@ -5,10 +5,13 @@ import { getConfig, fetchJSON, setStatus, showError, every, el, escapeHtml } fro
 const API = 'https://commons.wikimedia.org/w/api.php';
 
 let photos = [];
+let cfgCache = null;
+const getConfigSync = () => cfgCache;
 let idx = 0;
 
 export async function initGallery() {
   const cfg = await getConfig();
+  cfgCache = cfg;
   const body = document.getElementById('gallery-body');
   try {
     photos = await loadCategory(`Category:${cfg.wikiTitle}`);
@@ -34,11 +37,16 @@ export async function initGallery() {
 function show(body) {
   const p = photos[idx];
   body.innerHTML = '';
+  const links = getConfigSync()?.photoLinks || [];
   body.appendChild(el('a', { href: p.descUrl, target: '_blank', rel: 'noopener' }, [
     el('img', { class: 'gallery-img', src: p.thumb, alt: p.title, loading: 'lazy' }),
   ]));
   body.appendChild(el('p', { class: 'chart-caption', html:
     `${escapeHtml(p.title)}${p.author ? ' · ' + escapeHtml(p.author) : ''} · ${escapeHtml(p.license || 'Wikimedia Commons')}` }));
+  if (links.length) {
+    body.appendChild(el('div', { class: 'link-row' }, links.map(lk =>
+      el('a', { class: 'btn-link', href: lk.url, target: '_blank', rel: 'noopener', title: lk.note || '', text: `${lk.label} →` }))));
+  }
 }
 
 async function loadCategory(cat) {
