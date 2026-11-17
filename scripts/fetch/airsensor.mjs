@@ -17,9 +17,47 @@ function km(lat1, lon1, lat2, lon2) {
 }
 const num = v => (v == null || v === '' || !isFinite(+v) ? null : Math.round(+v * 10) / 10);
 
+// Záznam AirGradient → jednotný tvar položky.
+function agItem(r, own) {
+  const lat = +(r.latitude ?? r.lat), lon = +(r.longitude ?? r.lng ?? r.lon);
+  const hasPos = isFinite(lat) && isFinite(lon) && (lat !== 0 || lon !== 0);
+  return {
+    source: 'AirGradient', own,
+    id: String(r.locationId ?? r.id ?? ''),
+    name: r.publicLocationName || r.locationName || r.publicPlaceName || r.name || `senzor ${r.locationId ?? ''}`,
+    owner: r.publicContributorName || '',
+    lat: hasPos ? Math.round(lat * 1e4) / 1e4 : null, lon: hasPos ? Math.round(lon * 1e4) / 1e4 : null,
+    // vlastný senzor bez zverejnenej polohy berieme ako senzor v obci
+    distKm: hasPos ? Math.round(km(CONFIG.lat, CONFIG.lon, lat, lon) * 10) / 10 : (own ? 0 : null),
+    pm25: num(r.pm02_corrected ?? r.pm02Compensated ?? r.pm02),
+    pm25raw: num(r.pm02),
+    pm10: num(r.pm10_corrected ?? r.pm10), pm1: num(r.pm01_corrected ?? r.pm01),
+    temp: num(r.atmp_corrected ?? r.atmpCompensated ?? r.atmp),
+    rh: num(r.rhum_corrected ?? r.rhumCompensated ?? r.rhum),
+    ts: r.timestamp || r.date || null,
+    url: 'https://www.airgradient.com/map/',
+  };
+}
+
 export async function fetchAirSensor() {
   const diag = [];
   const items = [];
+
+  // Vlastný senzor cez API token (GitHub secret AIRGRADIENT_TOKEN) — pre
+  // senzory, ktoré nie sú zdieľané verejne. Token sa nikdy nevypisuje.
+  const token = process.env.AIRGRADIENT_TOKEN;
+  if (token) {
+    try {
+      const res = await fetch(`https://api.airgradient.com/public/api/v1/locations/measures/current?token=${encodeURIComponent(token)}`, {
+        signal: AbortSignal.timeout(30000), headers: { 'user-agent': UA, accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const mine = await res.json();
+      const list = Array.isArray(mine) ? mine : [mine];
+      diag.push(`AirGradient (token): ${list.length} vlastných lokalít`);
+      items.push(...list.map(r => agItem(r, true)).filter(i => i.distKm != null && i.distKm <= RADIUS_KM));
+    } catch (e) { diag.push(`AirGradient (token): ${String(e.message).replace(token, '***').slice(0, 80)}`); }
+  }
 
   try {
     const res = await fetch(AG_WORLD, {
@@ -32,26 +70,10 @@ export async function fetchAirSensor() {
     const list = Array.isArray(all) ? all : (all.data || all.locations || []);
     diag.push(`AirGradient: ${list.length} lokalít · CORS ${cors} · kľúče: ${Object.keys(list[0] || {}).join(',').slice(0, 400)}`);
     for (const r of list) {
-      const lat = +(r.latitude ?? r.lat ?? r.location?.latitude);
-      const lon = +(r.longitude ?? r.lng ?? r.lon ?? r.location?.longitude);
-      if (!isFinite(lat) || !isFinite(lon)) continue;
-      const d = km(CONFIG.lat, CONFIG.lon, lat, lon);
-      if (d > RADIUS_KM) continue;
-      items.push({
-        source: 'AirGradient',
-        id: String(r.locationId ?? r.id ?? ''),
-        name: r.publicLocationName || r.locationName || r.publicPlaceName || r.name || `senzor ${r.locationId ?? ''}`,
-        owner: r.publicContributorName || r.ownerName || '',
-        lat: Math.round(lat * 1e4) / 1e4, lon: Math.round(lon * 1e4) / 1e4,
-        distKm: Math.round(d * 10) / 10,
-        pm25: num(r.pm02_corrected ?? r.pm02Compensated ?? r.pm02),
-        pm25raw: num(r.pm02),
-        pm10: num(r.pm10_corrected ?? r.pm10), pm1: num(r.pm01_corrected ?? r.pm01),
-        temp: num(r.atmp_corrected ?? r.atmpCompensated ?? r.atmp),
-        rh: num(r.rhum_corrected ?? r.rhumCompensated ?? r.rhum),
-        ts: r.timestamp || r.date || null,
-        url: `https://www.airgradient.com/map/`,
-      });
+      const it = agItem(r, false);
+      if (it.distKm == null || it.distKm > RADIUS_KM) continue;
+      if (items.some(x => x.id === it.id)) continue;   // už ho máme cez token
+      items.push(it);
     }
   } catch (e) { diag.push(`AirGradient: ${e.message.slice(0, 160)}`); }
 
@@ -80,7 +102,7 @@ export async function fetchAirSensor() {
     items.push(...byLoc.values());
   } catch (e) { diag.push(`Sensor.Community: ${e.message.slice(0, 120)}`); }
 
-  items.sort((a, b) => a.distKm - b.distKm);
+  items.sort((a, b) => Number(!!b.own) - Number(!!a.own) || a.distKm - b.distKm);
   console.log('  airsensor:', diag.join(' | '));
   console.log('  airsensor najbližšie:', items.slice(0, 8).map(i => `${i.source} „${i.name}" ${i.distKm} km PM2.5 ${i.pm25} @${i.ts}`).join(' ; ') || 'žiadne');
   return writeResult('airsensor', { items: items.slice(0, 12), radiusKm: RADIUS_KM, _diag: diag });

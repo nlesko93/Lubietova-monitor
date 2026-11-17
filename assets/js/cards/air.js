@@ -60,7 +60,7 @@ function pickSensor(items, cfg, maxKm, maxAgeH) {
   const fresh = items.filter(i => i.pm25 != null && i.ts && (Date.now() - new Date(i.ts).getTime()) / 3600e3 < maxAgeH);
   const pin = cfg.airSensor || {};
   return fresh.find(i => (pin.id && i.id === String(pin.id)) || (pin.name && i.name === pin.name)) ||
-    fresh.find(i => i.distKm <= maxKm) || null;
+    fresh.find(i => i.own) || fresh.find(i => i.distKm <= maxKm) || null;
 }
 
 function renderSensor(body, s, model) {
@@ -78,7 +78,7 @@ function renderSensor(body, s, model) {
     s.rh != null ? tile('Vlhkosť', s.rh, '%') : null,
   ].filter(Boolean)));
   body.appendChild(el('p', { class: 'chart-caption', html:
-    `<b>Merané v obci</b> — senzor ${s.source} „${escapeText(s.name)}" (${s.distKm} km od stredu obce), ` +
+    `<b>Merané v obci</b> — senzor ${s.source} „${escapeText(s.name)}"${s.lat != null ? ` (${s.distKm} km od stredu obce)` : ''}, ` +
     `<a href="${s.url}" target="_blank" rel="noopener">mapa senzorov →</a>` }));
   if (model) {
     const diff = model.pm2_5 != null ? s.pm25 - model.pm2_5 : null;
@@ -108,7 +108,7 @@ function renderModel(body, c, standalone) {
   if (standalone) {
     body.appendChild(el('p', { class: 'chart-caption', text:
       'Model CAMS (Open-Meteo) — výpočet na mriežke asi 10 km, nie meranie v obci. ' +
-      'Lokálny dym z kúrenia nezachytí; verejný senzor v obci momentálne nie je dostupný.' }));
+      'Lokálny dym z kúrenia nezachytí. Verejne zdieľaný senzor priamo v obci zatiaľ nie je dostupný.' }));
   }
 }
 

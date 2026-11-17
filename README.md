@@ -34,7 +34,7 @@ prepínač (aj podľa nastavenia systému).
 | Karta | Zdroj | Obnovovanie |
 |---|---|---|
 | Počasie + 48 h graf + 7-dňová predpoveď | [Open-Meteo](https://open-meteo.com/) | 15 min (live) |
-| Kvalita ovzdušia (EAQI, PM2.5, PM10, O₃…) | Open-Meteo / CAMS | 20 min (live) |
+| Kvalita ovzdušia — meranie zo senzora v obci (ak je dostupný), inak model | [AirGradient](https://www.airgradient.com/map/) verejné senzory / vlastný senzor cez secret `AIRGRADIENT_TOKEN`, [Sensor.Community](https://sensor.community/), model [Open-Meteo/CAMS](https://open-meteo.com/) | senzor pri každom behu, model 20 min |
 | Meteorologické výstrahy pre okres | [Meteoalarm](https://meteoalarm.org/) | hodinovo |
 | Vodné stavy riek | [SHMÚ](https://www.shmu.sk/) | hodinovo |
 | Zemetrasenia do 150 km | [USGS](https://earthquake.usgs.gov/) | 30 min (live) |
