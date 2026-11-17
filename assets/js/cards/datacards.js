@@ -323,7 +323,7 @@ export function initFinance() {
       }
     }
     show(ents[0].key);
-  }, { handlesEmpty: true, maxAgeH: 36 });
+  }, { handlesEmpty: true, maxAgeH: 24 * 8 });
 }
 
 export function initDemo() {
@@ -363,7 +363,7 @@ export function initDemo() {
       }
       body.appendChild(el('p', { class: 'chart-caption', text: ex.label || '' }));
     }
-  }, { maxAgeH: 36 });
+  }, { maxAgeH: 24 * 8 });
 }
 
 export async function initElections() {

@@ -7,6 +7,7 @@ import { writeResult, CONFIG } from './lib.mjs';
 
 const AG_WORLD = 'https://api.airgradient.com/public/api/v1/world/locations/measures/current';
 const RADIUS_KM = CONFIG.airSensor?.radiusKm ?? 25;
+const PIN_ID = CONFIG.airSensor?.id ? String(CONFIG.airSensor.id) : null;
 const UA = 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)';
 
 function km(lat1, lon1, lat2, lon2) {
@@ -70,12 +71,38 @@ export async function fetchAirSensor() {
     const list = Array.isArray(all) ? all : (all.data || all.locations || []);
     diag.push(`AirGradient: ${list.length} lokalít · CORS ${cors} · kľúče: ${Object.keys(list[0] || {}).join(',').slice(0, 400)}`);
     for (const r of list) {
-      const it = agItem(r, false);
+      // senzor pripnutý v config.json (airSensor.id) berieme vždy, aj keby
+      // nemal zverejnenú polohu
+      const pinned = PIN_ID && String(r.locationId) === PIN_ID;
+      const it = agItem(r, pinned);
+      if (pinned) diag.push(`pripnutý senzor ${PIN_ID}: nájdený · ${JSON.stringify(r).slice(0, 700)}`);
       if (it.distKm == null || it.distKm > RADIUS_KM) continue;
       if (items.some(x => x.id === it.id)) continue;   // už ho máme cez token
       items.push(it);
     }
   } catch (e) { diag.push(`AirGradient: ${e.message.slice(0, 160)}`); }
+
+  // DOČASNÁ sonda: ktoré verejné endpointy histórie fungujú pre pripnutý senzor
+  if (PIN_ID) {
+    if (!diag.some(d => d.startsWith('pripnutý senzor'))) diag.push(`pripnutý senzor ${PIN_ID}: vo verejnom zozname NIE JE`);
+    const z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    const from = z(new Date(Date.now() - 6 * 3600e3)), to = z(new Date());
+    const base = 'https://api.airgradient.com/public/api/v1';
+    for (const path of [
+      `/world/locations/${PIN_ID}/measures/current`,
+      `/world/locations/${PIN_ID}/measures/last/buckets/60`,
+      `/world/locations/${PIN_ID}/measures/last/buckets`,
+      `/world/locations/${PIN_ID}/measures/past?from=${from}&to=${to}`,
+      `/world/locations/${PIN_ID}/measures/raw?from=${from}&to=${to}`,
+      `/locations/${PIN_ID}/measures/last/buckets/60`,
+    ]) {
+      try {
+        const res = await fetch(base + path, { signal: AbortSignal.timeout(30000), headers: { 'user-agent': UA, accept: 'application/json', origin: 'https://nlesko93.github.io' } });
+        const t = await res.text();
+        diag.push(`SONDA ${path.replace(/\?.*/, '?…')} → ${res.status} · CORS ${res.headers.get('access-control-allow-origin') || '—'} · ${t.length} B · ${t.slice(0, 260).replace(/\s+/g, ' ')}`);
+      } catch (e) { diag.push(`SONDA ${path}: ${e.message.slice(0, 80)}`); }
+    }
+  }
 
   try {
     const url = `https://data.sensor.community/airrohr/v1/filter/area=${CONFIG.lat},${CONFIG.lon},${RADIUS_KM}`;

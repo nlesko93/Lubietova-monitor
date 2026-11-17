@@ -27,7 +27,9 @@ const ELECTIONS = [
   // komunálne 2022 sú statické v config.json (electionsStatic).
 ];
 
-export const fetchElections = () => cached('elections', 24, 2, load, prev => (prev.items || []).length >= 5);
+// Výsledky volieb sa už nemenia → zo ŠÚ SR sa ťahajú najviac raz za 30 dní
+// (medzitým sa preberá kópia z nasadenej stránky, bez volania zdroja).
+export const fetchElections = () => cached('elections', 24 * 30, 2, load, prev => (prev.items || []).length >= 5);
 
 async function load() {
   const items = [];

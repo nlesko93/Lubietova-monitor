@@ -5,7 +5,7 @@ import { getJSON, cached, CONFIG } from './lib.mjs';
 const API = 'https://data.statistics.sk/api/v2';
 const CUBE = 'om7101rr'; // stav trvale bývajúceho obyvateľstva podľa obcí
 
-export const fetchDemographics = () => cached('demographics', 24, 1, load, prev => (prev.items || []).length > 0);
+export const fetchDemographics = () => cached('demographics', 24 * 7, 1, load, prev => (prev.items || []).length > 0);
 
 async function load() {
   // 1) nájdi kód obce v číselníku dimenzie

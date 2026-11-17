@@ -105,7 +105,7 @@ async function entityFinance(ent) {
 }
 
 export function fetchFinance() {
-  return cached('finance', 24, 2, async () => {
+  return cached('finance', 24 * 7, 2, async () => {
     const entities = [];
     for (const ent of ENTITIES) {
       try { entities.push(await entityFinance(ent)); }

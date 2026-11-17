@@ -60,6 +60,7 @@
       "snapshot": "https://moj.jdnet.net/webkam.php?typ=fsg46df5gd74s6g1dsf"
     }
   ],
+  "airSensor": { "id": "180253", "name": "Ľubietová", "radiusKm": 25, "maxKm": 3, "maxAgeH": 3 },
   "bazos": {"psc": "97655", "radiusKm": 0},
   "football": {
     "club": "FK Baník Ľubietová",
