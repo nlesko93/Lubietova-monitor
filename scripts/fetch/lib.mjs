@@ -74,6 +74,24 @@ export async function cached(name, maxAgeH, version, fn, valid = () => true) {
   return writeResult(name, { _v: version, ...(await fn()) });
 }
 
+// Keď zdroj zlyhá, radšej ponechaj posledné dobré dáta z nasadenej stránky
+// (s pôvodným časom → karta ich označí ako staré), než zobraziť prázdnu kartu.
+export async function reuseDeployed(name, err) {
+  const site = (CONFIG.siteUrl || '').replace(/\/$/, '');
+  if (!site) return null;
+  try {
+    const res = await fetch(`${site}/data/${name}.json?t=${Date.now()}`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    const prev = await res.json();
+    if (!prev.ok) return null;
+    prev._lastError = String(err?.message || err).slice(0, 200);
+    await mkdir(DATA_DIR, { recursive: true });
+    await writeFile(path.join(DATA_DIR, `${name}.json`), JSON.stringify(prev, null, 1));
+    console.error(`↻ ${name}: zdroj zlyhal (${prev._lastError.slice(0, 100)}) — ponechávam dáta z ${prev.updated}`);
+    return prev;
+  } catch { return null; }
+}
+
 export async function writeFailure(name, err) {
   await mkdir(DATA_DIR, { recursive: true });
   const out = { updated: new Date().toISOString(), ok: false, error: String(err?.message || err) };

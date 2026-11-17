@@ -1,6 +1,6 @@
 // Spustí všetky fetchery; chyba jedného zdroja nezhodí ostatné.
 // Vždy končí kódom 0 — dashboard zobrazí error stav z data/*.json.
-import { writeFailure, writeResult } from './lib.mjs';
+import { writeFailure, writeResult, reuseDeployed } from './lib.mjs';
 import { fetchNews } from './news.mjs';
 import { fetchObec } from './obec.mjs';
 import { fetchAlerts } from './alerts.mjs';
@@ -40,7 +40,7 @@ const results = await Promise.allSettled(
     try {
       return await fn();
     } catch (e) {
-      return writeFailure(name, e);
+      return (await reuseDeployed(name, e)) || writeFailure(name, e);
     }
   }),
 );

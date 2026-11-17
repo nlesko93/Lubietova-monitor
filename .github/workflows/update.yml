@@ -97,4 +97,4 @@ jobs:
           node -e "const d=JSON.parse(require('fs').readFileSync('data/obec.json'));if(!d.ok)console.log('CHYBA',d.error);console.log((d._diag||[]).join(' | '));for(const s of d.sections||[]){console.log('-',s.key,s.title,'|',s.items.length);for(const it of s.items.slice(0,3))console.log('    ',it.date,'|',it.title.slice(0,70),'|',(it.meta||'').slice(0,60),'|',it.link.slice(0,90));}"
           echo
           echo "== vek dát (z cache = staršie než tento beh) =="
-          node -e "const fs=require('fs');console.log(fs.readdirSync('data').filter(f=>f.endsWith('.json')).map(f=>{const d=JSON.parse(fs.readFileSync('data/'+f));return f.replace('.json','')+':'+(d.ok?'':'CHYBA:')+Math.round((Date.now()-new Date(d.updated))/60000)+'min';}).join(' | '));"
+          node -e "const fs=require('fs');console.log(fs.readdirSync('data').filter(f=>f.endsWith('.json')).map(f=>{const d=JSON.parse(fs.readFileSync('data/'+f));return f.replace('.json','')+':'+(d.ok?'':'CHYBA:')+Math.round((Date.now()-new Date(d.updated))/60000)+'min'+(d.error?' ['+d.error.slice(0,220)+']':'')+(d._lastError?' [posledná chyba: '+d._lastError.slice(0,160)+']':'');}).join(' | '));"
