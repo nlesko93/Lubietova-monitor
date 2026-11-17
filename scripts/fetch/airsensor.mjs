@@ -18,6 +18,16 @@ function km(lat1, lon1, lat2, lon2) {
 }
 const num = v => (v == null || v === '' || !isFinite(+v) ? null : Math.round(+v * 10) / 10);
 
+// Naposledy nasadené data/airsensor.json (kvôli skladaniu histórie).
+async function deployed() {
+  const site = (CONFIG.siteUrl || '').replace(/\/$/, '');
+  if (!site) return null;
+  try {
+    const res = await fetch(`${site}/data/airsensor.json?t=${Date.now()}`, { signal: AbortSignal.timeout(10000) });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
+}
+
 // Záznam AirGradient → jednotný tvar položky.
 function agItem(r, own) {
   const lat = +(r.latitude ?? r.lat), lon = +(r.longitude ?? r.lng ?? r.lon);
@@ -75,34 +85,13 @@ export async function fetchAirSensor() {
       // nemal zverejnenú polohu
       const pinned = PIN_ID && String(r.locationId) === PIN_ID;
       const it = agItem(r, pinned);
-      if (pinned) diag.push(`pripnutý senzor ${PIN_ID}: nájdený · ${JSON.stringify(r).slice(0, 700)}`);
       if (it.distKm == null || it.distKm > RADIUS_KM) continue;
       if (items.some(x => x.id === it.id)) continue;   // už ho máme cez token
       items.push(it);
     }
   } catch (e) { diag.push(`AirGradient: ${e.message.slice(0, 160)}`); }
 
-  // DOČASNÁ sonda: ktoré verejné endpointy histórie fungujú pre pripnutý senzor
-  if (PIN_ID) {
-    if (!diag.some(d => d.startsWith('pripnutý senzor'))) diag.push(`pripnutý senzor ${PIN_ID}: vo verejnom zozname NIE JE`);
-    const z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-    const from = z(new Date(Date.now() - 6 * 3600e3)), to = z(new Date());
-    const base = 'https://api.airgradient.com/public/api/v1';
-    for (const path of [
-      `/world/locations/${PIN_ID}/measures/current`,
-      `/world/locations/${PIN_ID}/measures/last/buckets/60`,
-      `/world/locations/${PIN_ID}/measures/last/buckets`,
-      `/world/locations/${PIN_ID}/measures/past?from=${from}&to=${to}`,
-      `/world/locations/${PIN_ID}/measures/raw?from=${from}&to=${to}`,
-      `/locations/${PIN_ID}/measures/last/buckets/60`,
-    ]) {
-      try {
-        const res = await fetch(base + path, { signal: AbortSignal.timeout(30000), headers: { 'user-agent': UA, accept: 'application/json', origin: 'https://nlesko93.github.io' } });
-        const t = await res.text();
-        diag.push(`SONDA ${path.replace(/\?.*/, '?…')} → ${res.status} · CORS ${res.headers.get('access-control-allow-origin') || '—'} · ${t.length} B · ${t.slice(0, 260).replace(/\s+/g, ' ')}`);
-      } catch (e) { diag.push(`SONDA ${path}: ${e.message.slice(0, 80)}`); }
-    }
-  }
+  if (PIN_ID && !items.some(i => i.id === PIN_ID)) diag.push(`pripnutý senzor ${PIN_ID}: vo verejnom zozname AirGradient nie je`);
 
   try {
     const url = `https://data.sensor.community/airrohr/v1/filter/area=${CONFIG.lat},${CONFIG.lon},${RADIUS_KM}`;
@@ -130,7 +119,39 @@ export async function fetchAirSensor() {
   } catch (e) { diag.push(`Sensor.Community: ${e.message.slice(0, 120)}`); }
 
   items.sort((a, b) => Number(!!b.own) - Number(!!a.own) || a.distKm - b.distKm);
+
+  // --- história hlavného senzora (pripnutý / vlastný, inak najbližší v obci) ---
+  // Verejné API AirGradient históriu neposkytuje, preto si ju skladáme sami:
+  // každý beh pridá aktuálne meranie k histórii z naposledy nasadenej stránky
+  // (uchováva sa 7 dní). S tokenom sa navyše doplní hodinová história z API.
+  const main = items.find(i => i.own) || items.find(i => i.distKm <= (CONFIG.airSensor?.maxKm ?? 3)) || null;
+  let history = [];
+  if (main) {
+    const prev = await deployed();
+    if (prev?.historyId === main.id) history = prev.history || [];
+    if (token && main.source === 'AirGradient') {
+      try {
+        const res = await fetch(`https://api.airgradient.com/public/api/v1/locations/${main.id}/measures/last/buckets/60?token=${encodeURIComponent(token)}`, {
+          signal: AbortSignal.timeout(30000), headers: { 'user-agent': UA, accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        diag.push(`história z API: ${rows.length} hodinových hodnôt`);
+        history.push(...rows.map(r => ({ t: r.timestamp || r.date, pm25: num(r.pm02_corrected ?? r.pm02), pm10: num(r.pm10_corrected ?? r.pm10), temp: num(r.atmp_corrected ?? r.atmp) })));
+      } catch (e) { diag.push(`história z API: ${String(e.message).replace(token, '***').slice(0, 80)}`); }
+    }
+    if (main.ts && main.pm25 != null) history.push({ t: main.ts, pm25: main.pm25, pm10: main.pm10, temp: main.temp });
+    const cutoff = Date.now() - 7 * 86400e3;
+    const byT = new Map();
+    for (const h of history) {
+      const ms = new Date(h.t).getTime();
+      if (!isFinite(ms) || ms < cutoff || h.pm25 == null) continue;
+      byT.set(Math.round(ms / 600e3), { ...h, t: new Date(ms).toISOString() });   // 1 bod na 10 min
+    }
+    history = [...byT.values()].sort((a, b) => a.t.localeCompare(b.t));
+    diag.push(`história: ${history.length} bodov pre senzor ${main.id}`);
+  }
   console.log('  airsensor:', diag.join(' | '));
   console.log('  airsensor najbližšie:', items.slice(0, 8).map(i => `${i.source} „${i.name}" ${i.distKm} km PM2.5 ${i.pm25} @${i.ts}`).join(' ; ') || 'žiadne');
-  return writeResult('airsensor', { items: items.slice(0, 12), radiusKm: RADIUS_KM, _diag: diag });
+  return writeResult('airsensor', { items: items.slice(0, 12), radiusKm: RADIUS_KM, historyId: main?.id || null, history, _diag: diag });
 }

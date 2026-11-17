@@ -4,6 +4,7 @@
 //   2) MODEL: Open-Meteo / CAMS — výpočet na mriežke ~10 km, nie meranie.
 //      Lokálny dym z kúrenia v doline nezachytí, preto býva optimistický.
 import { getConfig, fetchJSON, loadData, setStatus, showError, every, el, fmtTime, timeAgo } from '../util.js';
+import { lineChart } from '../charts.js';
 
 // EAQI pásma pre index; stavové farby idú vždy s textovým popisom.
 const EAQI = [
@@ -46,6 +47,7 @@ export async function initAir() {
     const [m, s] = await Promise.allSettled([fetchJSON(url), loadData('airsensor')]);
     const model = m.status === 'fulfilled' ? m.value.current : null;
     const sensor = s.status === 'fulfilled' ? pickSensor(s.value.items || [], cfg, maxKm, maxAgeH) : null;
+    if (sensor && s.value.historyId === sensor.id) sensor.history = s.value.history || [];
     if (!model && !sensor) { showError(body, 'air', m.reason || s.reason); return; }
     body.innerHTML = '';
     if (sensor) renderSensor(body, sensor, model);
@@ -78,8 +80,24 @@ function renderSensor(body, s, model) {
     s.rh != null ? tile('Vlhkosť', s.rh, '%') : null,
   ].filter(Boolean)));
   body.appendChild(el('p', { class: 'chart-caption', html:
-    `<b>Merané v obci</b> — senzor ${s.source} „${escapeText(s.name)}"${s.lat != null ? ` (${s.distKm} km od stredu obce)` : ''}, ` +
-    `<a href="${s.url}" target="_blank" rel="noopener">mapa senzorov →</a>` }));
+    `<b>Merané v obci</b> — senzor ${s.source} „${escapeText(s.name)}"` +
+    (s.lat != null ? ` (${s.distKm} km od stredu obce), <a href="${s.url}" target="_blank" rel="noopener">mapa senzorov →</a>` : '') }));
+  // história merania — posledných 72 h
+  const since = Date.now() - 72 * 3600e3;
+  const pts = (s.history || []).map(h => ({ x: new Date(h.t), y: h.pm25 })).filter(p => +p.x >= since);
+  if (pts.length >= 4) {
+    const box = el('div');
+    body.appendChild(box);
+    const dayFmt = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' });
+    lineChart(box, [{ name: 'PM2.5', color: 'var(--series-5)', points: pts }], {
+      height: 140, unit: ' µg/m³', xLabel: v => dayFmt.format(new Date(v)),
+    });
+    const hours = Math.round((+pts.at(-1).x - +pts[0].x) / 3600e3);
+    body.appendChild(el('p', { class: 'chart-caption', text:
+      `PM2.5 — posledných ${hours >= 48 ? Math.round(hours / 24) + ' dní' : hours + ' h'} (${pts.length} meraní)` }));
+  } else {
+    body.appendChild(el('p', { class: 'chart-caption', text: 'História sa začína skladať — graf sa zobrazí po niekoľkých aktualizáciách.' }));
+  }
   if (model) {
     const diff = model.pm2_5 != null ? s.pm25 - model.pm2_5 : null;
     body.appendChild(el('details', { class: 'more-rows' }, [
