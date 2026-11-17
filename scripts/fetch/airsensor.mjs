@@ -65,7 +65,7 @@ export async function fetchAirSensor() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const mine = await res.json();
       const list = Array.isArray(mine) ? mine : [mine];
-      diag.push(`AirGradient (token): ${list.length} vlastných lokalít`);
+      diag.push(`AirGradient (token): ${list.length} vlastných lokalít · id ${list.map(r => r.locationId).join(',')} · polia ${Object.keys(list[0] || {}).join(',').slice(0, 300)}`);
       items.push(...list.map(r => agItem(r, true)).filter(i => i.distKm != null && i.distKm <= RADIUS_KM));
     } catch (e) { diag.push(`AirGradient (token): ${String(e.message).replace(token, '***').slice(0, 80)}`); }
   }
@@ -136,7 +136,7 @@ export async function fetchAirSensor() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = await res.json();
-        diag.push(`história z API: ${rows.length} hodinových hodnôt`);
+        diag.push(`história z API: ${rows.length} hodnôt · polia ${Object.keys(rows[0] || {}).join(',').slice(0, 200)} · od ${rows[0]?.timestamp || rows[0]?.date || '?'}`);
         history.push(...rows.map(r => ({ t: r.timestamp || r.date, pm25: num(r.pm02_corrected ?? r.pm02), pm10: num(r.pm10_corrected ?? r.pm10), temp: num(r.atmp_corrected ?? r.atmp) })));
       } catch (e) { diag.push(`história z API: ${String(e.message).replace(token, '***').slice(0, 80)}`); }
     }
