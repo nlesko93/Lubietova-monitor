@@ -40,7 +40,8 @@ export function initNews() {
     body.appendChild(linkList(d.items.slice(0, 8), {
       metaFn: it => [it.source, it.date ? timeAgo(it.date) : ''].filter(Boolean).join(' · '),
     }));
-  }, { emptyText: 'Google News momentálne neeviduje žiadne správy o Ľubietovej.' });
+    if (d.via) body.appendChild(el('p', { class: 'chart-caption', text: `Zdroj: ${d.via}` }));
+  }, { emptyText: 'Spravodajské vyhľadávače momentálne neevidujú žiadne správy o Ľubietovej.' });
 }
 
 export function initObec() {

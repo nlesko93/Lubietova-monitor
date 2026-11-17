@@ -11,6 +11,7 @@ async function load() {
   // 1) nájdi kód obce v číselníku dimenzie
   const dims = [`${CUBE}_obc`, 'nuts15', 'obc'];
   let obecCode = null, dimUsed = null;
+  const dimErrors = [];
   for (const dim of dims) {
     try {
       const d = await getJSON(`${API}/dimension/${CUBE}/${dim}?lang=sk`, { retries: 2 });
@@ -19,9 +20,15 @@ async function load() {
         entries.find(([, label]) => norm(label).includes(norm(CONFIG.obec)));
       if (hit) { obecCode = hit[0]; dimUsed = dim; break; }
       console.log(`  statistics: dimenzia ${dim} má ${entries.length} položiek, obec nenájdená`);
-    } catch (e) { console.warn(`  statistics dim ${dim}: ${e.message}`); }
+    } catch (e) { dimErrors.push(`${dim}: ${e.message.slice(0, 90)}`); console.warn(`  statistics dim ${dim}: ${e.message}`); }
   }
-  if (!obecCode) throw new Error('kód obce sa v číselníku nenašiel');
+  // číselník nedostupný → skús kód zložený z okresu (SK0321 = Banská Bystrica)
+  // a štatistického kódu obce z config.json
+  if (!obecCode && CONFIG.obecStatCode) {
+    obecCode = `${CONFIG.obecLau1 || 'SK0321'}${CONFIG.obecStatCode}`;
+    dimUsed = 'config';
+  }
+  if (!obecCode) throw new Error(`kód obce sa v číselníku nenašiel (${dimErrors.join(' ; ')})`);
   console.log(`  statistics: ${CONFIG.obec} = ${obecCode} (dim ${dimUsed})`);
 
   // 2) časový rad — kocka má 4 dimenzie (obec, rok, ďalšia, ukazovateľ);
@@ -44,7 +51,7 @@ async function load() {
       console.warn(`  statistics dataset: ${e.message.slice(0, 220)}`);
     }
   }
-  if (!population) throw lastErr;
+  if (!population) throw new Error(`${lastErr?.message?.slice(0, 160) || 'bez dát'}${dimErrors.length ? ` · číselník: ${dimErrors.join(' ; ')}` : ''}`);
 
   // 3) ďalšie obecné kocky (pohyb obyvateľstva, vek…) — všeobecným
   //    mechanizmom; zoznam kandidátov sa dolaďuje podľa logov discovery.
