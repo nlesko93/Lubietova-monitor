@@ -27,6 +27,7 @@ const PM25 = [
   [Infinity, 'extrémne zlá', 'var(--status-critical)'],
 ];
 const pmBand = v => PM25.find(([max]) => v <= max);
+// PM2.5 limity podľa EEA/WHO: 24 h priemer WHO 2021 = 15 µg/m³
 
 const tile = (lbl, v, unit = 'µg/m³') => el('div', { class: 'tile' }, [
   el('div', { class: 'label', text: lbl }),
@@ -75,12 +76,15 @@ function renderSensor(body, s, model) {
     ]),
   ]));
   body.appendChild(el('div', { class: 'tiles' }, [
-    tile('PM2.5', s.pm25), tile('PM10', s.pm10), s.pm1 != null ? tile('PM1', s.pm1) : null,
+    tile('PM2.5', s.pm25),
+    s.pm25raw != null && s.pm25raw !== s.pm25 ? tile('PM2.5 surová', s.pm25raw) : null,
+    tile('PM10', s.pm10), s.pm1 != null ? tile('PM1', s.pm1) : null,
     s.temp != null ? tile('Teplota', s.temp, '°C') : null,
     s.rh != null ? tile('Vlhkosť', s.rh, '%') : null,
   ].filter(Boolean)));
   body.appendChild(el('p', { class: 'chart-caption', html:
     `<b>Merané v obci</b> — senzor ${s.source} „${escapeText(s.name)}"` +
+    (s.pm25raw != null && s.pm25raw !== s.pm25 ? ' · PM2.5 s korekciou AirGradient (vlhkosť), surová hodnota zvlášť' : '') +
     (s.lat != null ? ` (${s.distKm} km od stredu obce), <a href="${s.url}" target="_blank" rel="noopener">mapa senzorov →</a>` : '') }));
   // história merania — posledných 72 h
   const since = Date.now() - 72 * 3600e3;
@@ -89,12 +93,16 @@ function renderSensor(body, s, model) {
     const box = el('div');
     body.appendChild(box);
     const dayFmt = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' });
-    lineChart(box, [{ name: 'PM2.5', color: 'var(--series-5)', points: pts }], {
+    const raw = (s.history || []).filter(h => +new Date(h.t) >= since && h.pm25raw != null).map(h => ({ x: new Date(h.t), y: h.pm25raw }));
+    const series = [{ name: 'PM2.5', color: 'var(--series-5)', points: pts }];
+    if (raw.length === pts.length) series.push({ name: 'PM2.5 surová', color: 'var(--series-2)', points: raw });
+    lineChart(box, series, {
       height: 140, unit: ' µg/m³', xLabel: v => dayFmt.format(new Date(v)),
     });
     const hours = Math.round((+pts.at(-1).x - +pts[0].x) / 3600e3);
     body.appendChild(el('p', { class: 'chart-caption', text:
-      `PM2.5 — posledných ${hours >= 48 ? Math.round(hours / 24) + ' dní' : hours + ' h'} (${pts.length} meraní)` }));
+      `PM2.5 — posledných ${hours >= 48 ? Math.round(hours / 24) + ' dní' : hours + ' h'}, priemery za 30 min` +
+      (series.length > 1 ? ' · hnedá = s korekciou, druhá čiara = surová' : '') }));
   } else {
     body.appendChild(el('p', { class: 'chart-caption', text: 'História sa začína skladať — graf sa zobrazí po niekoľkých aktualizáciách.' }));
   }
