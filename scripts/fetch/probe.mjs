@@ -16,11 +16,13 @@ export async function fetchProbe() {
   const text = execFileSync('pdftotext', ['-layout', '-enc', 'UTF-8', path.join(dir, 'cp.pdf'), '-'], { encoding: 'utf8', maxBuffer: 20e6 });
   const pages = text.split(/\f/);
   log.push(`strán ${pages.length}, znakov ${text.length}`);
-  pages.forEach((p, i) => {
-    const lines = p.split('\n');
-    log.push(`=== strana ${i + 1} (${lines.length} riadkov, Ľubietová: ${/ubietov/i.test(p)}) ===`);
-    // celá strana, ale len prvých 120 riadkov a 230 znakov na riadok
-    lines.slice(0, 120).forEach((l, j) => { if (l.trim()) log.push(`${String(j).padStart(3)}|${l.slice(0, 230)}`); });
-  });
+  // legenda značiek (riadky s „jazdí / premáva / sviatok…")
+  const legend = text.split('\n').filter(l => /jazd|premáv|sviat|sobot|nedeľ|pracovn|prázdn|vyučov/i.test(l));
+  log.push(`--- legenda (${legend.length}) ---`, ...legend.slice(0, 40).map(l => l.trim().slice(0, 200)));
+  // prvá strana s Ľubietovou celá (bez prázdnych riadkov)
+  const idx = pages.findIndex(p => /ubietov/i.test(p));
+  const lines = pages[idx].split('\n');
+  log.push(`=== strana ${idx + 1} (${lines.length} riadkov) ===`);
+  lines.forEach((l, j) => { if (l.trim()) log.push(`${String(j).padStart(3)}|${l.slice(0, 200)}`); });
   return writeResult('_probe', { log });
 }
