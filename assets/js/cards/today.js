@@ -4,6 +4,7 @@
 // svoju dlaždicu jednoducho nezobrazí.
 import { loadData, getConfig, el, every, timeAgo, daysFromToday } from '../util.js';
 import { nowInObec, statusNow } from './hours.js';
+import { lineForDay } from '../busdays.js';
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
 const ORDER = ['weather', 'bus', 'waste', 'open', 'alerts'];
@@ -46,10 +47,10 @@ export async function initToday() {
   });
 
   // najbližší autobus (obnovuje sa každých 30 s)
-  loadData('buses').then(d => {
-    const line = (d.lines || [])[0];
-    if (!line) return;
+  Promise.all([loadData('buses'), getConfig()]).then(([d, cfg]) => {
+    if (!(d.lines || [])[0]) return;
     every(30 * 1000, () => {
+      const line = lineForDay(d.lines[0], cfg);   // len dnešné spoje
       const now = new Date();
       const nowMin = now.getHours() * 60 + now.getMinutes();
       const parts = [];

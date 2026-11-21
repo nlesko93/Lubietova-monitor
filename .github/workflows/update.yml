@@ -78,7 +78,7 @@ jobs:
           curl -sSf "${url}data/news.json" | head -c 200
           echo
           echo "== kontrola autobusov =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/buses.json'));for(const l of d.lines||[]){console.log('linka',l.line,'geometria bodov:',l.geometry?l.geometry.length:0,'dĺžka cum:',l.cum?l.cum[l.cum.length-1]:'-');for(const dir of l.directions||[]){console.log('  smer',dir.dir,'zastávok:',dir.stops.length,'s dist:',dir.stops.filter(s=>s.dist!=null).length,'odchodov:',dir.departures.length);for(const s of dir.stops)console.log('    -',s.name,'časov:',s.times.length);}}"
+          node -e "const d=JSON.parse(require('fs').readFileSync('data/buses.json'));if(!d.ok)console.log('CHYBA',d.error);for(const l of d.lines||[]){console.log('linka',l.line,'geometria bodov:',l.geometry?l.geometry.length:0);for(const dir of l.directions||[]){const k={};for(const t of dir.trips||[]){const x=(t.d||'denne')+(t.sch?'/'+t.sch:'')+(t.ex?'/výluka':'');k[x]=(k[x]||0)+1;}console.log('  smer',dir.dir,'spojov',(dir.trips||[]).length,JSON.stringify(k),'| zastávky',dir.stops.map(s=>s.name+(s.dist!=null?'':'(bez dist)')).join(', '));for(const t of (dir.trips||[]).slice(0,4))console.log('    č.',t.n,t.d,t.sch||'',t.dep,JSON.stringify(t.t));}}"
           echo
           echo "== kontrola webkamier =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/webcams.json'));for(const c of d.items||[]){console.log('-',c.name,'ok='+c.ok,c.snapshot?('snapshot='+c.snapshot):'',c.embed?('embed='+c.embed):'',c.note?('note='+c.note):'');if(c.found&&c.found.length)console.log('    obrázky na stránke:',c.found.join(' , '));}"
@@ -103,6 +103,3 @@ jobs:
           echo
           echo "== merané ovzdušie =="
           node -e "const d=JSON.parse(require('fs').readFileSync('data/airsensor.json'));if(!d.ok)console.log('CHYBA',d.error);for(const l of d._diag||[])console.log(l);console.log('história:',(d.history||[]).length,'bodov, senzor',d.historyId);for(const i of d.items||[])console.log('  -',i.source,i.own?'(vlastný)':'','|',i.name,'|',i.owner,'|',i.distKm,'km |',i.lat,i.lon,'| PM2.5',i.pm25,'(raw',i.pm25raw+') PM10',i.pm10,'| T',i.temp,'RH',i.rh,'|',i.ts,'| id',i.id);"
-          echo
-          echo "== SONDA =="
-          node -e "const d=JSON.parse(require('fs').readFileSync('data/_probe.json'));for(const l of d.log||[d.error])console.log(l);"

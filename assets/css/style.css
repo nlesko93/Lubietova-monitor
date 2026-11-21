@@ -472,3 +472,4 @@ body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidd
 .install-help::backdrop { background: rgb(0 0 0 / 0.35); }
 .install-help h2 { margin: 0 0 8px; font-size: 1rem; }
 .install-help p { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.45; }
+.bus-day { margin: 0 0 8px; font-size: 0.8rem; color: var(--text-secondary); }

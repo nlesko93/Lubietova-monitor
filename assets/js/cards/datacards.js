@@ -2,6 +2,7 @@
 import { loadData, setStatus, showError, el, timeAgo, updatedLabel, freshness, daysFromToday, escapeHtml, every, fmtTime, haversineKm, getConfig } from '../util.js';
 import { barChart, lineChart } from '../charts.js';
 import { setBuses, setBusRoute, setTraffic } from './mapcard.js';
+import { lineForDay } from '../busdays.js';
 
 // maxAgeH: po koľkých hodinách sa dáta označia ako staré (denné zdroje majú 36 h)
 async function dataCard(key, bodyId, renderFn, { emptyText = 'Zatiaľ žiadne položky.', handlesEmpty = false, maxAgeH = 3 } = {}) {
@@ -562,6 +563,27 @@ function busVehicles(lines) {
     const geom = l.geometry, cum = l.cum;
     for (const dir of l.directions || []) {
       const stops = dir.stops || [];
+      // presne podľa spojov (len tie, ktoré dnes idú): úsek medzi dvoma
+      // zastávkami toho istého spoja, v ktorom je práve teraz
+      if (dir.trips) {
+        for (const tr of dir.trips) {
+          const pts = stops.filter(s => tr.t[s.name]).map(s => ({ s, m: toMin(tr.t[s.name]), tt: tr.t[s.name] }));
+          for (let i = 0; i < pts.length - 1; i++) {
+            const A = pts[i], B = pts[i + 1];
+            if (B.m <= A.m || nowMin < A.m || nowMin >= B.m) continue;
+            const f = (nowMin - A.m) / (B.m - A.m);
+            let pos = (A.s.dist != null && B.s.dist != null)
+              ? pointAtDist(geom, cum, A.s.dist + (B.s.dist - A.s.dist) * f) : null;
+            if (!pos) pos = [A.s.lat + (B.s.lat - A.s.lat) * f, A.s.lon + (B.s.lon - A.s.lon) * f];
+            vehicles.push({
+              lat: pos[0], lon: pos[1],
+              line: l.line, dir: dir.dir, dirLabel: dir.label, from: A.s.name, to: B.s.name, depart: A.tt, arrive: B.tt,
+            });
+            break;
+          }
+        }
+        continue;
+      }
       for (let i = 0; i < stops.length - 1; i++) {
         const A = stops[i], B = stops[i + 1];
         if (!A.times?.length || !B.times?.length) continue;
@@ -612,10 +634,13 @@ export function initBuses() {
     const routeGeom = lines.find(l => l.geometry?.length > 1)?.geometry;
     if (routeGeom) setBusRoute(routeGeom);
 
-    every(30 * 1000, () => {
-      renderBuses(body, lines);
-      setBuses(busVehicles(lines));
-    });
+    getConfig().then(cfg => every(30 * 1000, () => {
+      // len spoje, ktoré idú dnes (pracovný deň / sobota / nedeľa a sviatky,
+      // školské vyučovanie / prázdniny, výluky) — prepočíta sa aj cez polnoc
+      const today = lines.map(l => lineForDay(l, cfg));
+      renderBuses(body, today);
+      setBuses(busVehicles(today));
+    }));
     setStatus('buses', updatedLabel(d.updated), 'live');   // cestovný poriadok — denná aktualizácia stačí
   }).catch(e => showError(body, 'buses', e, 'Cestovný poriadok sa nepodarilo načítať.'));
 }
@@ -646,6 +671,9 @@ function renderBuses(body, lines) {
       el('div', { class: 'time-chips' }, chipTimes(dir.departures, nowMin, next)
         .map(t => el('span', { class: `chip${t === next ? ' chip-now' : ''}`, text: t }))),
     ]));
+  }
+  if (l.day) {
+    body.insertBefore(el('p', { class: 'bus-day', text: `Dnes: ${l.day.label} — zobrazené len spoje, ktoré dnes idú` }), body.firstChild);
   }
   body.appendChild(el('p', { class: 'chart-caption', html:
     `Zastávka Ľubietová, nám. · trasa ${escapeHtml(l.route || '')}<br>` +
