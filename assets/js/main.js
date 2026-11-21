@@ -82,6 +82,38 @@ document.querySelectorAll('main .theme').forEach(sec => {
   if (collapsed.includes(sec.id)) setCollapsed(sec, true); else title.setAttribute('aria-expanded', 'true');
 });
 
+// --- PWA: service worker + tlačidlo „Nainštalovať" ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW', e)));
+}
+const installBtn = document.getElementById('install-btn');
+const installHelp = document.getElementById('install-help');
+const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+// Chrome / Edge / Android: prehliadač ponúkne vlastný dialóg
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installPrompt = e;
+  installBtn.hidden = false;
+});
+window.addEventListener('appinstalled', () => { installBtn.hidden = true; installPrompt = null; });
+// iPhone / iPad (Safari) dialóg nemá — ukážeme návod
+const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (ios && !standalone) installBtn.hidden = false;
+installBtn.addEventListener('click', async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') installBtn.hidden = true;
+    installPrompt = null;
+    return;
+  }
+  document.getElementById('install-help-text').innerHTML = ios
+    ? 'V Safari ťukni na ikonu <b>Zdieľať</b> (štvorček so šípkou) a vyber <b>Pridať na plochu</b>.'
+    : 'V menu prehliadača vyber <b>Inštalovať aplikáciu</b> alebo <b>Pridať na plochu</b>.';
+  installHelp.showModal();
+});
+
 // --- karty: každá beží nezávisle, chyba jednej nezhodí ostatné ---
 const cards = [
   initToday, initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,

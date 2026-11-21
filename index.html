@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ľubietová naživo</title>
 <meta name="description" content="Monitorovací dashboard obce Ľubietová — počasie, ovzdušie, lietadlá a satelity nad obcou, správy, transparentnosť obce a ďalšie verejne dostupné údaje v reálnom čase.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2f7d4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ľubietová">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -19,6 +27,7 @@
   <div class="topbar-status">
     <div class="clock" id="clock" aria-live="off">--:--:--</div>
     <div class="topbar-meta" id="topbar-sun">—</div>
+    <button class="install-btn" id="install-btn" type="button" hidden>⬇ Inštalovať</button>
     <button class="theme-toggle" id="theme-toggle" title="Prepnúť svetlý/tmavý režim" aria-label="Prepnúť tému">◐</button>
   </div>
 </header>
@@ -282,6 +291,12 @@
   <p class="unavailable" id="unavailable" hidden></p>
 
 </main>
+
+<dialog class="install-help" id="install-help">
+  <h2>Pridať na plochu</h2>
+  <p id="install-help-text"></p>
+  <form method="dialog"><button class="btn-link">Rozumiem</button></form>
+</dialog>
 
 <footer class="footer">
   <p>Ľubietová naživo — nezávislý prehľad verejne dostupných (OSINT) údajov. Nie je oficiálnou stránkou obce.</p>

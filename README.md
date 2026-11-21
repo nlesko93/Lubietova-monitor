@@ -54,6 +54,14 @@ prepínač (aj podľa nastavenia systému).
 | Šport — FK Baník Ľubietová | odkazy na [Futbalnet](https://sportnet.sme.sk/futbalnet/) (tabuľka, výsledky, súpiska) | statické odkazy |
 | Inzeráty v okolí — PSČ 976 55 | [Bazoš.sk](https://www.bazos.sk/) | hodinovo |
 
+## Inštalácia ako aplikácia (PWA)
+
+Stránku si môžeš pridať na plochu telefónu alebo počítača ako aplikáciu:
+tlačidlo **⬇ Inštalovať** v hlavičke (Chrome, Edge, Android), na iPhone
+v Safari cez **Zdieľať → Pridať na plochu**. Aplikácia sa otvára bez
+lišty prehliadača a bez internetu ukáže posledný načítaný stav
+(`manifest.webmanifest`, `sw.js`).
+
 ## Architektúra
 
 - **Statická stránka** (vanilla JS, žiadny build) hosťovaná na **GitHub Pages**.
