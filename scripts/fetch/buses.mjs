@@ -14,7 +14,7 @@ const OBEC = new RegExp(CONFIG.busStopMatch || 'ubietov', 'i');
 const BB = /B(?:\.|ansk[aá])\s*Bystrica/i;
 const UA = 'LubietovaMonitor/1.0 (+https://github.com/nlesko93/lubietova-monitor)';
 
-export const fetchBuses = () => cached('buses', 12, 2, load, prev => (prev.lines || []).some(l => l.geometry && l.directions?.some(d => d.trips?.length)));
+export const fetchBuses = () => cached('buses', 12, 3, load, prev => (prev.lines || []).some(l => l.geometry && l.directions?.some(d => d.trips?.length)));
 
 async function load() {
   const lines = [];
@@ -229,7 +229,7 @@ function dayRule(tokens, legend) {
   return r;
 }
 
-const timesAt = line => [...line.matchAll(/\b([0-2]?\d)[:.]([0-5]\d)\b/g)]
+const timesAt = line => [...line.matchAll(/\b([0-2]?\d):([0-5]\d)\b/g)]
   .filter(m => +m[1] < 24)
   .map(m => ({ t: `${m[1].padStart(2, '0')}:${m[2]}`, c: m.index + m[0].length / 2 }));
 
@@ -297,7 +297,7 @@ function haversine(a, b) {
 }
 
 function extractTimes(line) {
-  return [...line.matchAll(/\b([0-2]?\d)[:.]([0-5]\d)\b/g)]
+  return [...line.matchAll(/\b([0-2]?\d):([0-5]\d)\b/g)]
     .map(m => [+m[1], m[2]]).filter(([h]) => h < 24)
     .map(([h, mm]) => `${String(h).padStart(2, '0')}:${mm}`);
 }
