@@ -837,3 +837,72 @@ export async function initFootball() {
     showError(body, 'football', e, 'Odkazy sa nepodarilo načítať.');
   }
 }
+
+// Bohoslužby (farnosť Medzibrod, filiálka Ľubietová) a farské oznamy.
+export function initChurch() {
+  return dataCard('church', 'church-body', (body, d) => {
+    getConfig().then(cfg => {
+      const place = cfg.church?.place || 'Ľubietová';
+      const services = d.items || [];
+      const posts = d.posts || [];
+      const dayFmt = new Intl.DateTimeFormat('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric' });
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bratislava' }).format(new Date());
+      const nowHm = new Intl.DateTimeFormat('sk-SK', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Bratislava' }).format(new Date());
+      // len budúce (dnešné od teraz)
+      const upcoming = services.filter(x => x.date > today || (x.date === today && x.time >= nowHm));
+
+      const tabs = el('div', { class: 'tab-row', role: 'tablist' });
+      const content = el('div');
+      body.append(tabs, content);
+
+      const serviceList = list => {
+        if (!list.length) return el('p', { class: 'empty-note', text: 'V kalendári farnosti teraz nie sú žiadne bohoslužby.' });
+        const ul = el('ul', { class: 'item-list' });
+        let lastDate = null;
+        list.forEach((x, i) => {
+          const label = x.date === today ? 'dnes' : dayFmt.format(new Date(x.date + 'T12:00:00'));
+          ul.appendChild(el('li', { class: i === 0 ? 'church-next' : '' }, [
+            el('span', { class: 'item-title' }, [
+              el('b', { text: `${x.date !== lastDate ? label + ' ' : ''}${x.time}` }),
+              ` · ${x.kind}${x.place !== place ? ' · ' + x.place : ''}`,
+            ]),
+            el('span', { class: 'item-meta', text: [x.intention, x.priest].filter(Boolean).join(' · ') }),
+          ]));
+          lastDate = x.date;
+        });
+        return ul;
+      };
+      const views = [
+        ['here', place, () => serviceList(upcoming.filter(x => x.place === place).slice(0, 8))],
+        ['all', 'Celá farnosť', () => serviceList(upcoming.slice(0, 12))],
+        ['posts', `Oznamy${posts.length ? ' (' + posts.length + ')' : ''}`, () => {
+          if (!posts.length) return el('p', { class: 'empty-note', text: 'Žiadne oznamy.' });
+          return linkList(posts.slice(0, 6), {
+            metaFn: it => [it.date ? new Date(it.date + 'T12:00:00').toLocaleDateString('sk-SK') : null, it.perex].filter(Boolean).join(' · '),
+          });
+        }],
+      ];
+      const show = key => {
+        tabs.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+        content.innerHTML = '';
+        content.appendChild(views.find(v => v[0] === key)[2]());
+      };
+      for (const [key, label] of views) {
+        const b = el('button', { class: 'tab-btn', 'data-key': key, text: label });
+        b.addEventListener('click', () => show(key));
+        tabs.appendChild(b);
+      }
+      show('here');
+
+      const links = el('div', { class: 'link-row' }, [
+        el('a', { class: 'btn-link', href: d.parish?.program || 'https://medzibrod.fara.sk/porad_bohosluzeb', target: '_blank', rel: 'noopener', text: 'Program bohoslužieb farnosti →' }),
+        cfg.church?.ecavFacebook
+          ? el('a', { class: 'btn-link', href: cfg.church.ecavFacebook, target: '_blank', rel: 'noopener', text: 'Evanjelický zbor (Facebook) →' })
+          : null,
+      ].filter(Boolean));
+      body.appendChild(links);
+      body.appendChild(el('p', { class: 'chart-caption', html:
+        'Rímskokatolícka farnosť Medzibrod (Ľubietová je filiálka) · zdroj: <a href="https://medzibrod.fara.sk/" target="_blank" rel="noopener">medzibrod.fara.sk</a>' }));
+    });
+  }, { handlesEmpty: true });
+}

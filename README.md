@@ -23,6 +23,7 @@ prepínač (aj podľa nastavenia systému).
 | Zber odpadu (kalendár) | Google Calendar ICS (v `config.json`) | hodinovo |
 | Odstávky elektriny | [SSD](https://www.ssd.sk/) / oznamy obce | hodinovo |
 | Otváracie hodiny (obecný úrad, pošta, Jednota, lekáreň) | statické v `config.json` + „otvorené teraz" v prehliadači | 1 min (výpočet) |
+| Bohoslužby v Ľubietovej a celej farnosti (čas, úmysel, kňaz) + farské oznamy a pozvánky | [medzibrod.fara.sk](https://medzibrod.fara.sk/) (RSS kalendár + blog; Ľubietová je filiálka farnosti Medzibrod) | pri každom behu |
 | Úradná tabuľa, oznamy, podujatia a dokumenty zastupiteľstva | [lubietova.sk](https://www.lubietova.sk/) | pri každom behu |
 | Správy o obci | Google News RSS | hodinovo |
 | Voľby v obci (komunálne 2026 — starosta + všetci kandidáti na poslancov, NRSR 2023, prezident 2024, EP 2024, komunálne 2022) | [volby.statistics.sk](https://volby.statistics.sk/) (CSV exporty) + statická záloha v `config.json` | hodinovo |

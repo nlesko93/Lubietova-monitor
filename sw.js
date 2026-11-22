@@ -3,7 +3,7 @@
 // cache" — aplikácia tak vždy ukáže najnovšie dáta a verziu, a bez
 // internetu aspoň posledný stav. Cudzie API (počasie, lietadlá…) sa
 // necachujú, idú priamo.
-const CACHE = 'lubietova-v2';
+const CACHE = 'lubietova-v3';
 const SHELL = [
   './', 'index.html', 'config.json', 'manifest.webmanifest',
   'assets/css/style.css', 'assets/js/main.js', 'assets/js/util.js', 'assets/js/charts.js', 'assets/js/busdays.js',

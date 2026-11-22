@@ -7,7 +7,7 @@ import { nowInObec, statusNow } from './hours.js';
 import { lineForDay } from '../busdays.js';
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
-const ORDER = ['weather', 'bus', 'waste', 'open', 'alerts'];
+const ORDER = ['weather', 'bus', 'waste', 'open', 'church', 'alerts'];
 
 export async function initToday() {
   const box = document.getElementById('today-tiles');
@@ -101,6 +101,18 @@ export async function initToday() {
         href: '#card-hours',
       });
     });
+  }).catch(() => {});
+
+  // najbližšia bohoslužba v obci
+  Promise.all([loadData('church'), getConfig()]).then(([d, cfg]) => {
+    const place = cfg.church?.place || 'Ľubietová';
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bratislava' }).format(new Date());
+    const nowHm = new Intl.DateTimeFormat('sk-SK', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Bratislava' }).format(new Date());
+    const next = (d.items || []).find(x => x.place === place && (x.date > today || (x.date === today && x.time >= nowHm)));
+    if (!next) return;
+    const n = Math.round((Date.parse(next.date + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86400e3);
+    const day = n === 0 ? 'dnes' : n === 1 ? 'zajtra' : new Intl.DateTimeFormat('sk-SK', { weekday: 'long' }).format(new Date(next.date + 'T12:00:00'));
+    set('church', { icon: '⛪', label: 'Bohoslužba v obci', value: `${day} ${next.time}`, sub: next.kind, href: '#card-church', tone: n === 0 ? 'soon' : '' });
   }).catch(() => {});
 
   // výstrahy a odstávky — jedna dlaždica, upozorní len keď niečo je
