@@ -249,7 +249,11 @@ function diffSpan(d) {
 
 // ---------- prepočet pre jednu domácnosť (sadzby z VZN obce) ----------
 const R = {dom: 0.065, podlazie: 0.04, byt: 0.065, garaz: 0.25, odpadDen: 0.096};
-const HH = {typ: 'dom', plocha: 120, podlazia: 2, garaz: 0, byt: 70, osoby: 3};
+const HH = {typ: 'dom', plocha: 120, podlazia: 1, garaz: 0, byt: 70, osoby: 3};
+// Sčítanie obyvateľov, domov a bytov 2021, obec Ľubietová (scitanie.sk/moja-obec/SK0321508748)
+const SODB = {domy: 412, rodinne: 387, bytoveDomy: 3, bytyBD: 20, plocha: 118.47};
+// odhad dane zo stavieb za všetky domácnosti: rodinný dom 6 až 15 € ročne, byt v bytovom dome asi 5 €
+const ODHAD = {nizky: Math.round(SODB.rodinne * 6 + SODB.bytyBD * 5), vysoky: Math.round(SODB.rodinne * 15 + SODB.bytyBD * 5)};
 const numIn = (key, label, min, max, step, unit) => {
   const l = el('label');
   const i = document.createElement('input');
@@ -272,8 +276,19 @@ function hhDan() {
   sel.addEventListener('change', () => { HH.typ = sel.value; update(); });
   inp.append(sel, dom, byt);
   const out = el('div', 'hh-out'); out.id = 'hh-dan-out';
-  const src = el('div', 'hh-src', 'Sadzby podľa VZN obce č. 2/2021: dom 0,065 € za m² zastavanej plochy a 0,04 € za m² za každé ďalšie podlažie, byt 0,065 € za m², garáž 0,25 € za m². Bez dane z pozemkov (záhrada, dvor). Zmena posuvníkom sa uplatní na všetky sadzby rovnako.');
-  box.append(inp, out, src);
+  const src = el('div', 'hh-src', 'Sadzby podľa VZN obce č. 2/2021: dom 0,065 € za m² zastavanej plochy a príplatok 0,04 € za m² za každé ďalšie podlažie, byt 0,065 € za m², garáž 0,25 € za m². Bez dane z pozemkov (záhrada, dvor). Zmena posuvníkom sa uplatní na všetky sadzby rovnako.');
+  const est = el('div', 'hh-out'); est.id = 'hh-dan-obec';
+  const det = el('details', 'items');
+  det.append(el('summary', '', 'Ako sme odhadli podiel domácností'));
+  [
+    'Podľa sčítania 2021 má Ľubietová ' + SODB.domy + ' domov, z toho ' + SODB.rodinne + ' rodinných a ' + SODB.bytoveDomy + ' bytové domy s ' + SODB.bytyBD + ' bytmi. Priemerná podlahová plocha bytu je ' + SODB.plocha.toLocaleString('sk-SK') + ' m².',
+    'Zastavaná plocha domov v sčítaní nie je. Pri dome s touto podlahovou plochou vychádza daň zo stavby zhruba 6 € (dvojpodlažný, menší pôdorys) až 15 € (prízemný s garážou a kôlňou) ročne.',
+    'Spolu za domácnosti teda ' + eur2(ODHAD.nizky).replace(',00', '') + ' až ' + eur2(ODHAD.vysoky).replace(',00', '') + ' ročne. Daň z pozemkov domácností (záhrady, dvory) v odhade nie je, lebo hodnotu týchto pozemkov pre Ľubietovú nemáme; skutočný podiel domácností bude preto o niečo vyšší.',
+    'Zvyšok dane z nehnuteľností platia ostatní vlastníci: firmy, vlastníci poľnohospodárskej pôdy a lesov, chát a ďalších stavieb. Koľko presne, rozpočet neuvádza.'
+  ].forEach((t) => det.append(el('p', 'small', t)));
+  const a = el('a', 'small', 'Údaje zo sčítania 2021 za Ľubietovú'); a.href = 'https://www.scitanie.sk/moja-obec/SK0321508748';
+  det.append(a);
+  box.append(inp, out, src, el('div', 'hh-title', 'A čo všetky domácnosti v obci'), est, det);
   return box;
 }
 function hhOdpad() {
@@ -417,7 +432,7 @@ function update() {
     $('id-' + k).replaceChildren(diffSpan(d));
     const pct = S[k];
     let t = $('in-' + k).dataset.base + ' Zmena ' + (pct > 0 ? '+' : '') + pct + ' %';
-    if (d !== 0) t += ', teda v priemere ' + sfmt(d / POP) + ' na obyvateľa ročne' + (k === 'dan' ? ' (priemer zahŕňa aj daň, ktorú platia firmy a vlastníci pozemkov a lesov)' : '');
+    if (d !== 0) t += ', teda v priemere ' + sfmt(d / POP) + ' na obyvateľa ročne' + (k === 'dan' ? ' (priemer zahŕňa aj daň firiem a vlastníkov pôdy a lesov, pozri odhad nižšie)' : '');
     if (k === 'odpad') t += '. Poplatok pokryje ' + (Math.round((b + d) / S.exp[D.odpadyId] * 1000) / 10).toLocaleString('sk-SK') + ' % nákladov na odpady.';
     else t += '.';
     $('in-' + k).textContent = t;
@@ -432,6 +447,14 @@ function update() {
     if (pct) o.append(document.createTextNode(', po vašej zmene '), el('b', '', eur2(nova)), el('span', 'diff ' + (nova > dnes ? 'neg' : 'pos'), ' ' + seur2(nova - dnes) + ' ročne'));
   };
   hhOut('hh-dan-out', hh.danDnes, hh.danNova, S.dan);
+  {
+    const o = $('hh-dan-obec');
+    const r0 = (v) => fmt(Math.round(v / 100) * 100);
+    const podielN = Math.round(ODHAD.nizky / D.inc.dan * 100), podielV = Math.round(ODHAD.vysoky / D.inc.dan * 100);
+    let t = 'Domácnosti zaplatia na dani zo stavieb spolu zhruba ' + r0(ODHAD.nizky) + ' až ' + r0(ODHAD.vysoky) + ' ročne, teda asi ' + podielN + ' až ' + podielV + ' % celej dane z nehnuteľností (' + fmt(D.inc.dan) + ').';
+    if (S.dan) t += ' Z vašej zmeny ' + sfmt(c.danDiff) + ' by na ne pripadlo približne ' + sfmt(ODHAD.nizky * S.dan / 100) + ' až ' + sfmt(ODHAD.vysoky * S.dan / 100) + ', zvyšok na ostatných vlastníkov.';
+    o.textContent = t;
+  }
   hhOut('hh-odpad-out', hh.odpadDnes, hh.odpadNovy, S.odpad);
   // výdavky
   D.exp.forEach((x) => {
