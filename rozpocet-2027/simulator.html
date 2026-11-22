@@ -81,6 +81,30 @@ details.items summary::-webkit-details-marker{display:none}
 .share{width:100%;font:inherit;font-size:13px;padding:8px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 footer{margin-top:28px;font-size:13px;color:var(--muted)}
 @media(prefers-reduced-motion:no-preference){.k-val{transition:color .2s}}
+.export{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:20px;max-width:min(440px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin-bottom:8px}
+dialog .btns{justify-content:flex-end;margin-top:14px}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.toast button{margin-left:10px;min-height:30px;padding:2px 10px;background:transparent;color:inherit;border-color:currentColor}
+#report{display:none}
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;color:#000;font-size:11pt}
+  .wrap,.toast,dialog{display:none!important}
+  #report{display:block}
+  #report h1{font-size:20pt;margin:0 0 4px}
+  #report .meta{font-size:9pt;color:#444;margin:0 0 10px;word-break:break-all}
+  #report .verdict{border:1px solid #000;padding:6px 8px;margin:8px 0 12px;font-weight:600}
+  #report table{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:9.5pt}
+  #report th,#report td{border-bottom:1px solid #bbb;padding:3px 4px;text-align:left;vertical-align:top}
+  #report th{border-bottom:1.5px solid #000}
+  #report td.n,#report th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  #report tr.sec td{font-weight:700;padding-top:8px;border-bottom:1.5px solid #000}
+  #report tr.chg td{font-weight:600}
+  #report h2{font-size:13pt;margin:12px 0 4px}
+}
 </style>
 </head>
 <body>
@@ -94,7 +118,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
       <div><div class="k-label">Bežný rozpočet (príjmy − výdavky)</div><div class="k-val" id="k-bezny">—</div></div>
       <div><div class="k-label">Investície a splátky spolu</div><div class="k-val" id="k-inv">—</div></div>
       <div class="k3"><div class="k-label">Zostatok na konci roka</div><div class="k-val" id="k-zost">—</div></div>
-      <div class="btns"><button type="button" id="b-reset">Návrh obce</button><button type="button" class="primary" id="b-share">Zdieľať odkaz</button></div>
+      <div class="btns"><button type="button" id="b-reset" title="Obnoví návrh obce a vymaže vaše zmeny">Návrh obce</button><button type="button" id="b-save">Uložiť / tlačiť</button><button type="button" class="primary" id="b-share">Zdieľať odkaz</button></div>
       <div class="status" id="status" role="status" aria-live="polite">—</div>
     </div>
   </div>
@@ -141,6 +165,12 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
     <h2>Vaše zmeny oproti návrhu obce</h2>
     <ul class="summary" id="sum-list"></ul>
     <p class="small muted" id="sum-capita"></p>
+    <div class="export">
+      <button type="button" id="b-print">Vytlačiť alebo uložiť ako PDF</button>
+      <button type="button" id="b-csv">Stiahnuť tabuľku pre Excel</button>
+      <button type="button" id="b-share2">Skopírovať odkaz</button>
+    </div>
+    <p class="small muted" style="margin-top:8px">Pri tlači zvoľte ako tlačiareň „Uložiť ako PDF“, ak chcete súbor. Tabuľka obsahuje všetky položky: návrh obce, váš návrh a rozdiel.</p>
     <input class="share" id="share-url" readonly aria-label="Odkaz na váš rozpočet" hidden>
   </section>
 
@@ -149,6 +179,17 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
+<dialog id="dlg" aria-labelledby="dlg-h">
+  <h2 id="dlg-h">Obnoviť návrh obce?</h2>
+  <p>Všetky vaše zmeny sa vymažú a simulátor sa vráti k návrhu obce.</p>
+  <p class="small muted">Ak si ich chcete nechať, najprv si skopírujte odkaz alebo stiahnite tabuľku.</p>
+  <div class="btns">
+    <button type="button" id="dlg-cancel">Zrušiť</button>
+    <button type="button" id="dlg-copy">Skopírovať odkaz</button>
+    <button type="button" class="danger" id="dlg-ok">Vymazať zmeny</button>
+  </div>
+</dialog>
+<div id="report" aria-hidden="true"></div>
 
 <script>
 {
@@ -399,18 +440,124 @@ function writeHash() {
     try { history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); } catch (e) {}
   }, 250);
 }
-function toast(t) { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, 2500); }
+function toast(t, action, fn) {
+  const e = $('toast');
+  e.replaceChildren(document.createTextNode(t));
+  if (action) { const b = el('button', '', action); b.type = 'button'; b.addEventListener('click', () => { e.hidden = true; fn(); }); e.append(b); }
+  e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, action ? 8000 : 2500);
+}
 
 // ---------- udalosti ----------
-$('b-reset').addEventListener('click', () => { S = base(); syncInputs(); update(); toast('Obnovený návrh obce.'); });
-$('b-share').addEventListener('click', async () => {
-  const h = encode();
-  const url = location.origin + location.pathname + (h ? '#' + h : '');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+function doReset() {
+  const prev = clone(S);
+  S = base(); syncInputs(); update();
+  toast('Obnovený návrh obce.', 'Vrátiť späť', () => { S = prev; syncInputs(); update(); });
+}
+const dlg = $('dlg');
+$('b-reset').addEventListener('click', () => {
+  if (!encode()) { toast('Zatiaľ nemáte žiadne zmeny, vidíte návrh obce.'); return; }
+  if (dlg && typeof dlg.showModal === 'function') dlg.showModal();
+  else if (window.confirm('Obnoviť návrh obce? Všetky vaše zmeny sa vymažú.')) doReset();
+});
+$('dlg-cancel').addEventListener('click', () => dlg.close());
+$('dlg-ok').addEventListener('click', () => { dlg.close(); doReset(); });
+$('dlg-copy').addEventListener('click', () => { copyLink(); });
+$('b-save').addEventListener('click', () => { $('zhrnutie').scrollIntoView({behavior: 'smooth', block: 'start'}); });
+const shareUrl = () => { const h = encode(); return location.origin + location.pathname + (h ? '#' + h : ''); };
+async function copyLink() {
+  const url = shareUrl();
   const box = $('share-url');
   box.value = url; box.hidden = false;
   try { await navigator.clipboard.writeText(url); toast('Odkaz je skopírovaný.'); }
-  catch (e) { box.focus(); box.select(); toast('Skopírujte odkaz z poľa dole na stránke.'); }
+  catch (e) { box.focus(); box.select(); toast('Skopírujte odkaz z poľa v časti Vaše zmeny.'); }
+}
+$('b-share').addEventListener('click', copyLink);
+$('b-share2').addEventListener('click', copyLink);
+
+// ---------- export: tabuľka všetkých riadkov ----------
+function model() {
+  const c = calc();
+  const rows = [];
+  const add = (sec, name, navrh, vas) => rows.push({sec, name, navrh: Math.round(navrh), vas: Math.round(vas), d: Math.round(vas - navrh)});
+  add('Príjmy', 'Daň z nehnuteľností', D.inc.dan, D.inc.dan + c.danDiff);
+  add('Príjmy', 'Poplatok za komunálny odpad', D.inc.odpad, D.inc.odpad + c.odpadDiff);
+  D.incLocked.forEach((x) => add('Príjmy', x.name, x.sum, x.sum));
+  D.exp.forEach((x) => add('Bežné výdavky', x.name, x.base, S.exp[x.id]));
+  if (S.uver) add('Bežné výdavky', 'Úroky z nového úveru', 0, c.urokyNove);
+  D.inv.forEach((x, i) => add('Investície', x.name, x.on ? x.sum : 0, S.inv[i] ? x.sum : 0));
+  S.custom.forEach((cc) => add('Investície', cc.name + ' (vlastný odhad)', 0, cc.sum));
+  add('Financovanie', 'Kapitálové príjmy v návrhu', D.kapPrijmy, D.kapPrijmy);
+  add('Financovanie', 'Predaj majetku', 0, S.predaj);
+  add('Financovanie', 'Rezervný fond', 0, S.rf);
+  add('Financovanie', 'Nový úver' + (S.uver ? ' (' + S.roky + ' rokov, ' + S.urok + ' %)' : ''), 0, S.uver);
+  add('Financovanie', 'Splátky istiny úverov', D.splatky, c.splatky);
+  const base0 = (() => { const keep = S; S = base(); const r = calc(); S = keep; return r; })();
+  add('Výsledok', 'Bežné príjmy spolu', base0.bp, c.bp);
+  add('Výsledok', 'Bežné výdavky spolu', base0.bv, c.bv);
+  add('Výsledok', 'Bežný rozpočet (príjmy − výdavky)', base0.bezny, c.bezny);
+  add('Výsledok', 'Investície spolu', base0.invSum, c.invSum);
+  add('Výsledok', 'Zostatok na konci roka', base0.zost, c.zost);
+  return {rows, c};
+}
+function verdict(c) {
+  if (Math.round(c.bezny) < 0) return 'Rozpočet nesedí: bežné výdavky prevyšujú bežné príjmy o ' + fmt(-c.bezny) + '.';
+  if (Math.round(c.zost) < 0) return 'Rozpočet nesedí: na investície a splátky chýba ' + fmt(-c.zost) + '.';
+  return Math.round(c.zost) > 0 ? 'Rozpočet sedí, zostáva ' + fmt(c.zost) + '.' : 'Rozpočet sedí.';
+}
+function today() { return new Date().toLocaleDateString('sk-SK'); }
+$('b-csv').addEventListener('click', () => {
+  const {rows, c} = model();
+  const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+  const lines = [
+    q('Môj rozpočet obce Ľubietová 2027') + ';;;;',
+    q('Vytvorené ' + today() + ' v simulátore rozpočtu') + ';;;;',
+    q(verdict(c)) + ';;;;',
+    q('Odkaz: ' + shareUrl()) + ';;;;',
+    '',
+    ['Časť', 'Položka', 'Návrh obce (€)', 'Váš návrh (€)', 'Rozdiel (€)'].map(q).join(';')
+  ];
+  rows.forEach((r) => lines.push([q(r.sec), q(r.name), r.navrh, r.vas, r.d].join(';')));
+  const blob = new Blob([String.fromCharCode(0xFEFF) + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'moj-rozpocet-lubietova-2027.csv';
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Tabuľka sa sťahuje.');
 });
+function buildReport() {
+  const {rows, c} = model();
+  const r = $('report');
+  const h1 = el('h1', '', 'Môj rozpočet obce Ľubietová 2027');
+  const meta = el('p', 'meta', 'Vytvorené ' + today() + ' v simulátore rozpočtu podľa návrhu obce na roky 2027–2029. Odkaz: ' + shareUrl());
+  const v = el('p', 'verdict', verdict(c));
+  const table = (list, title) => {
+    const frag = document.createDocumentFragment();
+    frag.append(el('h2', '', title));
+    const t = el('table');
+    const hr = el('tr');
+    [['Položka', ''], ['Návrh obce', 'n'], ['Váš návrh', 'n'], ['Rozdiel', 'n']].forEach(([x, cl]) => hr.append(el('th', cl, x)));
+    const thead = el('thead'); thead.append(hr); t.append(thead);
+    const tb = el('tbody');
+    let sec = null;
+    list.forEach((row) => {
+      if (row.sec !== sec) { sec = row.sec; const tr = el('tr', 'sec'); const td = el('td', '', sec); td.colSpan = 4; tr.append(td); tb.append(tr); }
+      const tr = el('tr', row.d ? 'chg' : '');
+      tr.append(el('td', '', row.name), el('td', 'n', fmt(row.navrh)), el('td', 'n', fmt(row.vas)), el('td', 'n', row.d ? sfmt(row.d) : '—'));
+      tb.append(tr);
+    });
+    t.append(tb); frag.append(t);
+    return frag;
+  };
+  const changed = rows.filter((x) => x.d !== 0 && x.sec !== 'Výsledok');
+  r.replaceChildren(h1, meta, v);
+  r.append(table(rows.filter((x) => x.sec === 'Výsledok'), 'Výsledok'));
+  r.append(changed.length ? table(changed, 'Vaše zmeny oproti návrhu') : el('p', '', 'Bez zmien oproti návrhu obce.'));
+  r.append(table(rows.filter((x) => x.sec !== 'Výsledok'), 'Celý rozpočet'));
+}
+$('b-print').addEventListener('click', () => { buildReport(); window.print(); });
+window.addEventListener('beforeprint', buildReport);
 [['f-predaj', 'predaj', 0, 5e6], ['f-rf', 'rf', 0, 5e6], ['f-uver', 'uver', 0, 5e6], ['f-roky', 'roky', 1, 30], ['f-urok', 'urok', 0, 15]].forEach(([id, key, lo, hi]) => {
   $(id).addEventListener('input', () => { const v = Number($(id).value); S[key] = Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; update(); });
 });
