@@ -81,6 +81,16 @@ details.items summary::-webkit-details-marker{display:none}
 .share{width:100%;font:inherit;font-size:13px;padding:8px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 footer{margin-top:28px;font-size:13px;color:var(--muted)}
 @media(prefers-reduced-motion:no-preference){.k-val{transition:color .2s}}
+.hh{margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.hh-title{font-weight:600;font-size:14px;margin-bottom:6px}
+.hh-in{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:14px}
+.hh-in [hidden]{display:none}
+.hh-in label{display:flex;gap:6px;align-items:center}
+.hh-in input[type=number]{font:inherit;font-size:16px;width:5.5em;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);text-align:right}
+.hh-in select{font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.hh-out{margin-top:8px;font-size:15px}
+.hh-out b{font-family:var(--serif);font-weight:400;font-size:20px}
+.hh-src{font-size:12px;color:var(--muted);margin-top:4px}
 .undo{min-height:30px;padding:2px 9px;font-size:12px;border-radius:999px}
 .undo[hidden]{display:none}
 .export{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
@@ -237,6 +247,55 @@ function diffSpan(d) {
   return s;
 }
 
+// ---------- prepočet pre jednu domácnosť (sadzby z VZN obce) ----------
+const R = {dom: 0.065, podlazie: 0.04, byt: 0.065, garaz: 0.25, odpadDen: 0.096};
+const HH = {typ: 'dom', plocha: 120, podlazia: 2, garaz: 0, byt: 70, osoby: 3};
+const numIn = (key, label, min, max, step, unit) => {
+  const l = el('label');
+  const i = document.createElement('input');
+  i.type = 'number'; i.min = min; i.max = max; i.step = step; i.value = HH[key]; i.id = 'hh-' + key;
+  i.addEventListener('input', () => { const v = Number(i.value); HH[key] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min; update(); });
+  l.append(document.createTextNode(label), i, document.createTextNode(unit));
+  return l;
+};
+function hhDan() {
+  const box = el('div', 'hh');
+  box.append(el('div', 'hh-title', 'Koľko by to bolo pre vás'));
+  const inp = el('div', 'hh-in');
+  const sel = document.createElement('select'); sel.id = 'hh-typ'; sel.setAttribute('aria-label', 'Typ nehnuteľnosti');
+  [['dom', 'Rodinný dom'], ['byt', 'Byt']].forEach(([v, t]) => { const o = new Option(t, v); sel.append(o); });
+  sel.value = HH.typ;
+  const dom = el('span', 'hh-in'); dom.id = 'hh-dom';
+  dom.append(numIn('plocha', 'zastavaná plocha ', 10, 1000, 5, ' m²'), numIn('podlazia', 'podlaží ', 1, 4, 1, ''), numIn('garaz', 'samostatná garáž ', 0, 200, 5, ' m²'));
+  const byt = el('span', 'hh-in'); byt.id = 'hh-bytbox';
+  byt.append(numIn('byt', 'podlahová plocha ', 10, 300, 5, ' m²'));
+  sel.addEventListener('change', () => { HH.typ = sel.value; update(); });
+  inp.append(sel, dom, byt);
+  const out = el('div', 'hh-out'); out.id = 'hh-dan-out';
+  const src = el('div', 'hh-src', 'Sadzby podľa VZN obce č. 2/2021: dom 0,065 € za m² zastavanej plochy a 0,04 € za m² za každé ďalšie podlažie, byt 0,065 € za m², garáž 0,25 € za m². Bez dane z pozemkov (záhrada, dvor). Zmena posuvníkom sa uplatní na všetky sadzby rovnako.');
+  box.append(inp, out, src);
+  return box;
+}
+function hhOdpad() {
+  const box = el('div', 'hh');
+  box.append(el('div', 'hh-title', 'Koľko by to bolo pre vás'));
+  const inp = el('div', 'hh-in');
+  inp.append(numIn('osoby', 'osôb v domácnosti ', 1, 15, 1, ''));
+  const out = el('div', 'hh-out'); out.id = 'hh-odpad-out';
+  const src = el('div', 'hh-src', 'Sadzba podľa VZN obce č. 4/2024: 0,096 € na osobu a deň, teda 35,04 € na osobu ročne. Zľavy (napríklad pre študentov alebo pri dlhodobom pobyte mimo obce) nie sú zarátané.');
+  box.append(inp, out, src);
+  return box;
+}
+const eur2 = (v) => v.toLocaleString('sk-SK', {minimumFractionDigits: 2, maximumFractionDigits: 2}).replace(/\s/g, NB) + NB + '€';
+const seur2 = (v) => (v > 0.004 ? '+' : v < -0.004 ? '−' : '') + eur2(Math.abs(v));
+function hhCalc() {
+  const danDnes = HH.typ === 'byt' ? HH.byt * R.byt : HH.plocha * (R.dom + R.podlazie * Math.max(0, HH.podlazia - 1)) + HH.garaz * R.garaz;
+  const danNova = danDnes * (1 + S.dan / 100);
+  const odpadDnes = HH.osoby * R.odpadDen * 365;
+  const odpadNovy = odpadDnes * (1 + S.odpad / 100);
+  return {danDnes, danNova, odpadDnes, odpadNovy};
+}
+
 function buildIncome() {
   const box = $('inc-rows');
   box.replaceChildren();
@@ -259,7 +318,7 @@ function buildIncome() {
     r.setAttribute('list', 'dl-zero');
     r.addEventListener('input', () => { S[key] = +r.value; update(); });
     const n = el('div', 'note'); n.id = 'in-' + key; n.dataset.base = note;
-    row.append(top, r, n);
+    row.append(top, r, n, key === 'dan' ? hhDan() : hhOdpad());
     box.append(row);
   });
   const lk = $('inc-locked');
@@ -358,12 +417,22 @@ function update() {
     $('id-' + k).replaceChildren(diffSpan(d));
     const pct = S[k];
     let t = $('in-' + k).dataset.base + ' Zmena ' + (pct > 0 ? '+' : '') + pct + ' %';
-    if (d !== 0) t += ', teda ' + sfmt(d / POP) + ' na obyvateľa ročne';
+    if (d !== 0) t += ', teda v priemere ' + sfmt(d / POP) + ' na obyvateľa ročne' + (k === 'dan' ? ' (priemer zahŕňa aj daň, ktorú platia firmy a vlastníci pozemkov a lesov)' : '');
     if (k === 'odpad') t += '. Poplatok pokryje ' + (Math.round((b + d) / S.exp[D.odpadyId] * 1000) / 10).toLocaleString('sk-SK') + ' % nákladov na odpady.';
     else t += '.';
     $('in-' + k).textContent = t;
   });
   ['dan', 'odpad'].forEach((k) => { $('iu-' + k).hidden = !S[k]; });
+  const hh = hhCalc();
+  $('hh-dom').hidden = HH.typ !== 'dom';
+  $('hh-bytbox').hidden = HH.typ !== 'byt';
+  const hhOut = (id, dnes, nova, pct) => {
+    const o = $(id);
+    o.replaceChildren(document.createTextNode('Dnes ročne '), el('b', '', eur2(dnes)));
+    if (pct) o.append(document.createTextNode(', po vašej zmene '), el('b', '', eur2(nova)), el('span', 'diff ' + (nova > dnes ? 'neg' : 'pos'), ' ' + seur2(nova - dnes) + ' ročne'));
+  };
+  hhOut('hh-dan-out', hh.danDnes, hh.danNova, S.dan);
+  hhOut('hh-odpad-out', hh.odpadDnes, hh.odpadNovy, S.odpad);
   // výdavky
   D.exp.forEach((x) => {
     const u = $('eu-' + x.id); if (u) u.hidden = S.exp[x.id] === x.base;
@@ -414,6 +483,13 @@ function update() {
     }));
   }
   const perCap = (c.danDiff + c.odpadDiff) / POP;
+  const hh2 = hhCalc();
+  if (S.dan || S.odpad) {
+    const parts = [];
+    if (S.dan) parts.push('daň ' + seur2(hh2.danNova - hh2.danDnes));
+    if (S.odpad) parts.push('odpad ' + seur2(hh2.odpadNovy - hh2.odpadDnes));
+    list.append(el('li', '', 'Pre domácnosť z prepočtu (' + (HH.typ === 'byt' ? 'byt ' + HH.byt + ' m²' : 'dom ' + HH.plocha + ' m², ' + HH.podlazia + ' podl.') + ', ' + HH.osoby + ' os.): ' + parts.join(', ') + ' ročne'));
+  }
   $('sum-capita').textContent = 'Výdavky obce a školy spolu: ' + fmt(c.bv) + ', teda ' + fmt(c.bv / POP) + ' na obyvateľa.' +
     (Math.round(perCap) ? ' Zmena daní a poplatkov: ' + sfmt(perCap) + ' na obyvateľa ročne.' : '');
   writeHash();
