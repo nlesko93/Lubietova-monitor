@@ -873,8 +873,27 @@ export function initChurch() {
         return ul;
       };
       const views = [
-        ['here', place, () => serviceList(upcoming.filter(x => x.place === place).slice(0, 8))],
+        ['here', 'Katolíci', () => serviceList(upcoming.filter(x => x.place === place).slice(0, 8))],
         ['all', 'Celá farnosť', () => serviceList(upcoming.slice(0, 12))],
+        ['ecav', 'Evanjelici', () => {
+          const e = d.ecav || {};
+          const box = el('div');
+          const next = nextEcavService(e);
+          if (next) {
+            box.appendChild(el('ul', { class: 'item-list' }, [el('li', { class: 'church-next' }, [
+              el('span', { class: 'item-title' }, [el('b', { text: `${next.label} ${next.time}` }), ' · Služby Božie']),
+              el('span', { class: 'item-meta', text: 'evanjelický kostol · pravidelný nedeľný rozpis — mimoriadne zmeny zbor oznamuje na Facebooku' }),
+            ])]));
+          }
+          if (e.schedule) box.appendChild(el('p', { class: 'church-schedule', text: e.schedule }));
+          const contact = [e.pastor, e.phone, e.email].filter(Boolean).join(' · ');
+          if (contact) box.appendChild(el('p', { class: 'chart-caption', text: contact }));
+          box.appendChild(el('div', { class: 'link-row' }, [
+            cfg.church?.ecavFacebook ? el('a', { class: 'btn-link', href: cfg.church.ecavFacebook, target: '_blank', rel: 'noopener', text: 'Oznamy a zmeny (Facebook) →' }) : null,
+            el('a', { class: 'btn-link', href: e.url || cfg.church?.ecavPage || 'https://ecav.sk/', target: '_blank', rel: 'noopener', text: 'Zbor na ecav.sk →' }),
+          ].filter(Boolean)));
+          return box;
+        }],
         ['posts', `Oznamy${posts.length ? ' (' + posts.length + ')' : ''}`, () => {
           if (!posts.length) return el('p', { class: 'empty-note', text: 'Žiadne oznamy.' });
           return linkList(posts.slice(0, 6), {
@@ -895,14 +914,26 @@ export function initChurch() {
       show('here');
 
       const links = el('div', { class: 'link-row' }, [
-        el('a', { class: 'btn-link', href: d.parish?.program || 'https://medzibrod.fara.sk/porad_bohosluzeb', target: '_blank', rel: 'noopener', text: 'Program bohoslužieb farnosti →' }),
-        cfg.church?.ecavFacebook
-          ? el('a', { class: 'btn-link', href: cfg.church.ecavFacebook, target: '_blank', rel: 'noopener', text: 'Evanjelický zbor (Facebook) →' })
-          : null,
-      ].filter(Boolean));
+        el('a', { class: 'btn-link', href: d.parish?.program || 'https://medzibrod.fara.sk/porad_bohosluzeb', target: '_blank', rel: 'noopener', text: 'Katolícky program bohoslužieb →' }),
+      ]);
       body.appendChild(links);
       body.appendChild(el('p', { class: 'chart-caption', html:
-        'Rímskokatolícka farnosť Medzibrod (Ľubietová je filiálka) · zdroj: <a href="https://medzibrod.fara.sk/" target="_blank" rel="noopener">medzibrod.fara.sk</a>' }));
+        'Katolíci: farnosť Medzibrod (Ľubietová je filiálka), <a href="https://medzibrod.fara.sk/" target="_blank" rel="noopener">medzibrod.fara.sk</a> · ' +
+        'evanjelici: cirkevný zbor ECAV Ľubietová, <a href="https://ecav.sk/" target="_blank" rel="noopener">ecav.sk</a>' }));
     });
   }, { handlesEmpty: true });
+}
+
+// Najbližšie nedeľné služby Božie (ECAV) podľa pravidelného rozpisu zboru.
+export function nextEcavService(e, now = new Date()) {
+  if (!e?.sunday) return null;
+  const tz = 'Europe/Bratislava';
+  const iso = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
+  const hm = new Intl.DateTimeFormat('sk-SK', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(now);
+  const dow = new Date(iso + 'T12:00:00Z').getUTCDay();          // 0 = nedeľa
+  let add = (7 - dow) % 7;
+  if (add === 0 && hm >= e.sunday) add = 7;                        // dnešné už prebehli
+  const date = new Date(Date.parse(iso + 'T12:00:00Z') + add * 86400e3).toISOString().slice(0, 10);
+  const label = add === 0 ? 'dnes' : add === 1 ? 'zajtra' : 'ne ' + new Date(date + 'T12:00:00').toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric' });
+  return { date, time: e.sunday, label, inDays: add };
 }

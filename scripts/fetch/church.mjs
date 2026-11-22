@@ -5,7 +5,7 @@
 //     <description> „Martin Uhrík 2026-11-22 v 11:00 + úmysel"
 //   blog — oznamy a pozvánky (odkazy /blog_clanek/<slug>-<id>, dátum za názvom)
 // Štruktúra overená v Actions behoch č. 1279–1280.
-import { getText, writeResult, xmlBlocks, xmlValue, stripTags, decodeEntities } from './lib.mjs';
+import { getText, writeResult, xmlBlocks, xmlValue, stripTags, decodeEntities, CONFIG } from './lib.mjs';
 
 const BASE = 'https://medzibrod.fara.sk';
 
@@ -57,10 +57,39 @@ export async function fetchChurch() {
     diag.push(`blog: ${posts.length} oznamov`);
   } catch (e) { diag.push(`blog: ${e.message.slice(0, 100)}`); }
 
+  // Evanjelický cirkevný zbor (ECAV) — stránka zboru na ecav.sk má pravidelný
+  // rozpis („Služby Božie sa konajú každú nedeľu o 9.00 hod. v Ľubietovej…")
+  // a kontakty; mimoriadne zmeny zbor dáva na Facebook (len odkaz).
+  let ecav = null;
+  const ecavUrl = CONFIG.church?.ecavPage;
+  if (ecavUrl) {
+    try {
+      const html = await getText(ecavUrl, { retries: 1 });
+      const main = html.slice(Math.max(0, html.search(/id="content"/)));
+      // bloky → riadky (stripTags by zlúčil všetko do jedného riadku)
+      const lines = stripTags(main.replace(/<\/(p|div|li|tr|h\d|dd|dt)>|<br\s*\/?>/gi, ' ⏎ '))
+        .split('⏎').map(l => l.trim()).filter(Boolean);
+      const after = re => { const i = lines.findIndex(l => re.test(l)); if (i < 0) return null; const same = lines[i].replace(re, '').trim(); return same || lines[i + 1] || null; };
+      const schedule = lines.find(l => /Služby Božie|bohoslužb/i.test(l)) || '';
+      const pm = lines.map(l => l.match(/((?:\S+\s+)?farár\S*):\s*([^,]+)/i)).find(Boolean);
+      const pastor = pm ? `${pm[1].trim()}: ${pm[2].trim()}` : null;     // napr. „Námestná farárka: Mgr. …"
+      const phone = after(/^Telefónne číslo:?/i);
+      const email = (main.match(/[\w.]+@ecav\.sk/) || [])[0] || null;
+      // pravidlo pre obec: „každú nedeľu o 9.00 hod. v Ľubietovej"
+      const rm = schedule.match(/každ\S+ nede\S+ o (\d{1,2})[.:](\d{2})\s*hod\.?\s*v Ľubietov/i);
+      ecav = {
+        name: 'Evanjelický cirkevný zbor ECAV Ľubietová', url: ecavUrl,
+        schedule, pastor, phone, email,
+        sunday: rm ? `${rm[1].padStart(2, '0')}:${rm[2]}` : null,
+      };
+      diag.push(`ECAV: ${schedule ? 'rozpis OK' : 'rozpis nenájdený'}${ecav.sunday ? ', nedeľa ' + ecav.sunday : ''}`);
+    } catch (e) { diag.push(`ECAV: ${e.message.slice(0, 100)}`); }
+  }
+
   console.log('  church:', diag.join(' | '));
-  if (!services.length && !posts.length) throw new Error(`farnosť: nič sa nenačítalo (${diag.join(' | ')})`);
+  if (!services.length && !posts.length && !ecav) throw new Error(`farnosť: nič sa nenačítalo (${diag.join(' | ')})`);
   return writeResult('church', {
     parish: { name: 'Rímskokatolícka farnosť Medzibrod', url: BASE, program: `${BASE}/porad_bohosluzeb` },
-    items: services, posts, _diag: diag,
+    items: services, posts, ecav, _diag: diag,
   });
 }

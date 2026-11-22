@@ -474,3 +474,4 @@ body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidd
 .install-help p { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.45; }
 .bus-day { margin: 0 0 8px; font-size: 0.8rem; color: var(--text-secondary); }
 .church-next .item-title b { color: var(--accent); }
+.church-schedule { margin: 8px 0 4px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; }

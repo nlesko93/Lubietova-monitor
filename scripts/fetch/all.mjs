@@ -18,7 +18,6 @@ import { fetchTraffic } from './traffic.mjs';
 import { fetchBazos } from './bazos.mjs';
 import { fetchAirSensor } from './airsensor.mjs';
 import { fetchChurch } from './church.mjs';
-import { fetchProbe } from './probe.mjs';
 
 const FETCHERS = [
   ['news', fetchNews],
@@ -38,7 +37,6 @@ const FETCHERS = [
   ['bazos', fetchBazos],
   ['airsensor', fetchAirSensor],
   ['church', fetchChurch],
-  ['_probe', fetchProbe],
 ];
 
 const results = await Promise.allSettled(

@@ -5,6 +5,7 @@
 import { loadData, getConfig, el, every, timeAgo, daysFromToday } from '../util.js';
 import { nowInObec, statusNow } from './hours.js';
 import { lineForDay } from '../busdays.js';
+import { nextEcavService } from './datacards.js';
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
 const ORDER = ['weather', 'bus', 'waste', 'open', 'church', 'alerts'];
@@ -108,11 +109,18 @@ export async function initToday() {
     const place = cfg.church?.place || 'Ľubietová';
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bratislava' }).format(new Date());
     const nowHm = new Intl.DateTimeFormat('sk-SK', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Bratislava' }).format(new Date());
-    const next = (d.items || []).find(x => x.place === place && (x.date > today || (x.date === today && x.time >= nowHm)));
+    const cands = [];
+    const kat = (d.items || []).find(x => x.place === place && (x.date > today || (x.date === today && x.time >= nowHm)));
+    if (kat) cands.push({ date: kat.date, time: kat.time, what: `${kat.kind} (katolícky kostol)` });
+    const ev = nextEcavService(d.ecav);
+    if (ev) cands.push({ date: ev.date, time: ev.time, what: 'Služby Božie (evanjelický kostol)' });
+    cands.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    const next = cands[0];
     if (!next) return;
     const n = Math.round((Date.parse(next.date + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86400e3);
     const day = n === 0 ? 'dnes' : n === 1 ? 'zajtra' : new Intl.DateTimeFormat('sk-SK', { weekday: 'long' }).format(new Date(next.date + 'T12:00:00'));
-    set('church', { icon: '⛪', label: 'Bohoslužba v obci', value: `${day} ${next.time}`, sub: next.kind, href: '#card-church', tone: n === 0 ? 'soon' : '' });
+    const other = cands[1] && cands[1].date === next.date ? ` · ${cands[1].time} ${cands[1].what.split(' (')[0]}` : '';
+    set('church', { icon: '⛪', label: 'Bohoslužba v obci', value: `${day} ${next.time}`, sub: next.what + other, href: '#card-church', tone: n === 0 ? 'soon' : '' });
   }).catch(() => {});
 
   // výstrahy a odstávky — jedna dlaždica, upozorní len keď niečo je
