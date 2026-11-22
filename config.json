@@ -77,7 +77,8 @@
   "airSensor": { "id": "180253", "name": "Ľubietová", "radiusKm": 25, "maxKm": 3, "maxAgeH": 3 },
   "church": {
     "place": "Ľubietová",
-    "ecavFacebook": ""
+    "ecavFacebook": "https://www.facebook.com/EcavLubietova/",
+    "ecavPage": "https://ecav.sk/zapadny-distrikt/zvolensky-seniorat/lubietova"
   },
   "photoLinks": [
     { "label": "Fotky z Ľubietovej na Rajči (orchideakvet)", "url": "https://orchideakvet.rajce.idnes.cz/", "note": "Albumy používateľa orchideakvet — väčšinou Ľubietová" }
