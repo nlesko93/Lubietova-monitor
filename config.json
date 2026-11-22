@@ -208,6 +208,19 @@
       ]
     },
     {
+      "name": "Potraviny Compel",
+      "subtitle": "Môj obchod · Nám. V. Dunajského 20 · podľa oznamu na predajni",
+      "week": [
+        { "d": "Pondelok",    "int": [["5:30", "17:00"]] },
+        { "d": "Utorok",      "int": [["5:30", "17:00"]] },
+        { "d": "Streda",      "int": [["5:30", "17:00"]] },
+        { "d": "Štvrtok",     "int": [["5:30", "17:00"]] },
+        { "d": "Piatok",      "int": [["5:30", "17:00"]] },
+        { "d": "Sobota",      "int": [["5:30", "11:30"]] },
+        { "d": "Nedeľa",      "int": [], "label": "zatvorené" }
+      ]
+    },
+    {
       "name": "Lekáreň",
       "subtitle": "Lekáreň PLUS · Nám. V. Dunajského",
       "url": "https://pluslekaren.sk/lekaren/lubka/",
