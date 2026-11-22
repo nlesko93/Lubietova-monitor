@@ -81,6 +81,8 @@ details.items summary::-webkit-details-marker{display:none}
 .share{width:100%;font:inherit;font-size:13px;padding:8px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 footer{margin-top:28px;font-size:13px;color:var(--muted)}
 @media(prefers-reduced-motion:no-preference){.k-val{transition:color .2s}}
+.undo{min-height:30px;padding:2px 9px;font-size:12px;border-radius:999px}
+.undo[hidden]{display:none}
 .export{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:20px;max-width:min(440px,calc(100vw - 32px))}
 dialog::backdrop{background:rgba(0,0,0,.45)}
@@ -133,7 +135,7 @@ button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
 
   <section class="card" id="vydavky">
     <h2>Bežné výdavky</h2>
-    <p class="muted small">Chod obce a školy podľa oblastí. Pod každou oblasťou si môžete pozrieť, z akých položiek sa skladá. Oblasti so zámkom platí štát alebo rodičia a obec ich meniť nemôže.</p>
+    <p class="muted small">Chod obce a školy podľa oblastí. Pri každej oblasti vidíte sumu z návrhu obce a rozdiel; tlačidlo „↺ Návrh“ vráti len tento riadok. Pod oblasťou si môžete pozrieť, z akých položiek sa skladá. Oblasti so zámkom platí štát alebo rodičia a obec ich meniť nemôže.</p>
     <div id="exp-rows"></div>
   </section>
 
@@ -190,6 +192,7 @@ button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
   </div>
 </dialog>
 <div id="report" aria-hidden="true"></div>
+<datalist id="dl-zero"><option value="0" label="návrh obce"></option></datalist>
 
 <script>
 {
@@ -244,12 +247,16 @@ function buildIncome() {
     const val = el('div', 'row-val');
     const v = el('span', 'num'); v.id = 'iv-' + key;
     const d = el('span'); d.id = 'id-' + key;
-    val.append(v, d);
+    const u = el('button', 'undo', '↺ Návrh'); u.type = 'button'; u.id = 'iu-' + key; u.hidden = true;
+    u.setAttribute('aria-label', name + ': vrátiť na návrh obce');
+    u.addEventListener('click', () => { S[key] = 0; $('ir-' + key).value = 0; update(); });
+    val.append(v, d, u);
     const nm = el('div'); nm.append(el('span', 'row-name', name), el('span', 'num muted small', ' · návrh ' + fmt(amount)));
     top.append(nm, val);
     const r = document.createElement('input');
     r.type = 'range'; r.min = -50; r.max = 100; r.step = 5; r.value = S[key]; r.id = 'ir-' + key;
     r.setAttribute('aria-label', name + ', zmena v percentách');
+    r.setAttribute('list', 'dl-zero');
     r.addEventListener('input', () => { S[key] = +r.value; update(); });
     const n = el('div', 'note'); n.id = 'in-' + key; n.dataset.base = note;
     row.append(top, r, n);
@@ -270,16 +277,26 @@ function buildExpenses() {
     const nm = el('div');
     nm.append(el('span', 'row-name', x.name));
     if (x.lock) nm.append(el('span', 'lock', '🔒 ' + x.lock));
+    else nm.append(el('span', 'num muted small', ' · návrh ' + fmt(x.base)));
     const val = el('div', 'row-val');
     const v = el('span', 'num'); v.id = 'ev-' + x.id;
     const d = el('span'); d.id = 'ed-' + x.id;
     val.append(v, d);
+    if (!x.lock) {
+      const u = el('button', 'undo', '↺ Návrh'); u.type = 'button'; u.id = 'eu-' + x.id; u.hidden = true;
+      u.setAttribute('aria-label', x.name + ': vrátiť na návrh obce');
+      u.addEventListener('click', () => { S.exp[x.id] = x.base; $('er-' + x.id).value = x.base; update(); });
+      val.append(u);
+    }
     top.append(nm, val);
     row.append(top);
     if (!x.lock) {
       const r = document.createElement('input');
       r.type = 'range'; r.min = x.min; r.max = x.max; r.step = x.step; r.value = S.exp[x.id]; r.id = 'er-' + x.id;
       r.setAttribute('aria-label', x.name + ' v eurách');
+      const dl = document.createElement('datalist'); dl.id = 'dl-' + x.id;
+      const op = document.createElement('option'); op.value = x.base; op.label = 'návrh obce'; dl.append(op);
+      row.append(dl); r.setAttribute('list', dl.id);
       r.addEventListener('input', () => { S.exp[x.id] = +r.value; update(); });
       row.append(r);
     }
@@ -346,8 +363,10 @@ function update() {
     else t += '.';
     $('in-' + k).textContent = t;
   });
+  ['dan', 'odpad'].forEach((k) => { $('iu-' + k).hidden = !S[k]; });
   // výdavky
   D.exp.forEach((x) => {
+    const u = $('eu-' + x.id); if (u) u.hidden = S.exp[x.id] === x.base;
     $('ev-' + x.id).textContent = fmt(S.exp[x.id]);
     $('ed-' + x.id).replaceChildren(diffSpan(S.exp[x.id] - x.base));
   });
