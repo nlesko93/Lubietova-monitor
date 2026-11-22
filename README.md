@@ -55,6 +55,18 @@ prepínač (aj podľa nastavenia systému).
 | Šport — FK Baník Ľubietová | odkazy na [Futbalnet](https://sportnet.sme.sk/futbalnet/) (tabuľka, výsledky, súpiska) | statické odkazy |
 | Inzeráty v okolí — PSČ 976 55 | [Bazoš.sk](https://www.bazos.sk/) | hodinovo |
 
+## Podujatia v obci
+
+Akcie (Mikuláš, trhy, koncerty…) sa zadávajú ručne do [`events.json`](events.json):
+
+```json
+{ "title": "Vianočné remeselné trhy", "date": "2026-12-12", "time": "15:00", "end": "18:00",
+  "place": "Ľubietovský park", "note": "…", "organizer": "…", "source": "Facebook — Priatelia Ľubietovej" }
+```
+
+Karta ukazuje len nadchádzajúce podujatia (po skončení sa samy skryjú) a pás
+„Dnes v obci" upozorní na najbližšie, ak je do 14 dní.
+
 ## Inštalácia ako aplikácia (PWA)
 
 Stránku si môžeš pridať na plochu telefónu alebo počítača ako aplikáciu:

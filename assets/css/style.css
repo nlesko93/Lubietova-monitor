@@ -475,3 +475,19 @@ body:not(.show-unavailable) .theme:not(:has(.card:not(.is-unavailable):not([hidd
 .bus-day { margin: 0 0 8px; font-size: 0.8rem; color: var(--text-secondary); }
 .church-next .item-title b { color: var(--accent); }
 .church-schedule { margin: 8px 0 4px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; }
+
+/* ---------- podujatia ---------- */
+.event-list { list-style: none; margin: 0; padding: 0; }
+.event-item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.event-item:first-child { border-top: 0; padding-top: 2px; }
+.event-date {
+  flex: none; width: 50px; height: 54px; border-radius: 10px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: var(--surface-2); line-height: 1.05;
+}
+.event-item.is-soon .event-date { background: var(--accent); color: #fff; }
+.event-day { font-size: 1.35rem; font-weight: 700; }
+.event-mon { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.event-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.event-title { font-weight: 600; }
+.event-meta { font-size: 0.8rem; color: var(--text-secondary); }
+.event-note { font-size: 0.82rem; color: var(--text-primary); margin-top: 2px; }

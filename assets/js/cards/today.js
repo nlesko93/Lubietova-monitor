@@ -6,9 +6,10 @@ import { loadData, getConfig, el, every, timeAgo, daysFromToday } from '../util.
 import { nowInObec, statusNow } from './hours.js';
 import { lineForDay } from '../busdays.js';
 import { nextEcavService } from './datacards.js';
+import { loadEvents, daysUntil } from './events.js';
 
 const toMin = t => (+t.slice(0, 2)) * 60 + (+t.slice(3, 5));
-const ORDER = ['weather', 'bus', 'waste', 'open', 'church', 'alerts'];
+const ORDER = ['weather', 'bus', 'waste', 'event', 'open', 'church', 'alerts'];
 
 export async function initToday() {
   const box = document.getElementById('today-tiles');
@@ -101,6 +102,19 @@ export async function initToday() {
         sub: closed.length ? `zatvorené: ${closed.map(s => s.name).join(', ')}` : 'všetko otvorené',
         href: '#card-hours',
       });
+    });
+  }).catch(() => {});
+
+  // najbližšie podujatie (ak je do 14 dní)
+  loadEvents().then(evs => {
+    const e = evs[0];
+    if (!e) return;
+    const n = daysUntil(e.date);
+    if (n > 14) return;
+    const day = n === 0 ? 'dnes' : n === 1 ? 'zajtra' : new Intl.DateTimeFormat('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(new Date(e.date + 'T12:00:00'));
+    set('event', {
+      icon: '🎉', label: 'Podujatie v obci', value: e.title,
+      sub: [day, e.time, e.place].filter(Boolean).join(' · '), href: '#card-events', tone: n <= 1 ? 'soon' : '',
     });
   }).catch(() => {});
 

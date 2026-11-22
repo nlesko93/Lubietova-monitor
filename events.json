@@ -1,0 +1,23 @@
+{
+  "_pozn": "Podujatia v obci zadávané ručne (napr. z Facebooku obce či skupín). Po skončení sa na stránke automaticky skryjú. Polia: title, date (RRRR-MM-DD), time, end, place, organizer, note, source.",
+  "events": [
+    {
+      "title": "Stretnutie s Mikulášom a slávnostné rozsvietenie vianočného stromčeka",
+      "date": "2026-12-05",
+      "time": "16:00",
+      "place": "Obecný park",
+      "organizer": "Obec Ľubietová a kultúrno-školská komisia",
+      "note": "Sladký balíček dostanú deti, ktoré sa preukážu pozdravom pre Mikuláša. Pozdrav v hodnote 1 € si môžete prevziať v obecnom parku od Mikulášovho pomocníka.",
+      "source": "Facebook — Obec Ľubietová"
+    },
+    {
+      "title": "Vianočné remeselné trhy",
+      "date": "2026-12-12",
+      "time": "15:00",
+      "end": "18:00",
+      "place": "Ľubietovský park",
+      "note": "Príďte podporiť našich remeselníkov. Spev, príjemná atmosféra a punč — výťažok z jeho predaja pôjde do domova dôchodcov STROM Strelníky.",
+      "source": "Facebook — Priatelia Ľubietovej"
+    }
+  ]
+}

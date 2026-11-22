@@ -11,6 +11,7 @@ import { initWiki } from './cards/wiki.js';
 import { initGallery } from './cards/gallery.js';
 import { initHours } from './cards/hours.js';
 import { initToday } from './cards/today.js';
+import { initEvents } from './cards/events.js';
 import {
   initNews, initObec, initAlerts, initContracts,
   initFinance, initDemo, initWebcams, initWaste, initElections,
@@ -119,7 +120,7 @@ const cards = [
   initToday, initMap, initWeather, initAir, initPlanes, initSky, initSats, initQuakes,
   initWiki, initNews, initObec, initAlerts, initContracts, initFinance,
   initDemo, initWebcams, initWaste, initElections,
-  initOutages, initBuses, initHydro, initGallery, initTraffic, initHours, initBazos, initFootball, initChurch,
+  initOutages, initBuses, initHydro, initGallery, initTraffic, initHours, initBazos, initFootball, initChurch, initEvents,
 ];
 for (const init of cards) {
   Promise.resolve().then(init).catch(e => console.error(init.name, e));
