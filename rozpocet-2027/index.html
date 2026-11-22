@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rozpočet Ľubietová 2027–2029</title>
+<style>
+/* VOICE: vecný obecný prehľad pre občanov
+   IDEA: výkaz rozpočtu prepísaný do čitateľných kariet
+   PICTURE: grafy príjmov, výdavkov a zmien
+   COLOUR and TYPE: biela, modrá pre príjmy, oranžová pre výdavky; systémové písmo, Georgia pre veľké čísla
+   LAYOUT: jeden stĺpec kariet, na širokej obrazovke mriežka zistení */
+
+:root{color-scheme:light dark;
+--color-fg:light-dark(#1b1b19,#ecebe7);--color-fg-muted:light-dark(#5f5d57,#a8a69f);
+--color-bg:light-dark(#ffffff,#181816);--color-panel:light-dark(#f6f5f1,#232320);
+--color-border-line:light-dark(#e2dfd7,#3a3935);--color-ok:light-dark(#2e8b57,#5cc48a);
+--color-bad:light-dark(#c2413a,#ee7b71);--color-warn:light-dark(#c98a12,#e6b04a);
+--font-anthropic-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+--font-anthropic-serif:Georgia,"Times New Roman",serif;
+--cds-font-size-caption:13px;--cds-font-size-body:15px;--cds-font-size-heading:19px;--cds-font-size-title:clamp(24px,4vw,32px);
+--cds-font-weight-medium:600;--cds-gap-xs:4px;--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-gap-xl:32px;
+--cds-pad-lg:20px;--cds-radius:10px;
+--cds-chart-muted:light-dark(#c8c5bc,#57554f);--cds-chart-grid:light-dark(#ebe9e3,#2f2e2b);
+--cds-chart-axis:light-dark(#cfccc4,#4a4945);--cds-chart-reference:#8a877f;
+--cds-text-secondary:var(--color-fg-muted);--cds-surface-popover:var(--color-bg);--cds-border:var(--color-border-line);
+--cds-shadow-popover:0 4px 16px rgba(0,0,0,.14);
+--c0:light-dark(#2a6fdb,#6ea3f2);--c1:light-dark(#d9772b,#f0a35c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--color-bg);color:var(--color-fg);font:15px/1.5 var(--font-anthropic-sans);overflow-x:clip}
+.lb-wrap{max-width:1100px;margin:0 auto;padding:clamp(16px,4vw,40px) max(4vw,14px)}
+.lb-foot{color:var(--color-fg-muted);font-size:13px;margin-top:24px}
+.lb-foot a{color:inherit}
+
+
+.lb { font-family: var(--font-anthropic-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-xl); }
+.lb-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+.lb-lead { font-size: var(--cds-font-size-body); margin: var(--cds-gap-sm) 0 0; line-height: 1.55; max-width: 62em; }
+.lb-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: var(--cds-gap-xs) 0 0; }
+.lb-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--cds-gap-md); }
+.lb-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.lb-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.lb-kpi-val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin: var(--cds-gap-xs) 0; white-space: nowrap; }
+.lb-kpi-chg { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.lb-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.lb-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-md); }
+.lb-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+.lb-segbtn { font: inherit; font-size: var(--cds-font-size-caption); background: transparent; color: var(--color-fg-muted); border: 0; padding: 6px 12px; cursor: pointer; }
+.lb-segbtn[aria-pressed='true'] { background: var(--color-fg); color: var(--color-bg); }
+.lb-chart { position: relative; min-height: 280px; }
+.lb-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 8px 10px; font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2; font-variant-numeric: tabular-nums; }
+.lb-tip-h { font-weight: var(--cds-font-weight-medium); margin-bottom: 2px; }
+.lb-axis text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+.lb-axis path, .lb-axis line { stroke: var(--cds-chart-axis); }
+.lb-grid line { stroke: var(--cds-chart-grid); }
+.lb-legend { display: flex; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); flex-wrap: wrap; }
+.lb-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.lb-bars { display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-height: 120px; }
+.lb-row { display: block; width: 100%; text-align: left; font: inherit; color: inherit; background: transparent; border: 0; padding: 4px 0; }
+button.lb-row { cursor: pointer; border-radius: var(--cds-radius); padding: 6px 8px; margin: 0 -8px; width: calc(100% + 16px); }
+button.lb-row:hover { background: var(--color-bg); }
+button.lb-row[aria-pressed='true'] { background: var(--color-bg); box-shadow: inset 3px 0 0 var(--color-fg); }
+.lb-rowtop { display: flex; justify-content: space-between; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-body); }
+.lb-rowval { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-rowpct { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.lb-track { height: 10px; background: var(--cds-chart-grid); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.lb-fill { height: 100%; border-radius: 3px; }
+.lb-pair { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.lb-pairline { display: flex; align-items: center; gap: 8px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.lb-pairline .lb-track { flex: 1; margin: 0; height: 8px; }
+.lb-pairlab { width: 3em; flex: none; }
+.lb-pairval { min-width: 6.5em; text-align: right; flex: none; }
+.lb-detail { margin-top: var(--cds-gap-lg); border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-md); }
+.lb-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-sm); }
+.lb-hint { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); line-height: 1.5; }
+.lb-tablewrap { overflow-x: auto; }
+.lb-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+.lb-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); border-bottom: 1px solid var(--color-border-line); padding: 6px 8px 6px 0; }
+.lb-table td { border-bottom: 1px solid var(--color-border-line); padding: 8px 8px 8px 0; font-variant-numeric: tabular-nums; }
+.lb-table .lb-num { text-align: right; white-space: nowrap; }
+.lb-zero { color: var(--color-bad); }
+.lb-err { color: var(--color-bad); font-size: var(--cds-font-size-caption); }
+.lb-notes summary { cursor: pointer; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.lb-notes li { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.lb-pozor { border-color: var(--color-warn); }
+.lb-insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--cds-gap-lg); }
+.lb-ins { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-md); }
+.lb-ins p { font-size: var(--cds-font-size-body); line-height: 1.5; margin: 0 0 var(--cds-gap-sm); }
+.lb-ins p.lb-hint { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.lb-ins p.lb-q { color: var(--color-fg-muted); font-style: italic; }
+.lb-badge { display: inline-flex; align-items: center; justify-content: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--color-fg); color: var(--color-bg); font-size: var(--cds-font-size-caption); margin-right: 8px; vertical-align: 1px; }
+.lb-div { position: relative; height: 10px; background: var(--cds-chart-grid); border-radius: 3px; margin-top: 4px; }
+.lb-div::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--cds-chart-reference); }
+.lb-divfill { position: absolute; top: 0; height: 100%; border-radius: 3px; }
+.lb-ucet { display: flex; flex-direction: column; margin-bottom: var(--cds-gap-sm); min-height: 140px; }
+.lb-ucet-row { display: flex; justify-content: space-between; gap: var(--cds-gap-sm); padding: 4px 0; font-size: var(--cds-font-size-body); }
+.lb-ucet-row.lb-sucet { font-weight: var(--cds-font-weight-medium); border-top: 1px solid var(--color-border-line); }
+
+.lb-items { display: flex; flex-direction: column; }
+.lb-items[hidden] { display: none; }
+.lb-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 7px 0; border-bottom: 1px solid var(--color-border-line); font-size: 14px; }
+.lb-item-name { flex: 1 1 220px; }
+.lb-item-obl { display: block; color: var(--color-fg-muted); font-size: 12px; }
+.lb-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px; line-height: 18px; border: 1px solid var(--color-border-line); color: var(--color-fg-muted); vertical-align: 1px; white-space: nowrap; }
+.lb-item-vals { display: flex; gap: 6px; align-items: baseline; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+.lb-item-old, .lb-arrow { color: var(--color-fg-muted); }
+.lb-item-chg { font-size: 12px; min-width: 5.8em; text-align: right; }
+.lb-neg { color: var(--color-bad); }
+.lb-pos { color: var(--color-ok); }
+.lb-more { font: inherit; font-size: 13px; background: none; border: 0; color: var(--c0); cursor: pointer; padding: 4px 0; min-height: 32px; }
+.lb-more:focus-visible, .lb-row:focus-visible, .lb-segbtn:focus-visible { outline: 2px solid var(--c0); outline-offset: 1px; }
+.lb-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--cds-gap-lg); }
+.lb-search { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); margin-bottom: var(--cds-gap-sm); }
+.lb-search:focus { outline: 2px solid var(--c0); outline-offset: 1px; }
+.lb-count { color: var(--color-fg-muted); font-size: 13px; padding: 4px 0; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+</head>
+<body>
+<main class="lb-wrap">
+<div class='lb'>
+  <header id='uvod'>
+    <h1 class='lb-title'>Rozpočet obce Ľubietová 2027–2029</h1>
+    <p class='lb-sub'>Návrh rozpočtu zverejnený na úradnej tabuli · obec spolu so školou (rozpočtová organizácia)</p>
+    <p class='lb-lead'>Návrh je vyrovnaný: príjmy aj výdavky sú <b data-draw='val-eur' data-source='suhrn' data-field='prijmy' data-where='obdobie=Návrh 2027'>—</b> ročne, rovnako v rokoch 2027, 2028 aj 2029. Na školstvo ide <b data-draw='val-pct' data-source='vydavky_kat' data-field='podiel_2027' data-where='kategoria=Školstvo'>—</b> bežných výdavkov a investície klesajú z <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Upravený 2026'>—</b> v roku 2026 na <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Návrh 2027'>—</b>.</p>
+  </header>
+
+  <section class='lb-kpis' id='ukazovatele'>
+    <div class='lb-card' id='kpi-prijmy'>
+      <div class='lb-kpi-label'>Príjmy 2027</div>
+      <div class='lb-kpi-val' data-draw='val-eur' data-source='suhrn' data-field='prijmy' data-where='obdobie=Návrh 2027'>—</div>
+      <div class='lb-kpi-chg'><span data-draw='val-chg' data-source='zmeny' data-field='zmena' data-where='ukazovatel=prijmy'>—</span> oproti upravenému 2026</div>
+    </div>
+    <div class='lb-card' id='kpi-vydavky'>
+      <div class='lb-kpi-label'>Výdavky 2027</div>
+      <div class='lb-kpi-val' data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2027'>—</div>
+      <div class='lb-kpi-chg'><span data-draw='val-chg' data-source='zmeny' data-field='zmena' data-where='ukazovatel=vydavky'>—</span> oproti upravenému 2026</div>
+    </div>
+    <div class='lb-card' id='kpi-bezne'>
+      <div class='lb-kpi-label'>Bežné výdavky 2027 (chod obce a školy)</div>
+      <div class='lb-kpi-val' data-draw='val-eur' data-source='suhrn' data-field='bezne_vydavky' data-where='obdobie=Návrh 2027'>—</div>
+      <div class='lb-kpi-chg'><span data-draw='val-chg' data-source='zmeny' data-field='zmena' data-where='ukazovatel=bezne_vydavky'>—</span> oproti upravenému 2026</div>
+    </div>
+    <div class='lb-card' id='kpi-investicie'>
+      <div class='lb-kpi-label'>Investície 2027</div>
+      <div class='lb-kpi-val' data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Návrh 2027'>—</div>
+      <div class='lb-kpi-chg'><span data-draw='val-chg' data-source='zmeny' data-field='zmena' data-where='ukazovatel=kap_vydavky'>—</span> oproti upravenému 2026</div>
+    </div>
+  </section>
+
+  <section class='lb-card lb-pozor' id='na-co-si-vsimnut'>
+    <h2 class='lb-h2'>Na čo si všimnúť</h2>
+    <p class='lb-hint'>Najdôležitejšie zistenia z návrhu aj s otázkami, ktoré sa oplatí položiť na zastupiteľstve.</p>
+    <div class='lb-insights'>
+      <article class='lb-ins' id='zistenie-investicie'>
+        <h3 class='lb-h3'><span class='lb-badge'>1</span>Investície takmer zmiznú</h3>
+        <p>V rokoch 2027–2029 je na investície len <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Návrh 2027'>—</b> ročne, na pozemky a fotovoltiku na škole. V roku 2026 to bolo <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Upravený 2026'>—</b> a v roku 2025 <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Skutočnosť 2025'>—</b>. Kapitálové príjmy sú len <b data-draw='val-eur' data-source='suhrn' data-field='kap_prijmy' data-where='obdobie=Návrh 2027'>—</b>, rozpočet teda nepočíta ani s dotáciami na projekty.</p>
+        <p class='lb-q'>Aké investície obec plánuje a z čoho ich zaplatí?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-rezerva'>
+        <h3 class='lb-h3'><span class='lb-badge'>2</span>Rozpočet bez rezervy</h3>
+        <div class='lb-ucet' data-draw='rezerva' data-source='rezerva_2027'></div>
+        <p>Prebytok bežného rozpočtu pokryje len investície a splátku úveru. Na nepredvídané výdavky ani do rezervného fondu nezostáva nič.</p>
+        <p class='lb-q'>Koľko peňazí je dnes v rezervnom fonde?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-zmeny'>
+        <h3 class='lb-h3'><span class='lb-badge'>3</span>Kde sa kráti a kde pridáva</h3>
+        <p class='lb-hint'>Zmena bežných výdavkov v návrhu 2027 oproti upravenému rozpočtu 2026. Zobrazené sú oblasti so zmenou aspoň 2 000 €. Časť poklesov sú len jednorazové výdavky roku 2026 (napríklad z rezervného fondu alebo vrátenie dotácie), rozpis je nižšie v časti Najväčšie zmeny v položkách.</p>
+        <div class='lb-bars' data-draw='zmeny-oblasti' data-source='zmeny_oblasti'></div>
+        <p class='lb-q'>Prečo klesá príspevok FK Baník (zo 6 000 € na 3 000 €) a peniaze na kultúrne akcie (z 13 000 € na 10 000 €)?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-roky'>
+        <h3 class='lb-h3'><span class='lb-badge'>4</span>Roky 2028 a 2029 sú len kópia</h3>
+        <p>Výdavky sú v návrhu na roky 2027, 2028 aj 2029 rovnaké: <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2027'>—</b>, <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2028'>—</b> a <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2029'>—</b>. Nepočíta sa s infláciou, rastom platov ani cien energií, takže ako plán majú tieto roky malú výpovednú hodnotu.</p>
+      </article>
+      <article class='lb-ins' id='zistenie-deficity'>
+        <h3 class='lb-h3'><span class='lb-badge'>5</span>Predchádzajúce roky boli v mínuse</h3>
+        <p class='lb-hint'>Výsledok bežného a kapitálového rozpočtu spolu (bez úverov a rezervného fondu).</p>
+        <div class='lb-bars' data-draw='vysledky' data-source='vysledok'></div>
+        <p>Stratu v rokoch 2024–2026 pokrývali úvery a rezervný fond. Návrh na rok 2027 s takýmito zdrojmi nepočíta: príjmy z úverov a fondu sú <b data-draw='val-eur' data-source='suhrn' data-field='fo_prijmy' data-where='obdobie=Návrh 2027'>—</b>.</p>
+      </article>
+      <article class='lb-ins' id='zistenie-odpad'>
+        <h3 class='lb-h3'><span class='lb-badge'>6</span>Poplatok za odpad nepokryje všetky náklady</h3>
+        <p>Poplatok za komunálny odpad prinesie <b data-draw='val-eur' data-source='prijmy' data-field='suma' data-where='skupina=Poplatok za komunálny odpad'>—</b>, odpady stoja <b data-draw='val-eur' data-source='vydavky' data-field='navrh_2027' data-where='oblast=Odpady'>—</b>. Poplatok teda pokrýva <b data-draw='val-pct' data-source='odpad_pokrytie'>—</b> nákladov. Poplatok aj daň z nehnuteľností ostávajú na úrovni roku 2026.</p>
+      </article>
+      <article class='lb-ins' id='zistenie-dohody'>
+        <h3 class='lb-h3'><span class='lb-badge'>7</span>Na úrade menej platov, viac dohôd</h3>
+        <p>Platy zamestnancov obecného úradu klesajú z 83 968 € na 71 262 €, odmeny za prácu na dohodu naopak rastú z 12 362 € na 26 620 €. Materiál na prevádzku úradu rastie z 8 776 € na 16 000 € a energie (vykurovanie a elektrina) o 8 370 €.</p>
+        <p class='lb-q'>Ide o presun práce zo zamestnancov na dohody a čo je v prevádzkovej réžii?</p>
+      </article>
+    </div>
+  </section>
+
+  <section class='lb-card' id='vyvoj'>
+    <div class='lb-head'>
+      <div>
+        <h2 class='lb-h2'>Vývoj rozpočtu 2024–2029</h2>
+        <p class='lb-sub'>2024–2025 skutočnosť, 2026 upravený rozpočet, 2027–2029 návrh. Ťuknite na rok pre presné sumy.</p>
+      </div>
+      <div class='lb-seg' role='group' aria-label='Časť rozpočtu'>
+        <button class='lb-segbtn' data-mode='celkom' aria-pressed='true'>Celkom</button>
+        <button class='lb-segbtn' data-mode='bezne' aria-pressed='false'>Bežné</button>
+        <button class='lb-segbtn' data-mode='kap' aria-pressed='false'>Kapitálové</button>
+      </div>
+    </div>
+    <div class='lb-chart' data-draw='trend' data-source='suhrn'></div>
+    <div class='lb-legend'><span><i class='lb-sw' data-c='0'></i>Príjmy</span><span><i class='lb-sw' data-c='1'></i>Výdavky</span></div>
+    <p class='lb-hint'>„Celkom“ zahŕňa aj finančné operácie (úvery, rezervný fond), preto sú roky 2024–2026 vyššie. „Bežné“ je chod obce a školy, „Kapitálové“ sú investície.</p>
+  </section>
+
+  <section class='lb-card' id='prijmy'>
+    <h2 class='lb-h2'>Odkiaľ peniaze prichádzajú</h2>
+    <p class='lb-hint'>Bežné príjmy v návrhu na rok 2027 (rovnaké v rokoch 2028 a 2029). Najväčšiu časť tvoria transfery zo štátu, hlavne na školstvo.</p>
+    <div class='lb-bars' data-draw='prijmy' data-source='prijmy_podiel'></div>
+  </section>
+
+  <section class='lb-card' id='vydavky'>
+    <div class='lb-head'>
+      <div>
+        <h2 class='lb-h2'>Kam peniaze idú</h2>
+        <p class='lb-sub'>Bežné výdavky podľa oblasti. Ťuknite na oblasť pre podrobnosti.</p>
+      </div>
+      <div class='lb-seg' role='group' aria-label='Rok'>
+        <button class='lb-segbtn' data-year='navrh_2027' aria-pressed='true'>Návrh 2027</button>
+        <button class='lb-segbtn' data-year='upr_2026' aria-pressed='false'>Upravený 2026</button>
+      </div>
+    </div>
+    <div class='lb-bars' data-draw='kategorie' data-source='vydavky_kat'></div>
+    <div class='lb-detail' id='vydavky-detail'>
+      <h3 class='lb-h3'>Podrobnosti: <span data-draw='detail-nazov'>—</span></h3>
+      <div class='lb-bars' data-draw='detail' data-source='vydavky'></div>
+      <div class='lb-legend'><span><i class='lb-sw' data-c='m'></i>Upravený 2026</span><span><i class='lb-sw' data-c='1'></i>Návrh 2027</span></div>
+    </div>
+  </section>
+
+  <section class='lb-card' id='druhy'>
+    <div class='lb-head'>
+      <div>
+        <h2 class='lb-h2'>Na čo konkrétne idú peniaze</h2>
+        <p class='lb-sub'>Všetky bežné výdavky obce a školy podľa druhu výdavku. Ťuknite na druh pre zoznam položiek.</p>
+      </div>
+      <div class='lb-seg' role='group' aria-label='Rok'>
+        <button class='lb-segbtn' data-druhyear='navrh_2027' aria-pressed='true'>Návrh 2027</button>
+        <button class='lb-segbtn' data-druhyear='upr_2026' aria-pressed='false'>Upravený 2026</button>
+      </div>
+    </div>
+    <div class='lb-bars' data-draw='druhy'></div>
+    <div class='lb-detail'>
+      <h3 class='lb-h3'>Položky: <span data-draw='druh-nazov'>—</span></h3>
+      <div class='lb-items' data-draw='druh-polozky'></div>
+    </div>
+  </section>
+
+  <section class='lb-card' id='zmeny-polozky'>
+    <h2 class='lb-h2'>Najväčšie zmeny v položkách</h2>
+    <p class='lb-hint'>Návrh 2027 oproti upravenému rozpočtu 2026. Značka „jednorazové“ označuje výdavky roku 2026, ktoré sa neopakujú: platené z rezervného fondu alebo zo zostatkov z minulého roka, vrátenie dotácií a odstupné.</p>
+    <div class='lb-cols'>
+      <div><h3 class='lb-h3'>Najviac klesá</h3><div class='lb-items' data-draw='pokles'></div></div>
+      <div><h3 class='lb-h3'>Najviac rastie</h3><div class='lb-items' data-draw='rast'></div></div>
+    </div>
+  </section>
+
+  <section class='lb-card' id='hladat'>
+    <h2 class='lb-h2'>Hľadať v rozpočte</h2>
+    <p class='lb-hint'>Všetkých 206 položiek bežných výdavkov. Skúste napríklad „FK“, „elektrina“, „kultúra“, „cirkev“ alebo „dohodu“.</p>
+    <input class='lb-search' type='search' id='lb-q' placeholder='Hľadať položku…' autocomplete='off' aria-label='Hľadať položku v rozpočte'>
+    <div class='lb-items' data-draw='hladat'></div>
+  </section>
+
+  <section class='lb-card' id='investicie'>
+    <h2 class='lb-h2'>Investície: rok 2026 a návrh 2027</h2>
+    <p class='lb-hint'>Kapitálové výdavky. Na roky 2027–2029 zostáva len kúpa pozemkov a fotovoltika na škole.</p>
+    <div class='lb-bars' data-draw='investicie' data-source='investicie'></div>
+    <div class='lb-legend'><span><i class='lb-sw' data-c='m'></i>Upravený 2026</span><span><i class='lb-sw' data-c='1'></i>Návrh 2027</span></div>
+  </section>
+
+
+  <details class='lb-notes' id='poznamky'>
+    <summary>O údajoch</summary>
+    <ul>
+      <li>Čísla sú prepísané z dokumentu „Návrh rozpočtu 2027–2029“ zverejneného na úradnej tabuli obce Ľubietová.</li>
+      <li>Návrh na roky 2028 a 2029 je vo všetkých položkách rovnaký ako na rok 2027.</li>
+      <li>Oblasti výdavkov sú zoskupené podľa funkčnej klasifikácie. Školstvo zahŕňa rozpočtovú organizáciu (ZŠ, MŠ, školský klub, školská jedáleň).</li>
+      <li>Rozpis podľa oblastí za upravený rozpočet 2026 je zo súčtov riadkov; suma za obecný úrad je dopočítaná z celkového súčtu obce.</li>
+      <li>Bežný rozpočet je chod obce a školy, kapitálový sú investície, finančné operácie sú úvery a rezervný fond.</li>
+    </ul>
+  </details>
+</div>
+
+
+<p class='lb-foot'>Zdroj: <a href='https://www.lubietova.sk/e_download.php?file=/data/uredni_deska/obsah469_1.pdf&amp;original=N%C3%A1vrh%20rozpo%C4%8Det%20%202027-2029.pdf'>Návrh rozpočtu obce Ľubietová na roky 2027–2029</a>, úradná tabuľa obce. Čísla sú prepísané z dokumentu; pred rozhodnutím ich overte v originále.</p>
+
+</main>
+<script>
+window.dash = (() => {
+  const data = {"polozky": [{"oblast": "Obecný úrad a samospráva", "polozka": "Plat – doprava a životné prostredie (štát)", "druh": "Platy", "zdroj": "111", "ekon": "611", "upr_2026": 40, "navrh_2027": 40, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Plat – voľby (štát)", "druh": "Platy", "zdroj": "111", "ekon": "611", "upr_2026": 122, "navrh_2027": 122, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Platy zamestnancov obecného úradu", "druh": "Platy", "zdroj": "41", "ekon": "611", "upr_2026": 83968, "navrh_2027": 71262, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Plat starostu a hlavného kontrolóra", "druh": "Platy", "zdroj": "41", "ekon": "611", "upr_2026": 50500, "navrh_2027": 52356, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Osobné príplatky zamestnancov úradu", "druh": "Platy", "zdroj": "41", "ekon": "612001", "upr_2026": 19844, "navrh_2027": 19844, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odmeny zamestnancov úradu", "druh": "Platy", "zdroj": "41", "ekon": "614", "upr_2026": 11000, "navrh_2027": 10000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Náhrady pri PN", "druh": "Platy", "zdroj": "41", "ekon": "615", "upr_2026": 1000, "navrh_2027": 800, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odvody – voľby, doprava a ŽP (štát)", "druh": "Odvody do poisťovní", "zdroj": "111", "ekon": "62", "upr_2026": 58, "navrh_2027": 58, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odvody za zamestnancov úradu", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "62", "upr_2026": 41316, "navrh_2027": 40640, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odvody za starostu a kontrolóra", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "62", "upr_2026": 18865, "navrh_2027": 19254, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Doplnkové dôchodkové sporenie", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "627", "upr_2026": 2850, "navrh_2027": 2850, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Cestovné náhrady", "druh": "Služby", "zdroj": "41", "ekon": "631001", "upr_2026": 400, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Vykurovanie", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632001", "upr_2026": 22000, "navrh_2027": 27000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Vodné, stočné", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632002", "upr_2026": 3500, "navrh_2027": 3500, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Poštovné – voľby (štát)", "druh": "Energie, voda, telefón", "zdroj": "111", "ekon": "632003", "upr_2026": 7, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Poštovné", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632003", "upr_2026": 3000, "navrh_2027": 5000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Internet – voľby (štát)", "druh": "Energie, voda, telefón", "zdroj": "111", "ekon": "632004", "upr_2026": 10, "navrh_2027": 10, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Internet", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632004", "upr_2026": 1100, "navrh_2027": 1100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Telefón – voľby (štát)", "druh": "Energie, voda, telefón", "zdroj": "111", "ekon": "632005", "upr_2026": 5, "navrh_2027": 5, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Telefón, mobil, web", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632005", "upr_2026": 1100, "navrh_2027": 1100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Elektrina – voľby (štát)", "druh": "Energie, voda, telefón", "zdroj": "111", "ekon": "632006", "upr_2026": 20, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Elektrina", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632006", "upr_2026": 16630, "navrh_2027": 20000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Elektrina z rezervného fondu", "druh": "Energie, voda, telefón", "zdroj": "46", "ekon": "632006", "upr_2026": 5000, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Interiérové vybavenie (kult. dom, klub dôchodcov, úrad)", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633001", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Výpočtová technika", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633002", "upr_2026": 1100, "navrh_2027": 100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Stroje, prístroje, zariadenie", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633004", "upr_2026": 1200, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Pracovné náradie", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633004", "upr_2026": 500, "navrh_2027": 500, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kamerový systém", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633005", "upr_2026": 200, "navrh_2027": 200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kancelárske potreby – voľby (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633006", "upr_2026": 150, "navrh_2027": 150, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kancelárske potreby", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 2300, "navrh_2027": 2300, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Hygienické a čistiace potreby", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 2000, "navrh_2027": 2000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Tonery", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 1800, "navrh_2027": 1800, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kvety, sadenice, kvetináče", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 2200, "navrh_2027": 2200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kvety – náhradná výsadba", "druh": "Materiál a vybavenie", "zdroj": "71", "ekon": "633006", "upr_2026": 100, "navrh_2027": 100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Prevádzková réžia (materiál)", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 8776, "navrh_2027": 16000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Ľubietovské kalendáre", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 2602, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odborná literatúra, noviny", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633009", "upr_2026": 600, "navrh_2027": 600, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Pracovné odevy a pomôcky", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633010", "upr_2026": 700, "navrh_2027": 700, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Potraviny, občerstvenie", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633011", "upr_2026": 350, "navrh_2027": 350, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Softvér a licencie", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633013", "upr_2026": 6986, "navrh_2027": 6990, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Palivá", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633015", "upr_2026": 2500, "navrh_2027": 2500, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Reprezentačné – voľby (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633016", "upr_2026": 26, "navrh_2027": 26, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Reprezentačné", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633016", "upr_2026": 400, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Pohonné hmoty – voľby (štát)", "druh": "Vozidlá a pohonné hmoty", "zdroj": "111", "ekon": "634001", "upr_2026": 20, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Pohonné hmoty, mazivá", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634001", "upr_2026": 6200, "navrh_2027": 6200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Servis a opravy vozidiel", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634002", "upr_2026": 8000, "navrh_2027": 8000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Poistenie vozidiel", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634003", "upr_2026": 1300, "navrh_2027": 1300, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Diaľničné známky, poplatky", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634005", "upr_2026": 350, "navrh_2027": 350, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba výpočtovej techniky", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635002", "upr_2026": 350, "navrh_2027": 350, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba strojov a náradia", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635004", "upr_2026": 3000, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba kotlov z rezervného fondu", "druh": "Údržba a opravy", "zdroj": "46", "ekon": "635004", "upr_2026": 5200, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba špeciálnych strojov", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635005", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba miestnych komunikácií", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 7000, "navrh_2027": 7000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Údržba obce a budov", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 5410, "navrh_2027": 1500, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Správa a údržba cintorína", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Prenájom pozemkov SPF", "druh": "Služby", "zdroj": "41", "ekon": "636001", "upr_2026": 100, "navrh_2027": 100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Prenájom strojov", "druh": "Služby", "zdroj": "41", "ekon": "636002", "upr_2026": 200, "navrh_2027": 200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Súťaže, ohňostroj", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 800, "navrh_2027": 800, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Propagácia a inzercia", "druh": "Služby", "zdroj": "41", "ekon": "637003", "upr_2026": 200, "navrh_2027": 200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Obecné noviny", "druh": "Služby", "zdroj": "41", "ekon": "637003", "upr_2026": 4200, "navrh_2027": 4200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Vypracovanie žiadostí o financie", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 1200, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Revízie a kontroly zariadení", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 4000, "navrh_2027": 4000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Všeobecné služby ostatné", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 15833, "navrh_2027": 15833, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Geometrické plány, posudky, projekty, notár", "druh": "Služby", "zdroj": "41", "ekon": "637005", "upr_2026": 9000, "navrh_2027": 9000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Monitorovanie GPS", "druh": "Služby", "zdroj": "41", "ekon": "637005", "upr_2026": 600, "navrh_2027": 600, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Právne služby", "druh": "Služby", "zdroj": "41", "ekon": "637005", "upr_2026": 8400, "navrh_2027": 8400, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Preventívne prehliadky", "druh": "Služby", "zdroj": "41", "ekon": "637006", "upr_2026": 100, "navrh_2027": 100, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Štúdie, expertízy, posudky", "druh": "Služby", "zdroj": "41", "ekon": "637011", "upr_2026": 2000, "navrh_2027": 2000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Poplatky banke", "druh": "Služby", "zdroj": "41", "ekon": "637012", "upr_2026": 4260, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Kolkové známky", "druh": "Služby", "zdroj": "41", "ekon": "637012", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Strava – volebná komisia (štát)", "druh": "Stravovanie", "zdroj": "111", "ekon": "637014", "upr_2026": 170, "navrh_2027": 170, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Strava zamestnancov úradu", "druh": "Stravovanie", "zdroj": "41", "ekon": "637014", "upr_2026": 18847, "navrh_2027": 18900, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Poistenie majetku", "druh": "Služby", "zdroj": "41", "ekon": "637015", "upr_2026": 3700, "navrh_2027": 3700, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Prídel do sociálneho fondu", "druh": "Služby", "zdroj": "41", "ekon": "637016", "upr_2026": 2300, "navrh_2027": 2300, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Provízia za stravné lístky", "druh": "Služby", "zdroj": "41", "ekon": "637017", "upr_2026": 250, "navrh_2027": 250, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odmeny volebných komisií (štát)", "druh": "Odmeny poslancov a dohody", "zdroj": "111", "ekon": "637026", "upr_2026": 1482, "navrh_2027": 1700, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odmeny poslancov", "druh": "Odmeny poslancov a dohody", "zdroj": "41", "ekon": "637026", "upr_2026": 10000, "navrh_2027": 10000, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Dohody – voľby (štát)", "druh": "Odmeny poslancov a dohody", "zdroj": "111", "ekon": "637027", "upr_2026": 48, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odmeny za prácu na dohodu", "druh": "Odmeny poslancov a dohody", "zdroj": "41", "ekon": "637027", "upr_2026": 12362, "navrh_2027": 26620, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Pokuty a penále z rezervného fondu", "druh": "Služby", "zdroj": "46", "ekon": "637031", "upr_2026": 2000, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Daň z nehnuteľností", "druh": "Služby", "zdroj": "41", "ekon": "637035", "upr_2026": 30, "navrh_2027": 30, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Reprezentačné výdavky", "druh": "Služby", "zdroj": "41", "ekon": "637036", "upr_2026": 400, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Vrátenie nevyčerpanej dotácie na voľby", "druh": "Vrátenie dotácií", "zdroj": "111", "ekon": "637037", "upr_2026": 143, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odstupné", "druh": "Platy", "zdroj": "41", "ekon": "642012", "upr_2026": 25080, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Odchodné", "druh": "Platy", "zdroj": "41", "ekon": "642013", "upr_2026": 4166, "navrh_2027": 4166, "jednorazove": "nie"}, {"oblast": "Obecný úrad a samospráva", "polozka": "Príspevok na stravovanie", "druh": "Stravovanie", "zdroj": "41", "ekon": "642014", "upr_2026": 373, "navrh_2027": 450, "jednorazove": "nie"}, {"oblast": "Audit a poradenstvo", "polozka": "Audítorské služby", "druh": "Služby", "zdroj": "41", "ekon": "637005", "upr_2026": 3000, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Audit a poradenstvo", "polozka": "Poradenstvo k zlúčeniu spoločnosti z rezervného fondu", "druh": "Služby", "zdroj": "46", "ekon": "637005", "upr_2026": 2460, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Plat – matrika a evidencia obyvateľov (štát)", "druh": "Platy", "zdroj": "111", "ekon": "611", "upr_2026": 3484, "navrh_2027": 3484, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Odvody – matrika a evidencia (štát)", "druh": "Odvody do poisťovní", "zdroj": "111", "ekon": "62", "upr_2026": 1253, "navrh_2027": 1253, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Energie, pošta, telefón – matrika (štát)", "druh": "Energie, voda, telefón", "zdroj": "111", "ekon": "632", "upr_2026": 217, "navrh_2027": 217, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Kancelárske potreby a softvér – matrika (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633", "upr_2026": 165, "navrh_2027": 165, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Školenia – matrika (štát)", "druh": "Služby", "zdroj": "111", "ekon": "637001", "upr_2026": 315, "navrh_2027": 315, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Služby – matrika", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 300, "navrh_2027": 300, "jednorazove": "nie"}, {"oblast": "Matrika a evidencia obyvateľov", "polozka": "Príspevok na ošatenie – matrika (štát)", "druh": "Odmeny poslancov a dohody", "zdroj": "111", "ekon": "637026", "upr_2026": 100, "navrh_2027": 100, "jednorazove": "nie"}, {"oblast": "Úroky z úverov", "polozka": "Úroky z dlhodobých úverov", "druh": "Úroky", "zdroj": "41", "ekon": "651002", "upr_2026": 800, "navrh_2027": 800, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Elektrina DHZ", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632001", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Prevádzkový materiál DHZ (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633006", "upr_2026": 2555, "navrh_2027": 2285, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Prevádzkový materiál DHZ", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 1500, "navrh_2027": 1500, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Pracovné odevy DHZ (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633010", "upr_2026": 445, "navrh_2027": 715, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Pracovné odevy DHZ", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633010", "upr_2026": 287, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Palivo a mazivá DHZ", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634001", "upr_2026": 774, "navrh_2027": 1500, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Servis a opravy DHZ", "druh": "Vozidlá a pohonné hmoty", "zdroj": "41", "ekon": "634002", "upr_2026": 754, "navrh_2027": 1400, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Údržba budov DHZ z rezervného fondu", "druh": "Údržba a opravy", "zdroj": "46", "ekon": "635006", "upr_2026": 3100, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Hasiči (DHZ)", "polozka": "Školenia DHZ", "druh": "Služby", "zdroj": "41", "ekon": "637001", "upr_2026": 300, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Hasiči (DHZ)", "polozka": "Súťaže DHZ", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 1385, "navrh_2027": 700, "jednorazove": "nie"}, {"oblast": "Stavebný úrad", "polozka": "Spoločný stavebný úrad (štát)", "druh": "Dotácie, príspevky a transfery", "zdroj": "111", "ekon": "642006", "upr_2026": 1417, "navrh_2027": 2095, "jednorazove": "nie"}, {"oblast": "Stavebný úrad", "polozka": "Spoločný stavebný úrad", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642006", "upr_2026": 7648, "navrh_2027": 7648, "jednorazove": "nie"}, {"oblast": "Cestná doprava", "polozka": "Dopravné značky, GPS", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633005", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Cestná doprava", "polozka": "Posypová soľ", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 600, "navrh_2027": 600, "jednorazove": "nie"}, {"oblast": "Cestovný ruch", "polozka": "Komisia cestovného ruchu", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 1500, "navrh_2027": 1500, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Nákup odpadových nádob", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633004", "upr_2026": 2686, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Vrecia na separovaný zber", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 700, "navrh_2027": 700, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Odvoz odpadu (štát)", "druh": "Služby", "zdroj": "111", "ekon": "637004", "upr_2026": 180, "navrh_2027": 168, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Odvoz komunálneho a separovaného odpadu", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 40700, "navrh_2027": 40700, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Odvoz odpadu – veľkoobjemové kontajnery", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 24500, "navrh_2027": 24500, "jednorazove": "nie"}, {"oblast": "Odpady", "polozka": "Likvidácia nebezpečného odpadu", "druh": "Služby", "zdroj": "41", "ekon": "637004", "upr_2026": 500, "navrh_2027": 500, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Plat a príplatky obsluhy ČOV", "druh": "Platy", "zdroj": "71", "ekon": "611", "upr_2026": 15688, "navrh_2027": 15688, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Odmeny obsluhy ČOV", "druh": "Platy", "zdroj": "71", "ekon": "614", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Odvody za obsluhu ČOV", "druh": "Odvody do poisťovní", "zdroj": "71", "ekon": "62", "upr_2026": 6001, "navrh_2027": 6001, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Vodné, stočné ČOV", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632002", "upr_2026": 500, "navrh_2027": 500, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Elektrina ČOV", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632006", "upr_2026": 25500, "navrh_2027": 28000, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Prevádzkový materiál ČOV", "druh": "Materiál a vybavenie", "zdroj": "71", "ekon": "633006", "upr_2026": 1000, "navrh_2027": 1100, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Pracovné odevy ČOV", "druh": "Materiál a vybavenie", "zdroj": "71", "ekon": "633010", "upr_2026": 250, "navrh_2027": 250, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Údržba ČOV", "druh": "Údržba a opravy", "zdroj": "71", "ekon": "635004", "upr_2026": 2361, "navrh_2027": 2361, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Služby ČOV", "druh": "Služby", "zdroj": "71", "ekon": "637004", "upr_2026": 1400, "navrh_2027": 1400, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Kalibrácia prístrojov ČOV", "druh": "Služby", "zdroj": "71", "ekon": "637005", "upr_2026": 0, "navrh_2027": 1600, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Rozbor vody ČOV", "druh": "Služby", "zdroj": "71", "ekon": "637011", "upr_2026": 500, "navrh_2027": 600, "jednorazove": "nie"}, {"oblast": "Čistiareň odpadových vôd", "polozka": "Daň z príjmov", "druh": "Služby", "zdroj": "41", "ekon": "637035", "upr_2026": 409, "navrh_2027": 500, "jednorazove": "nie"}, {"oblast": "Zásobovanie vodou", "polozka": "Rozbor pitnej vody", "druh": "Služby", "zdroj": "41", "ekon": "637011", "upr_2026": 700, "navrh_2027": 700, "jednorazove": "nie"}, {"oblast": "Rozvoj obce", "polozka": "Údržba schodov a mostov z rezervného fondu", "druh": "Údržba a opravy", "zdroj": "46", "ekon": "635006", "upr_2026": 10000, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Rozvoj obce", "polozka": "Projekty z rezervného fondu", "druh": "Služby", "zdroj": "46", "ekon": "637005", "upr_2026": 7000, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Verejné osvetlenie", "polozka": "Elektrina verejného osvetlenia", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632006", "upr_2026": 10000, "navrh_2027": 14000, "jednorazove": "nie"}, {"oblast": "Verejné osvetlenie", "polozka": "Materiál verejného osvetlenia", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 500, "navrh_2027": 500, "jednorazove": "nie"}, {"oblast": "Verejné osvetlenie", "polozka": "Údržba verejného osvetlenia", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 2500, "navrh_2027": 2500, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Plat zodpovednej osoby za detské ihrisko", "druh": "Platy", "zdroj": "41", "ekon": "611", "upr_2026": 1200, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Odvody za zodpovednú osobu ihriska", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "62", "upr_2026": 420, "navrh_2027": 420, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Údržba ihriska", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 900, "navrh_2027": 900, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Športová komisia", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 1800, "navrh_2027": 1800, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "FK Baník – príspevok", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 6000, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Stolný tenis – príspevok", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 1800, "navrh_2027": 1800, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Rodičovské združenie pri ZŠ", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 300, "navrh_2027": 300, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Dance Studio by Aneta", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Rekreácia a šport", "polozka": "Príspevok jednotlivcovi", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642014", "upr_2026": 600, "navrh_2027": 0, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Elektrina kultúrneho domu", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632006", "upr_2026": 800, "navrh_2027": 900, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Vybavenie kultúrneho domu z rezervného fondu", "druh": "Materiál a vybavenie", "zdroj": "46", "ekon": "633001", "upr_2026": 4706, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Kultúra", "polozka": "Kvety ZPOZ", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633006", "upr_2026": 1500, "navrh_2027": 1600, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Knihy do knižnice", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633009", "upr_2026": 400, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Dary ZPOZ", "druh": "Materiál a vybavenie", "zdroj": "41", "ekon": "633016", "upr_2026": 1400, "navrh_2027": 1400, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Kultúrna komisia – kultúrne akcie", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 13000, "navrh_2027": 10000, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "SOZA (autorské poplatky)", "druh": "Služby", "zdroj": "41", "ekon": "637012", "upr_2026": 600, "navrh_2027": 600, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Odmeny na dohodu – ZPOZ", "druh": "Odmeny poslancov a dohody", "zdroj": "41", "ekon": "637027", "upr_2026": 4000, "navrh_2027": 4000, "jednorazove": "nie"}, {"oblast": "Kultúra", "polozka": "Folklórny súbor Debnár", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Miestny rozhlas", "polozka": "Údržba miestneho rozhlasu", "druh": "Údržba a opravy", "zdroj": "41", "ekon": "635006", "upr_2026": 1300, "navrh_2027": 1300, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Dom smútku – vodné, stočné", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632002", "upr_2026": 800, "navrh_2027": 800, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Dom smútku – elektrina", "druh": "Energie, voda, telefón", "zdroj": "41", "ekon": "632006", "upr_2026": 800, "navrh_2027": 800, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Podujatie ZPB", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 450, "navrh_2027": 450, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Dotácia včelárom", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642001", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Členské príspevky", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642006", "upr_2026": 6500, "navrh_2027": 6500, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Dotácia katolíckej cirkvi (kaplnka)", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642007", "upr_2026": 0, "navrh_2027": 5000, "jednorazove": "nie"}, {"oblast": "Cirkvi cintoríny a spolky", "polozka": "Dotácia evanjelickej cirkvi (zvony)", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642007", "upr_2026": 0, "navrh_2027": 5000, "jednorazove": "nie"}, {"oblast": "Environmentálna výchova", "polozka": "Školenia, kurzy, semináre", "druh": "Služby", "zdroj": "41", "ekon": "637001", "upr_2026": 3700, "navrh_2027": 3700, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Plat a príplatky opatrovateľky", "druh": "Platy", "zdroj": "41", "ekon": "611", "upr_2026": 11510, "navrh_2027": 11724, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Odmeny opatrovateľky", "druh": "Platy", "zdroj": "41", "ekon": "614", "upr_2026": 1200, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Náhrady pri PN – opatrovateľka", "druh": "Platy", "zdroj": "41", "ekon": "615", "upr_2026": 400, "navrh_2027": 400, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Odvody za opatrovateľku", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "62", "upr_2026": 4571, "navrh_2027": 4571, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Sociálna komisia, úcta k starším", "druh": "Služby", "zdroj": "41", "ekon": "637002", "upr_2026": 3000, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "polozka": "Strava dôchodcov a pracovníkov (klub dôchodcov)", "druh": "Stravovanie", "zdroj": "41", "ekon": "637014", "upr_2026": 30000, "navrh_2027": 30000, "jednorazove": "nie"}, {"oblast": "Ostatné sociálne zabezpečenie", "polozka": "Školské potreby z rodinných prídavkov (štát)", "druh": "Materiál a vybavenie", "zdroj": "111", "ekon": "633006", "upr_2026": 1440, "navrh_2027": 1440, "jednorazove": "nie"}, {"oblast": "Ostatné sociálne zabezpečenie", "polozka": "Vrátenie nevyčerpanej dotácie na stravu", "druh": "Vrátenie dotácií", "zdroj": "131", "ekon": "637037", "upr_2026": 7957, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Ostatné sociálne zabezpečenie", "polozka": "Jednorazová sociálna výpomoc", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "642014", "upr_2026": 3000, "navrh_2027": 3000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Platy – MŠ (predškoláci)", "druh": "Platy", "zdroj": "111", "ekon": "610", "upr_2026": 86872, "navrh_2027": 115000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Platy – ZŠ 1. stupeň", "druh": "Platy", "zdroj": "111", "ekon": "610", "upr_2026": 108180, "navrh_2027": 150000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Platy – ZŠ 2. stupeň", "druh": "Platy", "zdroj": "111", "ekon": "610", "upr_2026": 321000, "navrh_2027": 350000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Odvody – MŠ (predškoláci)", "druh": "Odvody do poisťovní", "zdroj": "111", "ekon": "620", "upr_2026": 27000, "navrh_2027": 46000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Odvody – ZŠ 1. stupeň", "druh": "Odvody do poisťovní", "zdroj": "111", "ekon": "620", "upr_2026": 39200, "navrh_2027": 57000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Odvody – ZŠ 2. stupeň", "druh": "Odvody do poisťovní", "zdroj": "111", "ekon": "620", "upr_2026": 120616, "navrh_2027": 138000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Tovary a služby – MŠ", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "111", "ekon": "630", "upr_2026": 20884, "navrh_2027": 24000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Tovary a služby – MŠ, zostatok z minulého roka", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "131", "ekon": "630", "upr_2026": 2980, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Tovary a služby – ZŠ 1. stupeň", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "111", "ekon": "630", "upr_2026": 10000, "navrh_2027": 10000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Tovary a služby – ZŠ 2. stupeň", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "111", "ekon": "630", "upr_2026": 91409, "navrh_2027": 90000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Tovary a služby – ZŠ, zostatok z minulého roka", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "131", "ekon": "630", "upr_2026": 31172, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Jedáleň ZŠ – zostatok dotácie na stravu z minulého roka", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "131", "ekon": "630", "upr_2026": 13740, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Potraviny – dotácia na stravu, jedáleň MŠ", "druh": "Potraviny v školských jedálňach", "zdroj": "111", "ekon": "630", "upr_2026": 4000, "navrh_2027": 4000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Potraviny – dotácia na stravu, jedáleň ZŠ", "druh": "Potraviny v školských jedálňach", "zdroj": "111", "ekon": "630", "upr_2026": 50000, "navrh_2027": 50000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Transfery – MŠ", "druh": "Dotácie, príspevky a transfery", "zdroj": "111", "ekon": "640", "upr_2026": 1000, "navrh_2027": 4000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Transfery – ZŠ 1. stupeň", "druh": "Dotácie, príspevky a transfery", "zdroj": "111", "ekon": "640", "upr_2026": 1000, "navrh_2027": 1000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Transfery a dopravné žiakov – ZŠ 2. stupeň", "druh": "Dotácie, príspevky a transfery", "zdroj": "111", "ekon": "640", "upr_2026": 4000, "navrh_2027": 6000, "jednorazove": "nie"}, {"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "polozka": "Dopravné žiakov z minulého roka", "druh": "Dotácie, príspevky a transfery", "zdroj": "131", "ekon": "640", "upr_2026": 123, "navrh_2027": 0, "jednorazove": "áno"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Platy – školský klub detí", "druh": "Platy", "zdroj": "41", "ekon": "610", "upr_2026": 35500, "navrh_2027": 35500, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Platy – jedáleň MŠ", "druh": "Platy", "zdroj": "41", "ekon": "610", "upr_2026": 12750, "navrh_2027": 12750, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Platy – jedáleň ZŠ", "druh": "Platy", "zdroj": "41", "ekon": "610", "upr_2026": 46740, "navrh_2027": 44650, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Odvody – školský klub detí", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "620", "upr_2026": 12950, "navrh_2027": 12950, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Odvody – jedáleň MŠ", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "620", "upr_2026": 5050, "navrh_2027": 5050, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Odvody – jedáleň ZŠ", "druh": "Odvody do poisťovní", "zdroj": "41", "ekon": "620", "upr_2026": 18502, "navrh_2027": 17750, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Tovary a služby – ŠKD a jedálne", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "41", "ekon": "630", "upr_2026": 3300, "navrh_2027": 3300, "jednorazove": "nie"}, {"oblast": "Školstvo – originálne kompetencie", "polozka": "Transfery – ŠKD a jedálne", "druh": "Dotácie, príspevky a transfery", "zdroj": "41", "ekon": "640", "upr_2026": 1200, "navrh_2027": 1200, "jednorazove": "nie"}, {"oblast": "Školská jedáleň", "polozka": "Platy – jedálne (z platieb za stravu)", "druh": "Platy", "zdroj": "72f", "ekon": "610", "upr_2026": 11000, "navrh_2027": 11000, "jednorazove": "nie"}, {"oblast": "Školská jedáleň", "polozka": "Odvody – jedálne (z platieb za stravu)", "druh": "Odvody do poisťovní", "zdroj": "72f", "ekon": "620", "upr_2026": 1500, "navrh_2027": 6500, "jednorazove": "nie"}, {"oblast": "Školská jedáleň", "polozka": "Tovary a služby – jedálne", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "72f", "ekon": "630", "upr_2026": 10500, "navrh_2027": 5500, "jednorazove": "nie"}, {"oblast": "Školská jedáleň", "polozka": "Potraviny – jedáleň MŠ", "druh": "Potraviny v školských jedálňach", "zdroj": "72f", "ekon": "630", "upr_2026": 17000, "navrh_2027": 12000, "jednorazove": "nie"}, {"oblast": "Školská jedáleň", "polozka": "Potraviny – jedáleň ZŠ", "druh": "Potraviny v školských jedálňach", "zdroj": "72f", "ekon": "630", "upr_2026": 16000, "navrh_2027": 11000, "jednorazove": "nie"}, {"oblast": "MŠ a školský klub detí", "polozka": "Platy – ŠKD (z poplatkov)", "druh": "Platy", "zdroj": "72j", "ekon": "610", "upr_2026": 1500, "navrh_2027": 1100, "jednorazove": "nie"}, {"oblast": "MŠ a školský klub detí", "polozka": "Odvody – ŠKD (z poplatkov)", "druh": "Odvody do poisťovní", "zdroj": "72j", "ekon": "620", "upr_2026": 500, "navrh_2027": 900, "jednorazove": "nie"}, {"oblast": "MŠ a školský klub detí", "polozka": "Tovary a služby – MŠ (z poplatkov)", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "72j", "ekon": "630", "upr_2026": 7800, "navrh_2027": 6800, "jednorazove": "nie"}, {"oblast": "MŠ a školský klub detí", "polozka": "Tovary a služby – ŠKD (z poplatkov)", "druh": "Prevádzka školy (tovary a služby)", "zdroj": "72j", "ekon": "630", "upr_2026": 5800, "navrh_2027": 6800, "jednorazove": "nie"}], "suhrn": [{"obdobie": "Skutočnosť 2024", "prijmy": 1991896.49, "vydavky": 1825556.04, "bezne_prijmy": 1679326.73, "bezne_vydavky": 1568774.95, "kap_prijmy": 400, "kap_vydavky": 202477.09, "fo_prijmy": 312169.76, "fo_vydavky": 54304}, {"obdobie": "Skutočnosť 2025", "prijmy": 2609103.02, "vydavky": 2284836.49, "bezne_prijmy": 1839863.69, "bezne_vydavky": 1681407.1, "kap_prijmy": 104255.08, "kap_vydavky": 359125.39, "fo_prijmy": 664984.25, "fo_vydavky": 244304}, {"obdobie": "Upravený 2026", "prijmy": 2093065, "vydavky": 2077961, "bezne_prijmy": 1855679, "bezne_vydavky": 1940655, "kap_prijmy": 4912, "kap_vydavky": 122282, "fo_prijmy": 232474, "fo_vydavky": 15024}, {"obdobie": "Návrh 2027", "prijmy": 2009750, "vydavky": 2009750, "bezne_prijmy": 2007750, "bezne_vydavky": 1990876, "kap_prijmy": 2000, "kap_vydavky": 4570, "fo_prijmy": 0, "fo_vydavky": 14304}, {"obdobie": "Návrh 2028", "prijmy": 2009750, "vydavky": 2009750, "bezne_prijmy": 2007750, "bezne_vydavky": 1990876, "kap_prijmy": 2000, "kap_vydavky": 4570, "fo_prijmy": 0, "fo_vydavky": 14304}, {"obdobie": "Návrh 2029", "prijmy": 2009750, "vydavky": 2009750, "bezne_prijmy": 2007750, "bezne_vydavky": 1990876, "kap_prijmy": 2000, "kap_vydavky": 4570, "fo_prijmy": 0, "fo_vydavky": 14304}], "prijmy": [{"skupina": "Granty a transfery (najmä štát na školstvo)", "suma": 1059518}, {"skupina": "Podielové dane", "suma": 540924}, {"skupina": "Nedaňové príjmy obce (nájmy poplatky stravné)", "suma": 227185}, {"skupina": "Poplatok za komunálny odpad", "suma": 65700}, {"skupina": "Príjmy školských zariadení", "suma": 61600}, {"skupina": "Daň z nehnuteľností", "suma": 50043}, {"skupina": "Ostatné dane (pes ubytovanie)", "suma": 2780}], "vydavky": [{"oblast": "Školstvo – prenesené kompetencie (MŠ a ZŠ)", "kategoria": "Školstvo", "upr_2026": 933176, "navrh_2027": 1045000}, {"oblast": "Školstvo – originálne kompetencie", "kategoria": "Školstvo", "upr_2026": 135992, "navrh_2027": 133150}, {"oblast": "Školská jedáleň", "kategoria": "Školstvo", "upr_2026": 56000, "navrh_2027": 46000}, {"oblast": "MŠ a školský klub detí", "kategoria": "Školstvo", "upr_2026": 15600, "navrh_2027": 15600}, {"oblast": "Environmentálna výchova", "kategoria": "Školstvo", "upr_2026": 3700, "navrh_2027": 3700}, {"oblast": "Obecný úrad a samospráva", "kategoria": "Správa obce", "upr_2026": 489899, "navrh_2027": 464676}, {"oblast": "Stavebný úrad", "kategoria": "Správa obce", "upr_2026": 9065, "navrh_2027": 9743}, {"oblast": "Matrika a evidencia obyvateľov", "kategoria": "Správa obce", "upr_2026": 5834, "navrh_2027": 5834}, {"oblast": "Audit a poradenstvo", "kategoria": "Správa obce", "upr_2026": 5460, "navrh_2027": 3000}, {"oblast": "Úroky z úverov", "kategoria": "Správa obce", "upr_2026": 800, "navrh_2027": 800}, {"oblast": "Odpady", "kategoria": "Životné prostredie", "upr_2026": 69266, "navrh_2027": 67768}, {"oblast": "Čistiareň odpadových vôd", "kategoria": "Životné prostredie", "upr_2026": 54609, "navrh_2027": 59000}, {"oblast": "Zásobovanie vodou", "kategoria": "Životné prostredie", "upr_2026": 700, "navrh_2027": 700}, {"oblast": "Sociálna pomoc a opatrovateľská služba", "kategoria": "Sociálne veci", "upr_2026": 50681, "navrh_2027": 50695}, {"oblast": "Ostatné sociálne zabezpečenie", "kategoria": "Sociálne veci", "upr_2026": 12397, "navrh_2027": 4440}, {"oblast": "Kultúra", "kategoria": "Kultúra, šport, komunita", "upr_2026": 27406, "navrh_2027": 19900}, {"oblast": "Cirkvi cintoríny a spolky", "kategoria": "Kultúra, šport, komunita", "upr_2026": 9550, "navrh_2027": 19550}, {"oblast": "Rekreácia a šport", "kategoria": "Kultúra, šport, komunita", "upr_2026": 14020, "navrh_2027": 10420}, {"oblast": "Miestny rozhlas", "kategoria": "Kultúra, šport, komunita", "upr_2026": 1300, "navrh_2027": 1300}, {"oblast": "Verejné osvetlenie", "kategoria": "Obec a bezpečnosť", "upr_2026": 13000, "navrh_2027": 17000}, {"oblast": "Hasiči (DHZ)", "kategoria": "Obec a bezpečnosť", "upr_2026": 12100, "navrh_2027": 9500}, {"oblast": "Rozvoj obce", "kategoria": "Obec a bezpečnosť", "upr_2026": 17000, "navrh_2027": 0}, {"oblast": "Cestná doprava", "kategoria": "Obec a bezpečnosť", "upr_2026": 1600, "navrh_2027": 1600}, {"oblast": "Cestovný ruch", "kategoria": "Obec a bezpečnosť", "upr_2026": 1500, "navrh_2027": 1500}], "investicie": [{"nazov": "Rekonštrukcia cintorínov", "upr_2026": 80000, "navrh_2027": 0}, {"nazov": "Rekonštrukcia ambulancie lekára", "upr_2026": 16000, "navrh_2027": 0}, {"nazov": "Kúpa pozemkov", "upr_2026": 14912, "navrh_2027": 2000}, {"nazov": "Prístrešok multifunkčného ihriska", "upr_2026": 4500, "navrh_2027": 0}, {"nazov": "Fotovoltika (škola)", "upr_2026": 2570, "navrh_2027": 2570}, {"nazov": "Kamerový systém", "upr_2026": 2500, "navrh_2027": 0}, {"nazov": "Stroje pre ČOV", "upr_2026": 1800, "navrh_2027": 0}], "ihrisko": [{"polozka": "Plat zodpovednej osoby", "typ": "Bežné výdavky", "suma_2027": 1200}, {"polozka": "Odvody za zodpovednú osobu", "typ": "Bežné výdavky", "suma_2027": 420}, {"polozka": "Údržba ihriska", "typ": "Bežné výdavky", "suma_2027": 900}, {"polozka": "Výstavba detského ihriska", "typ": "Investície", "suma_2027": 0}, {"polozka": "Prístrešok multifunkčného ihriska", "typ": "Investície", "suma_2027": 0}]};
+  const calcs = {}, draws = {}, cache = {};
+  const get = (id) => {
+    if (data[id]) return {status: 'ok', data: data[id]};
+    const c = calcs[id];
+    if (c) {
+      if (!(id in cache)) cache[id] = c.fn(...c.inputs.map((i) => get(i).data));
+      return {status: 'ok', data: cache[id]};
+    }
+    return {status: 'missing', data: []};
+  };
+  const run = (name) => document.querySelectorAll('[data-draw="' + name + '"]').forEach((el) => {
+    try { draws[name](el); } catch (e) { console.error(name, e); }
+  });
+  return {
+    colors: ['var(--c0)', 'var(--c1)'],
+    calc: (id, o) => { calcs[id] = o; },
+    data: get,
+    draw: (name, fn) => { if (fn) draws[name] = fn; else if (draws[name]) run(name); },
+    onData: () => {},
+    runAll: () => Object.keys(draws).forEach(run)
+  };
+})();
+</script>
+<script>
+const loc = d3.formatLocale({decimal: ',', thousands: String.fromCharCode(160), grouping: [3], currency: ['', '']});
+const NB = String.fromCharCode(160);
+const f0 = loc.format(',.0f');
+const f1 = loc.format(',.1f');
+window.LB = {
+  trendMode: 'celkom',
+  year: 'navrh_2027',
+  cat: 'Školstvo',
+  eur: (v) => f0(Math.round(+v)) + NB + '€',
+  pct: (v) => f1(+v) + NB + '%',
+  chg: (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + f1(Math.abs(+v)) + NB + '%',
+  short: (v) => v >= 1e6 ? f1(v / 1e6) + NB + 'mil.' : v >= 1e3 ? f0(v / 1e3) + NB + 'tis.' : f0(v),
+  enc: (s) => String(s).replace(/%/g, '%25').replace(/&/g, '%26').replace(/=/g, '%3D'),
+  color: (c) => c === 'm' ? 'var(--cds-chart-muted)' : dash.colors[(+c) % dash.colors.length],
+  msg: (el, st) => {
+    el.replaceChildren();
+    const p = document.createElement('p');
+    p.className = st === 'error' ? 'lb-err' : 'lb-hint';
+    p.textContent = st === 'error' ? 'Údaje sa nepodarilo načítať.' : '—';
+    el.append(p);
+  },
+  mark: (node, src, field, keyCol, keyVal) => {
+    node.dataset.source = src;
+    node.dataset.field = field;
+    if (keyCol) node.dataset.where = LB.enc(keyCol) + '=' + LB.enc(keyVal);
+    return node;
+  },
+  span: (cls, text) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = text;
+    return s;
+  },
+  barRow: (opt) => {
+    const row = document.createElement(opt.button ? 'button' : 'div');
+    row.className = 'lb-row';
+    if (opt.button) row.type = 'button';
+    const top = document.createElement('div');
+    top.className = 'lb-rowtop';
+    const right = document.createElement('span');
+    right.append(LB.mark(LB.span('lb-rowval', LB.eur(opt.value)), opt.src, opt.valField, opt.keyCol, opt.label));
+    if (opt.pct != null) right.append(LB.mark(LB.span('lb-rowpct', LB.pct(opt.pct)), opt.src, opt.pctField, opt.keyCol, opt.label));
+    top.append(LB.span('', opt.label), right);
+    const track = document.createElement('div');
+    track.className = 'lb-track';
+    const fill = document.createElement('div');
+    fill.className = 'lb-fill';
+    fill.style.width = (opt.max > 0 ? Math.max(0, opt.value / opt.max * 100) : 0) + '%';
+    fill.style.background = opt.color;
+    track.append(fill);
+    row.append(top, track);
+    return row;
+  },
+  pairRow: (opt) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    const top = document.createElement('div');
+    top.className = 'lb-rowtop';
+    top.append(LB.span('', opt.label));
+    const pair = document.createElement('div');
+    pair.className = 'lb-pair';
+    opt.lines.forEach((ln) => {
+      const line = document.createElement('div');
+      line.className = 'lb-pairline';
+      const track = document.createElement('div');
+      track.className = 'lb-track';
+      const fill = document.createElement('div');
+      fill.className = 'lb-fill';
+      fill.style.width = (opt.max > 0 ? Math.max(0, ln.value / opt.max * 100) : 0) + '%';
+      fill.style.background = LB.color(ln.c);
+      track.append(fill);
+      const val = LB.mark(LB.span('lb-pairval', LB.eur(ln.value)), opt.src, ln.field, opt.keyCol, opt.label);
+      if (+ln.value === 0) val.classList.add('lb-zero');
+      line.append(LB.span('lb-pairlab', ln.lab), track, val);
+      pair.append(line);
+    });
+    row.append(top, pair);
+    return row;
+  }
+};
+
+dash.calc('zmeny', {
+  inputs: ['suhrn'],
+  title: 'Zmena návrhu 2027 oproti upravenému 2026',
+  description: 'Percentuálna zmena hlavných ukazovateľov, zaokrúhlená na desatiny.',
+  fn: (suhrn) => {
+    const pred = suhrn.find((r) => r.obdobie === 'Upravený 2026');
+    const navrh = suhrn.find((r) => r.obdobie === 'Návrh 2027');
+    if (!pred || !navrh) return [];
+    return ['prijmy', 'vydavky', 'bezne_vydavky', 'kap_vydavky'].map((k) => ({
+      ukazovatel: k,
+      zmena: Math.round((+navrh[k] - +pred[k]) / +pred[k] * 1000) / 10
+    }));
+  }
+});
+
+dash.calc('prijmy_podiel', {
+  inputs: ['prijmy'],
+  title: 'Bežné príjmy 2027 s podielom',
+  description: 'Každý zdroj bežných príjmov a jeho podiel na súčte v percentách.',
+  fn: (prijmy) => {
+    const spolu = d3.sum(prijmy, (r) => +r.suma);
+    return prijmy
+      .map((r) => ({skupina: r.skupina, suma: +r.suma, podiel: Math.round(+r.suma / spolu * 1000) / 10}))
+      .sort((a, b) => b.suma - a.suma);
+  }
+});
+
+dash.calc('vydavky_kat', {
+  inputs: ['vydavky'],
+  title: 'Bežné výdavky podľa oblasti',
+  description: 'Súčet bežných výdavkov za každú oblasť a jej podiel na celku v percentách.',
+  fn: (vydavky) => {
+    const spolu2026 = d3.sum(vydavky, (r) => +r.upr_2026);
+    const spolu2027 = d3.sum(vydavky, (r) => +r.navrh_2027);
+    return d3.rollups(vydavky, (g) => [d3.sum(g, (r) => +r.upr_2026), d3.sum(g, (r) => +r.navrh_2027)], (r) => r.kategoria)
+      .map(([kategoria, [u, n]]) => ({
+        kategoria,
+        upr_2026: u,
+        navrh_2027: n,
+        podiel_2026: Math.round(u / spolu2026 * 1000) / 10,
+        podiel_2027: Math.round(n / spolu2027 * 1000) / 10
+      }))
+      .sort((a, b) => b.navrh_2027 - a.navrh_2027);
+  }
+});
+
+dash.calc('ihrisko_spolu', {
+  inputs: ['ihrisko'],
+  title: 'Ihrisko spolu za rok',
+  description: 'Súčet všetkých položiek na detské ihrisko v jednom roku.',
+  fn: (ihrisko) => d3.sum(ihrisko, (r) => +r.suma_2027)
+});
+</script>
+
+<script>
+function drawValue(el, fmt) {
+  const d = dash.data(el.dataset.source);
+  if (d.status !== 'ok') { el.textContent = '—'; return; }
+  let v = d.data;
+  if (el.dataset.field) {
+    const parts = (el.dataset.where || '').split('=');
+    const r = d.data.find((x) => String(x[parts[0]]) === parts[1]);
+    v = r ? r[el.dataset.field] : null;
+  }
+  el.textContent = v == null || v === '' ? '—' : fmt(+v);
+}
+dash.draw('val-eur', (el) => drawValue(el, LB.eur));
+dash.draw('val-pct', (el) => drawValue(el, LB.pct));
+dash.draw('val-chg', (el) => drawValue(el, LB.chg));
+
+dash.draw('trend', (el) => {
+  const d = dash.data('suhrn');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const keys = {celkom: ['prijmy', 'vydavky'], bezne: ['bezne_prijmy', 'bezne_vydavky'], kap: ['kap_prijmy', 'kap_vydavky']}[LB.trendMode];
+  const names = ['Príjmy', 'Výdavky'];
+  const rows = d.data;
+  el.replaceChildren();
+  const W = Math.max(280, el.clientWidth || 320);
+  const H = 280;
+  const bottom = 40;
+  const svg = d3.select(el).append('svg')
+    .attr('width', '100%').attr('height', H).attr('viewBox', '0 0 ' + W + ' ' + H)
+    .attr('role', 'img')
+    .attr('aria-label', 'Stĺpcový graf príjmov a výdavkov obce Ľubietová v rokoch 2024 až 2029');
+  const max = d3.max(rows, (r) => Math.max(+r[keys[0]], +r[keys[1]])) || 1;
+  const y = d3.scaleLinear().domain([0, max]).nice().range([H - bottom, 10]);
+  const ticks = y.ticks(5);
+  const gy = svg.append('g').attr('class', 'lb-axis').call(d3.axisLeft(y).tickValues(ticks).tickFormat(LB.short).tickSize(0));
+  gy.select('.domain').remove();
+  let mw = 0;
+  gy.selectAll('text').each(function () { mw = Math.max(mw, this.getComputedTextLength()); });
+  const ml = Math.ceil(mw) + 10;
+  const mr = 4;
+  gy.attr('transform', 'translate(' + (ml - 6) + ',0)');
+  svg.insert('g', ':first-child').attr('class', 'lb-grid').selectAll('line').data(ticks).join('line')
+    .attr('x1', ml).attr('x2', W - mr).attr('y1', (t) => y(t)).attr('y2', (t) => y(t));
+  const x = d3.scaleBand().domain(rows.map((r) => r.obdobie)).range([ml, W - mr]).paddingInner(0.28).paddingOuter(0.12);
+  const xs = d3.scaleBand().domain([0, 1]).range([0, x.bandwidth()]).padding(0.06);
+  const gx = svg.append('g').attr('class', 'lb-axis').attr('transform', 'translate(0,' + (H - bottom) + ')')
+    .call(d3.axisBottom(x).tickSize(0).tickFormat((o) => o.slice(-4)));
+  gx.selectAll('.tick text').attr('dy', '1.1em');
+  gx.selectAll('.tick').append('text').attr('y', 20).attr('dy', '0.9em')
+    .text((o) => o.indexOf('Skut') === 0 ? 'skutoč.' : o.indexOf('Upr') === 0 ? 'upravený' : 'návrh');
+  const bars = [];
+  rows.forEach((r) => keys.forEach((k, i) => bars.push({r, k, i, v: +r[k]})));
+  svg.append('g').selectAll('rect').data(bars).join('rect')
+    .attr('x', (b) => x(b.r.obdobie) + xs(b.i)).attr('width', xs.bandwidth())
+    .attr('y', (b) => y(b.v)).attr('height', (b) => Math.max(0, y(0) - y(b.v))).attr('rx', 2)
+    .style('fill', (b) => LB.color(b.i));
+  const tip = document.createElement('div');
+  tip.className = 'lb-tip';
+  tip.hidden = true;
+  el.append(tip);
+  const show = (ev, r) => {
+    tip.replaceChildren();
+    const h = document.createElement('div');
+    h.className = 'lb-tip-h';
+    h.textContent = r.obdobie;
+    tip.append(h);
+    keys.forEach((k, i) => {
+      const line = document.createElement('div');
+      const sw = document.createElement('i');
+      sw.className = 'lb-sw';
+      sw.style.background = LB.color(i);
+      line.append(sw, document.createTextNode(names[i] + ': ' + LB.eur(r[k])));
+      tip.append(line);
+    });
+    tip.hidden = false;
+    const p = d3.pointer(ev, el);
+    const tw = tip.offsetWidth;
+    let left = p[0] + 12;
+    if (left + tw > W) left = p[0] - tw - 12;
+    tip.style.left = Math.max(0, left) + 'px';
+    tip.style.top = Math.max(0, p[1] - 50) + 'px';
+  };
+  svg.append('g').selectAll('rect').data(rows).join('rect')
+    .attr('x', (r) => x(r.obdobie) - x.step() * x.paddingInner() / 2).attr('width', x.step())
+    .attr('y', 0).attr('height', H - bottom + 30).style('fill', 'transparent')
+    .on('pointerenter pointermove pointerdown', show)
+    .on('pointerleave', () => { tip.hidden = true; });
+});
+
+dash.draw('prijmy', (el) => {
+  const d = dash.data('prijmy_podiel');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const max = d3.max(d.data, (r) => +r.suma);
+  el.replaceChildren(...d.data.map((r) => LB.barRow({
+    label: r.skupina, value: +r.suma, pct: r.podiel, max, color: LB.color(0),
+    src: 'prijmy_podiel', valField: 'suma', pctField: 'podiel', keyCol: 'skupina'
+  })));
+});
+
+dash.draw('kategorie', (el) => {
+  const d = dash.data('vydavky_kat');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const field = LB.year;
+  const pctField = field === 'upr_2026' ? 'podiel_2026' : 'podiel_2027';
+  const rows = d.data.slice().sort((a, b) => b[field] - a[field]);
+  const max = d3.max(rows, (r) => +r[field]);
+  const buttons = rows.map((r) => {
+    const b = LB.barRow({
+      button: true, label: r.kategoria, value: +r[field], pct: r[pctField], max, color: LB.color(1),
+      src: 'vydavky_kat', valField: field, pctField, keyCol: 'kategoria'
+    });
+    b.setAttribute('aria-pressed', String(r.kategoria === LB.cat));
+    b.addEventListener('click', () => {
+      LB.cat = r.kategoria;
+      buttons.forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      dash.draw('detail');
+      dash.draw('detail-nazov');
+    });
+    return b;
+  });
+  el.replaceChildren(...buttons);
+});
+
+dash.draw('detail-nazov', (el) => { el.textContent = LB.cat; });
+
+dash.draw('detail', (el) => {
+  const d = dash.data('vydavky');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const rows = d.data.filter((r) => r.kategoria === LB.cat).sort((a, b) => +b.navrh_2027 - +a.navrh_2027);
+  const max = d3.max(rows, (r) => Math.max(+r.upr_2026, +r.navrh_2027));
+  el.replaceChildren(...rows.map((r) => LB.pairRow({
+    label: r.oblast, max, src: 'vydavky', keyCol: 'oblast',
+    lines: [
+      {lab: '2026', value: +r.upr_2026, c: 'm', field: 'upr_2026'},
+      {lab: '2027', value: +r.navrh_2027, c: 1, field: 'navrh_2027'}
+    ]
+  })));
+});
+
+dash.draw('investicie', (el) => {
+  const d = dash.data('investicie');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const rows = d.data.slice().sort((a, b) => +b.upr_2026 - +a.upr_2026);
+  const max = d3.max(rows, (r) => Math.max(+r.upr_2026, +r.navrh_2027));
+  el.replaceChildren(...rows.map((r) => LB.pairRow({
+    label: r.nazov, max, src: 'investicie', keyCol: 'nazov',
+    lines: [
+      {lab: '2026', value: +r.upr_2026, c: 'm', field: 'upr_2026'},
+      {lab: '2027', value: +r.navrh_2027, c: 1, field: 'navrh_2027'}
+    ]
+  })));
+});
+
+dash.draw('ihrisko-riadky', (el) => {
+  const d = dash.data('ihrisko');
+  if (d.status !== 'ok') {
+    el.replaceChildren();
+    if (d.status === 'error') {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 3;
+      td.className = 'lb-err';
+      td.textContent = 'Údaje sa nepodarilo načítať.';
+      tr.append(td);
+      el.append(tr);
+    }
+    return;
+  }
+  el.replaceChildren(...d.data.map((r) => {
+    const tr = document.createElement('tr');
+    const a = document.createElement('td');
+    a.textContent = r.polozka;
+    const b = document.createElement('td');
+    b.textContent = r.typ;
+    const c = document.createElement('td');
+    c.className = 'lb-num' + (+r.suma_2027 === 0 ? ' lb-zero' : '');
+    c.textContent = LB.eur(r.suma_2027);
+    tr.append(a, b, c);
+    return tr;
+  }));
+});
+
+LB.seur = (v) => (+v > 0 ? '+' : '') + LB.eur(v);
+LB.divRow = (opt) => {
+  const row = document.createElement('div');
+  row.className = 'lb-row';
+  const top = document.createElement('div');
+  top.className = 'lb-rowtop';
+  const right = document.createElement('span');
+  right.append(LB.mark(LB.span('lb-rowval', LB.seur(opt.value)), opt.src, opt.valField, opt.keyCol, opt.label));
+  if (opt.pct != null) right.append(LB.mark(LB.span('lb-rowpct', LB.chg(opt.pct)), opt.src, opt.pctField, opt.keyCol, opt.label));
+  top.append(LB.span('', opt.label), right);
+  const track = document.createElement('div');
+  track.className = 'lb-div';
+  const fill = document.createElement('div');
+  fill.className = 'lb-divfill';
+  const w = opt.maxAbs > 0 ? Math.min(50, Math.abs(opt.bar) / opt.maxAbs * 50) : 0;
+  fill.style.width = w + '%';
+  fill.style.left = opt.bar < 0 ? (50 - w) + '%' : '50%';
+  fill.style.background = opt.bar < 0 ? 'var(--color-bad)' : 'var(--color-ok)';
+  track.append(fill);
+  row.append(top, track);
+  return row;
+};
+
+dash.calc('rezerva_2027', {
+  inputs: ['suhrn'],
+  title: 'Kam ide prebytok v návrhu 2027',
+  description: 'Bežné príjmy mínus bežné výdavky, investície, splátky úverov a príjmy z úverov a rezervného fondu.',
+  fn: (suhrn) => {
+    const r = suhrn.find((x) => x.obdobie === 'Návrh 2027');
+    if (!r) return [];
+    const prebytok = Math.round(+r.bezne_prijmy - +r.bezne_vydavky);
+    const investicie = Math.round(+r.kap_prijmy - +r.kap_vydavky);
+    const zostava = Math.round(prebytok + investicie - +r.fo_vydavky + +r.fo_prijmy);
+    return [
+      {krok: 'Bežné príjmy', suma: Math.round(+r.bezne_prijmy), sucet: false},
+      {krok: 'Bežné výdavky', suma: -Math.round(+r.bezne_vydavky), sucet: false},
+      {krok: 'Prebytok bežného rozpočtu', suma: prebytok, sucet: true},
+      {krok: 'Investície (po odpočítaní kapitálových príjmov)', suma: investicie, sucet: false},
+      {krok: 'Splátka úveru', suma: -Math.round(+r.fo_vydavky), sucet: false},
+      {krok: 'Príjmy z úverov a rezervného fondu', suma: Math.round(+r.fo_prijmy), sucet: false},
+      {krok: 'Zostáva na rezervu', suma: zostava, sucet: true}
+    ];
+  }
+});
+
+dash.calc('zmeny_oblasti', {
+  inputs: ['vydavky'],
+  title: 'Zmeny výdavkov podľa oblasti 2027 oproti 2026',
+  description: 'Rozdiel návrhu 2027 a upraveného rozpočtu 2026 v eurách a percentách, pre oblasti so zmenou aspoň 2 000 eur.',
+  fn: (vydavky) => vydavky
+    .map((r) => ({
+      oblast: r.oblast,
+      zmena_eur: Math.round(+r.navrh_2027 - +r.upr_2026),
+      zmena_pct: +r.upr_2026 > 0 ? Math.round((+r.navrh_2027 - +r.upr_2026) / +r.upr_2026 * 1000) / 10 : null
+    }))
+    .filter((r) => Math.abs(r.zmena_eur) >= 2000)
+    .sort((a, b) => a.zmena_pct - b.zmena_pct)
+});
+
+dash.calc('vysledok', {
+  inputs: ['suhrn'],
+  title: 'Výsledok rozpočtu po rokoch',
+  description: 'Bežné a kapitálové príjmy mínus bežné a kapitálové výdavky, zaokrúhlené na celé eurá.',
+  fn: (suhrn) => suhrn
+    .filter((r) => r.obdobie !== 'Návrh 2028' && r.obdobie !== 'Návrh 2029')
+    .map((r) => ({
+      obdobie: r.obdobie,
+      vysledok: Math.round(+r.bezne_prijmy + +r.kap_prijmy - +r.bezne_vydavky - +r.kap_vydavky)
+    }))
+});
+
+dash.calc('odpad_pokrytie', {
+  inputs: ['prijmy', 'vydavky'],
+  title: 'Pokrytie nákladov na odpady poplatkom',
+  description: 'Poplatok za komunálny odpad ako percento výdavkov na odpady v návrhu 2027.',
+  fn: (prijmy, vydavky) => {
+    const poplatok = prijmy.find((r) => r.skupina === 'Poplatok za komunálny odpad');
+    const odpady = vydavky.find((r) => r.oblast === 'Odpady');
+    if (!poplatok || !odpady || !(+odpady.navrh_2027 > 0)) return null;
+    return Math.round(+poplatok.suma / +odpady.navrh_2027 * 1000) / 10;
+  }
+});
+
+dash.draw('rezerva', (el) => {
+  const d = dash.data('rezerva_2027');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  el.replaceChildren(...d.data.map((r) => {
+    const row = document.createElement('div');
+    row.className = 'lb-ucet-row' + (r.sucet ? ' lb-sucet' : '');
+    const v = LB.mark(LB.span('lb-rowval', LB.seur(r.suma)), 'rezerva_2027', 'suma', 'krok', r.krok);
+    if (r.sucet && +r.suma <= 0) v.classList.add('lb-zero');
+    row.append(LB.span('', r.krok), v);
+    return row;
+  }));
+});
+
+dash.draw('zmeny-oblasti', (el) => {
+  const d = dash.data('zmeny_oblasti');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const maxAbs = d3.max(d.data, (r) => Math.abs(+r.zmena_pct));
+  el.replaceChildren(...d.data.map((r) => LB.divRow({
+    label: r.oblast, value: r.zmena_eur, pct: r.zmena_pct, bar: +r.zmena_pct, maxAbs,
+    src: 'zmeny_oblasti', keyCol: 'oblast', valField: 'zmena_eur', pctField: 'zmena_pct'
+  })));
+});
+
+dash.draw('vysledky', (el) => {
+  const d = dash.data('vysledok');
+  if (d.status !== 'ok') { LB.msg(el, d.status); return; }
+  const maxAbs = d3.max(d.data, (r) => Math.abs(+r.vysledok));
+  el.replaceChildren(...d.data.map((r) => LB.divRow({
+    label: r.obdobie, value: r.vysledok, bar: +r.vysledok, maxAbs,
+    src: 'vysledok', keyCol: 'obdobie', valField: 'vysledok'
+  })));
+});
+</script>
+
+<script>
+document.querySelectorAll('.lb-sw[data-c]').forEach((s) => { s.style.background = LB.color(s.dataset.c); });
+document.querySelectorAll('.lb-segbtn[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.lb-segbtn[data-mode]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+  LB.trendMode = b.dataset.mode;
+  dash.draw('trend');
+}));
+document.querySelectorAll('.lb-segbtn[data-year]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.lb-segbtn[data-year]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+  LB.year = b.dataset.year;
+  dash.draw('kategorie');
+}));
+</script>
+
+<script>
+{
+  const P = dash.data('polozky').data;
+  const norm = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  LB.druh = 'Platy';
+  LB.druhYear = 'navrh_2027';
+  LB.q = '';
+
+  const mkItem = (r, showObl) => {
+    const row = document.createElement('div');
+    row.className = 'lb-item';
+    const name = document.createElement('div');
+    name.className = 'lb-item-name';
+    name.append(document.createTextNode(r.polozka));
+    if (r.jednorazove === 'áno') name.append(LB.span('lb-tag', 'jednorazové'));
+    if (showObl) name.append(LB.span('lb-item-obl', r.oblast));
+    const vals = document.createElement('div');
+    vals.className = 'lb-item-vals';
+    const d = r.navrh_2027 - r.upr_2026;
+    vals.append(LB.span('lb-item-old', LB.eur(r.upr_2026)), LB.span('lb-arrow', '→'), LB.span('lb-item-new', LB.eur(r.navrh_2027)));
+    vals.append(LB.span('lb-item-chg ' + (d < 0 ? 'lb-neg' : d > 0 ? 'lb-pos' : ''), d === 0 ? 'bez zmeny' : LB.seur(d)));
+    row.append(name, vals);
+    return row;
+  };
+  const polozky = (n) => n + (n === 1 ? ' položka' : n >= 2 && n <= 4 ? ' položky' : ' položiek');
+  const count = (text) => {
+    const p = document.createElement('div');
+    p.className = 'lb-count';
+    p.textContent = text;
+    return p;
+  };
+
+  dash.draw('detail', (el) => {
+    const rows = dash.data('vydavky').data.filter((r) => r.kategoria === LB.cat).sort((a, b) => b.navrh_2027 - a.navrh_2027);
+    const max = d3.max(rows, (r) => Math.max(+r.upr_2026, +r.navrh_2027));
+    el.replaceChildren(...rows.map((r) => {
+      const wrap = document.createElement('div');
+      const pr = LB.pairRow({
+        label: r.oblast, max, src: 'vydavky', keyCol: 'oblast',
+        lines: [
+          {lab: '2026', value: +r.upr_2026, c: 'm', field: 'upr_2026'},
+          {lab: '2027', value: +r.navrh_2027, c: 1, field: 'navrh_2027'}
+        ]
+      });
+      const items = P.filter((p) => p.oblast === r.oblast).sort((a, b) => b.navrh_2027 - a.navrh_2027 || b.upr_2026 - a.upr_2026);
+      const list = document.createElement('div');
+      list.className = 'lb-items';
+      list.hidden = true;
+      list.append(...items.map((i) => mkItem(i, false)));
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lb-more';
+      btn.setAttribute('aria-expanded', 'false');
+      btn.textContent = 'Zobraziť položky (' + items.length + ')';
+      btn.addEventListener('click', () => {
+        const open = list.hidden;
+        list.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        btn.textContent = (open ? 'Skryť položky' : 'Zobraziť položky') + ' (' + items.length + ')';
+      });
+      wrap.append(pr, btn, list);
+      return wrap;
+    }));
+  });
+
+  dash.draw('druhy', (el) => {
+    const field = LB.druhYear;
+    const sums = d3.rollups(P, (g) => d3.sum(g, (r) => r[field]), (r) => r.druh)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const total = d3.sum(sums, (s) => s[1]);
+    const max = d3.max(sums, (s) => s[1]);
+    if (!sums.some(([k]) => k === LB.druh)) LB.druh = sums[0][0];
+    const buttons = sums.map(([k, v]) => {
+      const b = LB.barRow({button: true, label: k, value: v, pct: Math.round(v / total * 1000) / 10, max, color: LB.color(1)});
+      b.setAttribute('aria-pressed', String(k === LB.druh));
+      b.addEventListener('click', () => {
+        LB.druh = k;
+        buttons.forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+        dash.draw('druh-nazov');
+        dash.draw('druh-polozky');
+      });
+      return b;
+    });
+    el.replaceChildren(...buttons);
+  });
+
+  dash.draw('druh-nazov', (el) => { el.textContent = LB.druh; });
+
+  dash.draw('druh-polozky', (el) => {
+    const field = LB.druhYear;
+    const items = P.filter((r) => r.druh === LB.druh && (r.upr_2026 > 0 || r.navrh_2027 > 0))
+      .sort((a, b) => b[field] - a[field] || b.upr_2026 - a.upr_2026);
+    el.replaceChildren(count(polozky(items.length) + ' · upravený 2026 → návrh 2027'), ...items.map((r) => mkItem(r, true)));
+  });
+
+  const diffRows = P.map((r) => Object.assign({}, r, {d: r.navrh_2027 - r.upr_2026})).filter((r) => r.d !== 0);
+  dash.draw('pokles', (el) => {
+    const rows = diffRows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d).slice(0, 12);
+    el.replaceChildren(...rows.map((r) => mkItem(r, true)));
+  });
+  dash.draw('rast', (el) => {
+    const rows = diffRows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d).slice(0, 12);
+    el.replaceChildren(...rows.map((r) => mkItem(r, true)));
+  });
+
+  dash.draw('hladat', (el) => {
+    const q = norm(LB.q.trim());
+    if (q.length < 2) {
+      el.replaceChildren(count('Zadajte aspoň 2 znaky.'));
+      return;
+    }
+    const stem = q.length >= 6 ? q.slice(0, -2) : q.length === 5 ? q.slice(0, -1) : q;
+    const hits = P.filter((r) => norm(r.polozka + ' ' + r.oblast + ' ' + r.druh).includes(stem))
+      .sort((a, b) => b.navrh_2027 - a.navrh_2027 || b.upr_2026 - a.upr_2026);
+    const sum27 = d3.sum(hits, (r) => r.navrh_2027);
+    const sum26 = d3.sum(hits, (r) => r.upr_2026);
+    const head = hits.length ? polozky(hits.length) + ' · spolu ' + LB.eur(sum26) + ' → ' + LB.eur(sum27) : 'Nič sa nenašlo.';
+    el.replaceChildren(count(head), ...hits.slice(0, 50).map((r) => mkItem(r, true)));
+  });
+
+  const input = document.getElementById('lb-q');
+  if (input) input.addEventListener('input', () => { LB.q = input.value; dash.draw('hladat'); });
+  document.querySelectorAll('.lb-segbtn[data-druhyear]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.lb-segbtn[data-druhyear]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    LB.druhYear = b.dataset.druhyear;
+    dash.draw('druhy');
+    dash.draw('druh-polozky');
+  }));
+}
+</script>
+<script>
+{
+  dash.runAll();
+  const t = document.querySelector('[data-draw="trend"]');
+  let lastW = t ? t.clientWidth : 0;
+  if (t) {
+    const ro = new ResizeObserver(() => { if (t.clientWidth !== lastW) { lastW = t.clientWidth; dash.draw('trend'); } });
+    ro.observe(t);
+  }
+}
+</script>
+</body>
+</html>
