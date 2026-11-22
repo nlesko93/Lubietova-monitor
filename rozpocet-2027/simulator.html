@@ -84,7 +84,12 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
 .hh{margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .hh-title{font-weight:600;font-size:14px;margin-bottom:6px}
 .hh-in{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:14px}
-.hh-in [hidden]{display:none}
+.hh-in [hidden],.hh-in[hidden]{display:none}
+.hh-poz{margin-top:10px}
+.hh-check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.hh-check input{width:20px;height:20px;accent-color:var(--c0)}
+#hh-poz-in{margin-top:8px}
+#hh-poz-in input[type=number]{width:7em}
 .hh-in label{display:flex;gap:6px;align-items:center}
 .hh-in input[type=number]{font:inherit;font-size:16px;width:5.5em;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);text-align:right}
 .hh-in select{font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
@@ -249,7 +254,17 @@ function diffSpan(d) {
 
 // ---------- prepočet pre jednu domácnosť (sadzby z VZN obce) ----------
 const R = {dom: 0.065, podlazie: 0.04, byt: 0.065, garaz: 0.25, odpadDen: 0.096};
-const HH = {typ: 'dom', plocha: 120, podlazia: 1, garaz: 0, byt: 70, osoby: 3};
+// pozemky: hodnota za m² (zákon 582/2004 príl. 1 pre k. ú. Ľubietová, príl. 2 pre obce 1 001 – 6 000 obyv.; VZN 2/2021) × sadzba 0,50 %
+const POZ = [
+  ['zahrada', 'záhrada', 1.85],
+  ['dvor', 'dvor a ostatné plochy (bez plochy pod domom)', 1.85],
+  ['stavebny', 'stavebný pozemok', 20],
+  ['orna', 'orná pôda', 0.1062],
+  ['ttp', 'lúky a pasienky (TTP)', 0.0185],
+  ['les', 'les', 0.15]
+];
+const SADZBA_POZ = 0.005;
+const HH = {typ: 'dom', plocha: 120, podlazia: 1, garaz: 0, byt: 70, osoby: 3, pozemky: false, zahrada: 600, dvor: 200, stavebny: 0, orna: 0, ttp: 0, les: 0};
 // Sčítanie obyvateľov, domov a bytov 2021, obec Ľubietová (scitanie.sk/moja-obec/SK0321508748)
 const SODB = {domy: 412, rodinne: 387, bytoveDomy: 3, bytyBD: 20, plocha: 118.47};
 // odhad dane zo stavieb za všetky domácnosti: rodinný dom 6 až 15 € ročne, byt v bytovom dome asi 5 €
@@ -275,6 +290,14 @@ function hhDan() {
   byt.append(numIn('byt', 'podlahová plocha ', 10, 300, 5, ' m²'));
   sel.addEventListener('change', () => { HH.typ = sel.value; update(); });
   inp.append(sel, dom, byt);
+  const pzWrap = el('div', 'hh-poz');
+  const pzLab = el('label', 'hh-check');
+  const pzCb = document.createElement('input'); pzCb.type = 'checkbox'; pzCb.id = 'hh-pozemky'; pzCb.checked = HH.pozemky;
+  pzCb.addEventListener('change', () => { HH.pozemky = pzCb.checked; update(); });
+  pzLab.append(pzCb, document.createTextNode(' Mám aj pozemky (záhrada, dvor, pole, lúka, les)'));
+  const pzIn = el('div', 'hh-in'); pzIn.id = 'hh-poz-in';
+  POZ.forEach(([k, name]) => pzIn.append(numIn(k, name + ' ', 0, 5000000, 50, ' m²')));
+  pzWrap.append(pzLab, pzIn, el('div', 'hh-src', '1 hektár = 10 000 m². Plochu priamo pod domom nezadávajte, tá sa nezdaňuje.'));
   const out = el('div', 'hh-out'); out.id = 'hh-dan-out';
   const src = el('div', 'hh-src', 'Sadzby podľa VZN obce č. 2/2021: dom 0,065 € za m² zastavanej plochy a príplatok 0,04 € za m² za každé ďalšie podlažie, byt 0,065 € za m², garáž 0,25 € za m². Bez dane z pozemkov (záhrada, dvor). Zmena posuvníkom sa uplatní na všetky sadzby rovnako.');
   const est = el('div', 'hh-out'); est.id = 'hh-dan-obec';
@@ -283,12 +306,13 @@ function hhDan() {
   [
     'Podľa sčítania 2021 má Ľubietová ' + SODB.domy + ' domov, z toho ' + SODB.rodinne + ' rodinných a ' + SODB.bytoveDomy + ' bytové domy s ' + SODB.bytyBD + ' bytmi. Priemerná podlahová plocha bytu je ' + SODB.plocha.toLocaleString('sk-SK') + ' m².',
     'Zastavaná plocha domov v sčítaní nie je. Pri dome s touto podlahovou plochou vychádza daň zo stavby zhruba 6 € (dvojpodlažný, menší pôdorys) až 15 € (prízemný s garážou a kôlňou) ročne.',
-    'Spolu za domácnosti teda ' + eur2(ODHAD.nizky).replace(',00', '') + ' až ' + eur2(ODHAD.vysoky).replace(',00', '') + ' ročne. Daň z pozemkov domácností (záhrady, dvory) v odhade nie je, lebo hodnotu týchto pozemkov pre Ľubietovú nemáme; skutočný podiel domácností bude preto o niečo vyšší.',
+    'Pozemky domácností v odhade nie sú, lebo nevieme, aké veľké záhrady a polia ľudia majú. Pre predstavu: ak by mal každý z ' + SODB.rodinne + ' domov 1 000 m² záhrady a dvora, pridalo by to spolu asi ' + eur2(SODB.rodinne * 1000 * 1.85 * SADZBA_POZ).replace(/,\d\d/, '') + ' ročne.',
+    'Spolu za stavby domácností teda ' + eur2(ODHAD.nizky).replace(',00', '') + ' až ' + eur2(ODHAD.vysoky).replace(',00', '') + ' ročne. So záhradami a poliami bude skutočný podiel domácností o niečo vyšší.',
     'Zvyšok dane z nehnuteľností platia ostatní vlastníci: firmy, vlastníci poľnohospodárskej pôdy a lesov, chát a ďalších stavieb. Koľko presne, rozpočet neuvádza.'
   ].forEach((t) => det.append(el('p', 'small', t)));
   const a = el('a', 'small', 'Údaje zo sčítania 2021 za Ľubietovú'); a.href = 'https://www.scitanie.sk/moja-obec/SK0321508748';
   det.append(a);
-  box.append(inp, out, src, el('div', 'hh-title', 'A čo všetky domácnosti v obci'), est, det);
+  box.append(inp, pzWrap, out, src, el('div', 'hh-src', 'Pozemky: hodnota za m² podľa zákona o miestnych daniach a VZN obce, sadzba 0,50 % ročne. Vychádza to na m²: záhrada a dvor 0,00925 €, stavebný pozemok 0,10 €, orná pôda 0,00053 €, lúka 0,00009 €, les 0,00075 € (ak nemáte znalecký posudok na les). Napríklad 1 000 m² záhrady je 9,25 € ročne, 1 hektár lesa 7,50 €.'), el('div', 'hh-title', 'A čo všetky domácnosti v obci'), est, det);
   return box;
 }
 function hhOdpad() {
@@ -304,11 +328,13 @@ function hhOdpad() {
 const eur2 = (v) => v.toLocaleString('sk-SK', {minimumFractionDigits: 2, maximumFractionDigits: 2}).replace(/\s/g, NB) + NB + '€';
 const seur2 = (v) => (v > 0.004 ? '+' : v < -0.004 ? '−' : '') + eur2(Math.abs(v));
 function hhCalc() {
-  const danDnes = HH.typ === 'byt' ? HH.byt * R.byt : HH.plocha * (R.dom + R.podlazie * Math.max(0, HH.podlazia - 1)) + HH.garaz * R.garaz;
+  const stavby = HH.typ === 'byt' ? HH.byt * R.byt : HH.plocha * (R.dom + R.podlazie * Math.max(0, HH.podlazia - 1)) + HH.garaz * R.garaz;
+  const pozemky = HH.pozemky ? POZ.reduce((s, [k, , val]) => s + HH[k] * val * SADZBA_POZ, 0) : 0;
+  const danDnes = stavby + pozemky;
   const danNova = danDnes * (1 + S.dan / 100);
   const odpadDnes = HH.osoby * R.odpadDen * 365;
   const odpadNovy = odpadDnes * (1 + S.odpad / 100);
-  return {danDnes, danNova, odpadDnes, odpadNovy};
+  return {danDnes, danNova, odpadDnes, odpadNovy, stavby, pozemky};
 }
 
 function buildIncome() {
@@ -446,12 +472,14 @@ function update() {
     o.replaceChildren(document.createTextNode('Dnes ročne '), el('b', '', eur2(dnes)));
     if (pct) o.append(document.createTextNode(', po vašej zmene '), el('b', '', eur2(nova)), el('span', 'diff ' + (nova > dnes ? 'neg' : 'pos'), ' ' + seur2(nova - dnes) + ' ročne'));
   };
+  $('hh-poz-in').hidden = !HH.pozemky;
   hhOut('hh-dan-out', hh.danDnes, hh.danNova, S.dan);
+  if (HH.pozemky) $('hh-dan-out').append(el('div', 'hh-src', 'Z toho dnes stavba ' + eur2(hh.stavby) + ' a pozemky ' + eur2(hh.pozemky) + '.'));
   {
     const o = $('hh-dan-obec');
     const r0 = (v) => fmt(Math.round(v / 100) * 100);
     const podielN = Math.round(ODHAD.nizky / D.inc.dan * 100), podielV = Math.round(ODHAD.vysoky / D.inc.dan * 100);
-    let t = 'Domácnosti zaplatia na dani zo stavieb spolu zhruba ' + r0(ODHAD.nizky) + ' až ' + r0(ODHAD.vysoky) + ' ročne, teda asi ' + podielN + ' až ' + podielV + ' % celej dane z nehnuteľností (' + fmt(D.inc.dan) + ').';
+    let t = 'Domácnosti zaplatia na dani zo stavieb (bez pozemkov) spolu zhruba ' + r0(ODHAD.nizky) + ' až ' + r0(ODHAD.vysoky) + ' ročne, teda asi ' + podielN + ' až ' + podielV + ' % celej dane z nehnuteľností (' + fmt(D.inc.dan) + ').';
     if (S.dan) t += ' Z vašej zmeny ' + sfmt(c.danDiff) + ' by na ne pripadlo približne ' + sfmt(ODHAD.nizky * S.dan / 100) + ' až ' + sfmt(ODHAD.vysoky * S.dan / 100) + ', zvyšok na ostatných vlastníkov.';
     o.textContent = t;
   }
@@ -511,7 +539,7 @@ function update() {
     const parts = [];
     if (S.dan) parts.push('daň ' + seur2(hh2.danNova - hh2.danDnes));
     if (S.odpad) parts.push('odpad ' + seur2(hh2.odpadNovy - hh2.odpadDnes));
-    list.append(el('li', '', 'Pre domácnosť z prepočtu (' + (HH.typ === 'byt' ? 'byt ' + HH.byt + ' m²' : 'dom ' + HH.plocha + ' m², ' + HH.podlazia + ' podl.') + ', ' + HH.osoby + ' os.): ' + parts.join(', ') + ' ročne'));
+    list.append(el('li', '', 'Pre domácnosť z prepočtu (' + (HH.typ === 'byt' ? 'byt ' + HH.byt + ' m²' : 'dom ' + HH.plocha + ' m², ' + HH.podlazia + ' podl.') + (HH.pozemky ? ' a pozemky' : '') + ', ' + HH.osoby + ' os.): ' + parts.join(', ') + ' ročne'));
   }
   $('sum-capita').textContent = 'Výdavky obce a školy spolu: ' + fmt(c.bv) + ', teda ' + fmt(c.bv / POP) + ' na obyvateľa.' +
     (Math.round(perCap) ? ' Zmena daní a poplatkov: ' + sfmt(perCap) + ' na obyvateľa ročne.' : '');
