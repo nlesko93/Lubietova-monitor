@@ -62,6 +62,11 @@ details.items summary::-webkit-details-marker{display:none}
 .item{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0;border-bottom:1px dotted var(--line)}
 .item span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
 .locked-list .item{font-size:14px}
+.det-toggle{margin:4px 0 8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.item.edit{align-items:center}
+.item.edit .iv{display:flex;gap:8px;align-items:center}
+.item.edit input{width:96px;text-align:right;font:inherit;font-variant-numeric:tabular-nums;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:transparent;color:inherit}
+.item.edit .diff{font-size:12px;min-width:64px;text-align:right}
 /* investície */
 .inv{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 .inv:first-child{border-top:0}
@@ -151,6 +156,7 @@ button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
   <section class="card" id="vydavky">
     <h2>Bežné výdavky</h2>
     <p class="muted small">Chod obce a školy podľa oblastí. Pri každej oblasti vidíte sumu z návrhu obce a rozdiel; tlačidlo „↺ Návrh“ vráti len tento riadok. Pod oblasťou si môžete pozrieť, z akých položiek sa skladá. Oblasti so zámkom platí štát alebo rodičia a obec ich meniť nemôže.</p>
+    <label class="hh-check det-toggle"><input type="checkbox" id="det-toggle"> Podrobný režim: upravovať aj jednotlivé položky (napríklad elektrinu alebo príspevok klubu)</label>
     <div id="exp-rows"></div>
   </section>
 
@@ -225,9 +231,41 @@ const base = () => ({
   exp: Object.fromEntries(D.exp.map((x) => [x.id, x.base])),
   inv: D.inv.map((x) => x.on),
   custom: [],
-  predaj: 0, rf: 0, uver: 0, roky: 10, urok: 4
+  predaj: 0, rf: 0, uver: 0, roky: 10, urok: 4,
+  det: false, it: {}
 });
 let S = base();
+
+// ---------- podrobný režim: jednotlivé položky ----------
+const itemsOf = (x) => D.items.map((p, i) => i).filter((i) => { const p = D.items[i]; return p.oblast === (x.oblast || x.name) && p.navrh_2027 > 0 && (!x.inc || new RegExp(x.inc).test(p.polozka)) && (!x.exc || !new RegExp(x.exc).test(p.polozka)); });
+const AREA_ITEMS = Object.fromEntries(D.exp.map((x) => [x.id, itemsOf(x)]));
+const ITEM_AREA = {}; D.exp.forEach((x) => AREA_ITEMS[x.id].forEach((i) => { ITEM_AREA[i] = x; }));
+const ITEM_MAX = 5e6;
+const itemVal = (i, st = S) => (st.it[i] != null ? st.it[i] : D.items[i].navrh_2027);
+const canDetail = (x) => !x.lock && AREA_ITEMS[x.id].length > 0;
+const detArea = (x, st = S) => st.det && canDetail(x);
+const itemSum = (x, st = S) => AREA_ITEMS[x.id].reduce((s, i) => s + itemVal(i, st), 0);
+function setItem(i, v, st = S) { if (v === D.items[i].navrh_2027) delete st.it[i]; else st.it[i] = v; }
+// rozdelí sumu oblasti medzi položky v pomere ich súčasných hodnôt
+function scaleItems(x, total, st = S) {
+  const idx = AREA_ITEMS[x.id];
+  let w = idx.map((i) => itemVal(i, st));
+  if (w.reduce((a, b) => a + b, 0) <= 0) w = idx.map((i) => D.items[i].navrh_2027);
+  const ws = w.reduce((a, b) => a + b, 0);
+  const vals = w.map((v) => Math.round(v * total / ws));
+  const big = w.indexOf(Math.max(...w));
+  vals[big] = Math.max(0, vals[big] + total - vals.reduce((a, b) => a + b, 0));
+  idx.forEach((i, k) => setItem(i, vals[k], st));
+  st.exp[x.id] = itemSum(x, st);
+}
+function setDetail(on) {
+  const hadItems = Object.keys(S.it).length > 0;
+  S.det = on;
+  if (on) D.exp.forEach((x) => { if (canDetail(x) && itemSum(x) !== S.exp[x.id]) scaleItems(x, S.exp[x.id]); });
+  else S.it = {};
+  buildExpenses(); syncInputs(); update();
+  if (!on && hadItems) toast('Súčty oblastí zostali, úpravy jednotlivých položiek sa zrušili.');
+}
 
 // ---------- výpočet ----------
 function calc() {
@@ -380,7 +418,9 @@ function buildIncome() {
   lk.replaceChildren(...D.incLocked.map((x) => { const it = el('div', 'item'); it.append(el('span', '', x.name), el('span', '', fmt(x.sum))); return it; }));
 }
 
+let renderedDet = null;
 function buildExpenses() {
+  renderedDet = S.det;
   const box = $('exp-rows');
   box.replaceChildren();
   let lastCat = null;
@@ -399,7 +439,7 @@ function buildExpenses() {
     if (!x.lock) {
       const u = el('button', 'undo', '↺ Návrh'); u.type = 'button'; u.id = 'eu-' + x.id; u.hidden = true;
       u.setAttribute('aria-label', x.name + ': vrátiť na návrh obce');
-      u.addEventListener('click', () => { S.exp[x.id] = x.base; $('er-' + x.id).value = x.base; update(); });
+      u.addEventListener('click', () => { S.exp[x.id] = x.base; AREA_ITEMS[x.id].forEach((i) => { delete S.it[i]; }); $('er-' + x.id).value = x.base; update(); });
       val.append(u);
     }
     top.append(nm, val);
@@ -411,16 +451,29 @@ function buildExpenses() {
       const dl = document.createElement('datalist'); dl.id = 'dl-' + x.id;
       const op = document.createElement('option'); op.value = x.base; op.label = 'návrh obce'; dl.append(op);
       row.append(dl); r.setAttribute('list', dl.id);
-      r.addEventListener('input', () => { S.exp[x.id] = +r.value; update(); });
+      r.addEventListener('input', () => { if (detArea(x)) scaleItems(x, +r.value); else S.exp[x.id] = +r.value; update(); });
       row.append(r);
     }
     if (x.note) row.append(el('div', 'note', x.note));
-    const items = D.items.filter((p) => p.oblast === (x.oblast || x.name) && p.navrh_2027 > 0 && (!x.inc || new RegExp(x.inc).test(p.polozka)) && (!x.exc || !new RegExp(x.exc).test(p.polozka)));
-    if (items.length) {
+    const idx = AREA_ITEMS[x.id].slice().sort((a, b) => D.items[b].navrh_2027 - D.items[a].navrh_2027);
+    if (idx.length) {
       const det = el('details', 'items');
-      det.append(el('summary', '', 'Položky v návrhu (' + items.length + ')'));
-      items.sort((a, b) => b.navrh_2027 - a.navrh_2027).forEach((p) => {
-        const it = el('div', 'item'); it.append(el('span', '', p.polozka), el('span', '', fmt(p.navrh_2027))); det.append(it);
+      const edit = detArea(x);
+      det.append(el('summary', '', (edit ? 'Upraviť položky (' : 'Položky v návrhu (') + idx.length + ')'));
+      idx.forEach((i) => {
+        const p = D.items[i];
+        const it = el('div', edit ? 'item edit' : 'item');
+        if (!edit) { it.append(el('span', '', p.polozka), el('span', '', fmt(p.navrh_2027))); det.append(it); return; }
+        const iv = el('span', 'iv');
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.min = 0; inp.max = ITEM_MAX; inp.step = 50; inp.inputMode = 'numeric'; inp.id = 'pi-' + i; inp.value = itemVal(i);
+        inp.setAttribute('aria-label', p.polozka + ' v eurách, návrh obce ' + fmt(p.navrh_2027));
+        inp.addEventListener('input', () => { const v = Number(inp.value); setItem(i, Number.isFinite(v) ? Math.min(ITEM_MAX, Math.max(0, Math.round(v))) : 0); S.exp[x.id] = itemSum(x); update(); });
+        inp.addEventListener('change', () => { inp.value = itemVal(i); });
+        const dd = el('span'); dd.id = 'pid-' + i;
+        iv.append(inp, dd);
+        const nm = el('span'); nm.append(document.createTextNode(p.polozka), el('span', 'muted', ' · návrh ' + fmt(p.navrh_2027)));
+        it.append(nm, iv); det.append(it);
       });
       row.append(det);
     }
@@ -457,6 +510,8 @@ function buildCustom() {
 }
 
 function syncInputs() {
+  if (renderedDet !== S.det) buildExpenses();
+  $('det-toggle').checked = S.det;
   ['dan', 'odpad', 'stocne'].forEach((k) => { $('ir-' + k).value = S[k]; });
   D.exp.forEach((x) => { const r = $('er-' + x.id); if (r) r.value = S.exp[x.id]; });
   D.inv.forEach((x, i) => { $('inv-' + i).checked = S.inv[i]; });
@@ -505,6 +560,13 @@ function update() {
     const u = $('eu-' + x.id); if (u) u.hidden = S.exp[x.id] === x.base;
     $('ev-' + x.id).textContent = fmt(S.exp[x.id]);
     $('ed-' + x.id).replaceChildren(diffSpan(S.exp[x.id] - x.base));
+    const r = $('er-' + x.id); if (r && document.activeElement !== r) r.value = S.exp[x.id];
+    if (detArea(x)) AREA_ITEMS[x.id].forEach((i) => {
+      const inp = $('pi-' + i); if (!inp) return;
+      if (document.activeElement !== inp) inp.value = itemVal(i);
+      const d = itemVal(i) - D.items[i].navrh_2027;
+      $('pid-' + i).replaceChildren(d ? diffSpan(d) : el('span', 'diff'));
+    });
   });
   // lišta
   const setK = (id, v, signColor) => { const e = $(id); e.textContent = sfmt(v); e.className = 'k-val' + (signColor ? (Math.round(v) < 0 ? ' neg' : Math.round(v) > 0 ? ' pos' : '') : ''); };
@@ -534,7 +596,14 @@ function update() {
   if (S.dan) items.push(['Daň z nehnuteľností ' + (S.dan > 0 ? '+' : '') + S.dan + ' %', c.danDiff]);
   if (S.odpad) items.push(['Poplatok za odpad ' + (S.odpad > 0 ? '+' : '') + S.odpad + ' %', c.odpadDiff]);
   if (S.stocne) items.push(['Stočné ' + (S.stocne > 0 ? '+' : '') + S.stocne + ' %', c.stocneDiff]);
-  D.exp.forEach((x) => { const d = S.exp[x.id] - x.base; if (Math.round(d)) items.push([x.name, -d, d]); });
+  const itemChanges = (x) => (detArea(x) ? AREA_ITEMS[x.id].filter((i) => S.it[i] != null) : []);
+  D.exp.forEach((x) => {
+    const d = S.exp[x.id] - x.base; const ch = itemChanges(x);
+    if (!Math.round(d) && !ch.length) return;
+    let t = x.name;
+    if (ch.length) t += ' (' + ch.slice(0, 4).map((i) => D.items[i].polozka + ' ' + sfmt(itemVal(i) - D.items[i].navrh_2027)).join(', ') + (ch.length > 4 ? ' a ďalšie' : '') + ')';
+    items.push([t, -d, d]);
+  });
   D.inv.forEach((x, i) => { if (S.inv[i] !== x.on) items.push([(S.inv[i] ? 'Investícia: ' : 'Bez investície: ') + x.name, S.inv[i] ? -x.sum : x.sum]); });
   S.custom.forEach((cc) => items.push(['Vlastná investícia: ' + cc.name, -cc.sum]));
   if (S.predaj) items.push(['Predaj majetku', S.predaj]);
@@ -571,7 +640,8 @@ function encode() {
   if (S.dan) p.set('d', S.dan);
   if (S.stocne) p.set('st', S.stocne);
   if (S.odpad) p.set('o', S.odpad);
-  D.exp.forEach((x) => { if (S.exp[x.id] !== b.exp[x.id]) p.set('e' + x.id, S.exp[x.id]); });
+  if (S.det) p.set('pd', 1);
+  D.exp.forEach((x) => { if (detArea(x)) AREA_ITEMS[x.id].forEach((i) => { if (S.it[i] != null) p.set('p' + i, S.it[i]); }); else if (S.exp[x.id] !== b.exp[x.id]) p.set('e' + x.id, S.exp[x.id]); });
   const inv = S.inv.map((v) => (v ? 1 : 0)).join('');
   if (inv !== b.inv.map((v) => (v ? 1 : 0)).join('')) p.set('i', inv);
   S.custom.forEach((cc, i) => p.set('c' + i, cc.name.replace(/~/g, '-') + '~' + cc.sum));
@@ -586,6 +656,13 @@ function decode(str) {
   const num = (k, lo, hi, def) => { const v = Number(p.get(k)); return p.has(k) && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def; };
   s.dan = num('d', -50, 100, 0); s.odpad = num('o', -50, 100, 0); s.stocne = num('st', -50, 100, 0);
   D.exp.forEach((x) => { if (!x.lock) s.exp[x.id] = num('e' + x.id, x.min, x.max, x.base); });
+  s.det = p.get('pd') === '1';
+  if (s.det) D.exp.forEach((x) => {
+    if (!canDetail(x)) return;
+    const any = AREA_ITEMS[x.id].some((i) => p.has('p' + i));
+    if (any) { AREA_ITEMS[x.id].forEach((i) => setItem(i, Math.round(num('p' + i, 0, ITEM_MAX, D.items[i].navrh_2027)), s)); s.exp[x.id] = itemSum(x, s); }
+    else if (s.exp[x.id] !== x.base) scaleItems(x, s.exp[x.id], s);
+  });
   const inv = p.get('i');
   if (inv && /^[01]+$/.test(inv)) D.inv.forEach((x, i) => { if (inv[i] != null) s.inv[i] = inv[i] === '1'; });
   for (let i = 0; i < 10; i++) {
@@ -616,12 +693,12 @@ function toast(t, action, fn) {
 const clone = (o) => JSON.parse(JSON.stringify(o));
 function doReset() {
   const prev = clone(S);
-  S = base(); syncInputs(); update();
+  S = base(); S.det = prev.det; syncInputs(); update();
   toast('Obnovený návrh obce.', 'Vrátiť späť', () => { S = prev; syncInputs(); update(); });
 }
 const dlg = $('dlg');
 $('b-reset').addEventListener('click', () => {
-  if (!encode()) { toast('Zatiaľ nemáte žiadne zmeny, vidíte návrh obce.'); return; }
+  if (!encode().replace(/^pd=1&?/, '')) { toast('Zatiaľ nemáte žiadne zmeny, vidíte návrh obce.'); return; }
   if (dlg && typeof dlg.showModal === 'function') dlg.showModal();
   else if (window.confirm('Obnoviť návrh obce? Všetky vaše zmeny sa vymažú.')) doReset();
 });
@@ -649,7 +726,10 @@ function model() {
   add('Príjmy', 'Poplatok za komunálny odpad', D.inc.odpad, D.inc.odpad + c.odpadDiff);
   add('Príjmy', 'Stočné', D.inc.stocne, D.inc.stocne + c.stocneDiff);
   D.incLocked.forEach((x) => add('Príjmy', x.name, x.sum, x.sum));
-  D.exp.forEach((x) => add('Bežné výdavky', x.name, x.base, S.exp[x.id]));
+  D.exp.forEach((x) => {
+    add('Bežné výdavky', x.name, x.base, S.exp[x.id]);
+    if (detArea(x)) AREA_ITEMS[x.id].forEach((i) => { if (S.it[i] != null) add('Bežné výdavky', '   › ' + D.items[i].polozka, D.items[i].navrh_2027, S.it[i]); });
+  });
   if (S.uver) add('Bežné výdavky', 'Úroky z nového úveru', 0, c.urokyNove);
   D.inv.forEach((x, i) => add('Investície', x.name, x.on ? x.sum : 0, S.inv[i] ? x.sum : 0));
   S.custom.forEach((cc) => add('Investície', cc.name + ' (vlastný odhad)', 0, cc.sum));
@@ -722,6 +802,7 @@ function buildReport() {
   r.append(changed.length ? table(changed, 'Vaše zmeny oproti návrhu') : el('p', '', 'Bez zmien oproti návrhu obce.'));
   r.append(table(rows.filter((x) => x.sec !== 'Výsledok'), 'Celý rozpočet'));
 }
+$('det-toggle').addEventListener('change', (e) => setDetail(e.target.checked));
 $('b-print').addEventListener('click', () => { buildReport(); window.print(); });
 window.addEventListener('beforeprint', buildReport);
 [['f-predaj', 'predaj', 0, 5e6], ['f-rf', 'rf', 0, 5e6], ['f-uver', 'uver', 0, 5e6], ['f-roky', 'roky', 1, 30], ['f-urok', 'urok', 0, 15]].forEach(([id, key, lo, hi]) => {
