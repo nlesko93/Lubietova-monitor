@@ -152,64 +152,6 @@ button.lb-row[aria-pressed='true'] { background: var(--color-bg); box-shadow: in
     </div>
   </section>
 
-  <section class='lb-card lb-pozor' id='na-co-si-vsimnut'>
-    <h2 class='lb-h2'>Na čo si všimnúť</h2>
-    <p class='lb-hint'>Najdôležitejšie zistenia z návrhu aj s otázkami, ktoré sa oplatí položiť na zastupiteľstve.</p>
-    <div class='lb-insights'>
-      <article class='lb-ins' id='zistenie-investicie'>
-        <h3 class='lb-h3'><span class='lb-badge'>1</span>Investície takmer zmiznú</h3>
-        <p>V rokoch 2027–2029 je na investície len <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Návrh 2027'>—</b> ročne, na pozemky a fotovoltiku na škole. V roku 2026 to bolo <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Upravený 2026'>—</b> a v roku 2025 <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Skutočnosť 2025'>—</b>. Kapitálové príjmy sú len <b data-draw='val-eur' data-source='suhrn' data-field='kap_prijmy' data-where='obdobie=Návrh 2027'>—</b>, rozpočet teda nepočíta ani s dotáciami na projekty.</p>
-        <p class='lb-q'>Aké investície obec plánuje a z čoho ich zaplatí?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-rezerva'>
-        <h3 class='lb-h3'><span class='lb-badge'>2</span>Rozpočet bez rezervy</h3>
-        <div class='lb-ucet' data-draw='rezerva' data-source='rezerva_2027'></div>
-        <p>Prebytok bežného rozpočtu pokryje len investície a splátku úveru. Na nepredvídané výdavky ani do rezervného fondu nezostáva nič.</p>
-        <p class='lb-q'>Koľko peňazí je dnes v rezervnom fonde?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-zmeny'>
-        <h3 class='lb-h3'><span class='lb-badge'>3</span>Kde sa kráti a kde pridáva</h3>
-        <p class='lb-hint'>Zmena bežných výdavkov v návrhu 2027 oproti upravenému rozpočtu 2026. Zobrazené sú oblasti so zmenou aspoň 2 000 €. Časť poklesov sú len jednorazové výdavky roku 2026 (napríklad z rezervného fondu alebo vrátenie dotácie), rozpis je nižšie v časti Najväčšie zmeny v položkách.</p>
-        <div class='lb-bars' data-draw='zmeny-oblasti' data-source='zmeny_oblasti'></div>
-        <p class='lb-q'>Prečo klesá príspevok FK Baník (zo 6 000 € na 3 000 €) a peniaze na kultúrne akcie (z 13 000 € na 10 000 €)?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-roky'>
-        <h3 class='lb-h3'><span class='lb-badge'>4</span>Roky 2028 a 2029 sú len kópia</h3>
-        <p>Výdavky sú v návrhu na roky 2027, 2028 aj 2029 rovnaké: <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2027'>—</b>, <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2028'>—</b> a <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2029'>—</b>. Nepočíta sa s infláciou, rastom platov ani cien energií, takže ako plán majú tieto roky malú výpovednú hodnotu.</p>
-      </article>
-      <article class='lb-ins' id='zistenie-deficity'>
-        <h3 class='lb-h3'><span class='lb-badge'>5</span>Prebytok bežného rozpočtu sa zmenšuje</h3>
-        <p class='lb-hint'>Bežné príjmy mínus bežné výdavky, teda koľko zostane z chodu obce a školy. 2024 a 2025 sú skutočnosť, 2026 a 2027 plán.</p>
-        <div class='lb-bars' data-draw='vysledky' data-source='vysledok'></div>
-        <p>V rokoch 2024 a 2025 zostalo z bežného rozpočtu 110 552 € a 158 457 €. Investície do ciest, ulíc a odvodnenia sa platili z tohto prebytku, z eurofondov a z rezervného fondu a fondu rozvoja a opráv. Upravený rozpočet 2026 počíta v bežnom rozpočte s mínusom, ktorý kryje rezervný fond. Návrh 2027 nepočíta s peniazmi z fondov ani zo zostatkov: tieto príjmy sú <b data-draw='val-eur' data-source='suhrn' data-field='fo_prijmy' data-where='obdobie=Návrh 2027'>—</b>.</p>
-        <p class='lb-hint'>Skutočnosť a plán sa nedajú porovnať úplne, obce príjmy zvyčajne plánujú opatrne.</p>
-        <p class='lb-q'>Prečo má byť prebytok v roku 2027 o toľko menší ako v rokoch 2024 a 2025?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-odpad'>
-        <h3 class='lb-h3'><span class='lb-badge'>6</span>Poplatok za odpad nepokryje všetky náklady</h3>
-        <p>Poplatok za komunálny odpad prinesie <b data-draw='val-eur' data-source='prijmy' data-field='suma' data-where='skupina=Poplatok za komunálny odpad'>—</b>, odpady stoja <b data-draw='val-eur' data-source='vydavky' data-field='navrh_2027' data-where='oblast=Odpady'>—</b>. Poplatok teda pokrýva <b data-draw='val-pct' data-source='odpad_pokrytie'>—</b> nákladov. Poplatok aj daň z nehnuteľností ostávajú na úrovni roku 2026.</p>
-      </article>
-      <article class='lb-ins' id='zistenie-dohody'>
-        <h3 class='lb-h3'><span class='lb-badge'>7</span>Na úrade menej platov, viac dohôd</h3>
-        <p>Platy zamestnancov obecného úradu klesajú z 83 968 € na 71 262 €, odmeny za prácu na dohodu naopak rastú z 12 362 € na 26 620 €. Materiál na prevádzku úradu rastie z 8 776 € na 16 000 € a energie (vykurovanie a elektrina) o 8 370 €.</p>
-        <p class='lb-q'>Ide o presun práce zo zamestnancov na dohody a čo je v prevádzkovej réžii?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-cov'>
-        <h3 class='lb-h3'><span class='lb-badge'>8</span>Stočné pokryje len polovicu nákladov na čistiareň</h3>
-        <p>Stočné prinesie 30 000 €, prevádzka čistiarne odpadových vôd stojí 59 000 €. Zo stočného sa platí obsluha, údržba a rozbory vody, elektrinu za 28 000 € platí obec z vlastných peňazí. Pre porovnanie, koľko nákladov pokryjú poplatky v iných oblastiach:</p>
-        <div class='lb-bars' data-draw='pokrytie' data-source='pokrytie'></div>
-        <p class='lb-hint'>Cenu stočného schvaľuje Úrad pre reguláciu sieťových odvetví. Platná cena 0,8539 € za m³ a 10 € ročne (bez DPH, do konca roka 2027) vychádza z prevádzkových nákladov 31 313 € a odpisov 2 890 €. Rozpočet počíta s nákladmi 59 000 €.</p>
-        <p class='lb-q'>Prečo obec pri výpočte ceny stočného rátala s nižšími nákladmi, ako uvádza rozpočet?</p>
-      </article>
-      <article class='lb-ins' id='zistenie-pozicky'>
-        <h3 class='lb-h3'><span class='lb-badge'>9</span>Obecné firmy: nájom, pôžičky a zlúčenie</h3>
-        <p>Obecné lesy Ľubietová platia obci za prenájom lesov 6 € za každý vyťažený m³ dreva. Poľnohospodárske pozemky obec prenajíma podľa zmlúv z mája 2026 za necelých 4 500 € ročne, väčšinu zo 123 000 € za prenájom pozemkov teda tvorí nájom lesov.</p>
-        <p>Z rezervného fondu obec v roku 2025 požičala Obecným lesom 150 000 € na lesnú cestu Vôdka so splatnosťou do konca roka 2025 a v tom roku sa jej zo splátok vrátilo 150 000 €. Obecnej píle požičala 40 000 € v roku 2024 na nakladač a 80 000 € v roku 2025 na pílu a guľatinu. Podľa zmlúv a dodatkov ich mala píla vrátiť v roku 2026, schválený rozpočet 2026 s tým počítal (120 000 €), upravený rozpočet 2026 ani návrh na roky 2027–2029 už nie. V upravenom rozpočte 2026 je aj 2 460 € na poradenstvo k zlúčeniu spoločnosti.</p>
-        <p class='lb-q'>Čo bude s pôžičkami píle (120 000 €) po jej zlúčení s Obecnými lesmi a kedy ich obec dostane späť?</p>
-      </article>
-    </div>
-  </section>
-
   <section class='lb-card' id='vyvoj'>
     <div class='lb-head'>
       <div>
@@ -291,6 +233,64 @@ button.lb-row[aria-pressed='true'] { background: var(--color-bg); box-shadow: in
     <p class='lb-hint'>Kapitálové výdavky. Na roky 2027–2029 zostáva len kúpa pozemkov a fotovoltika na škole.</p>
     <div class='lb-bars' data-draw='investicie' data-source='investicie'></div>
     <div class='lb-legend'><span><i class='lb-sw' data-c='m'></i>Upravený 2026</span><span><i class='lb-sw' data-c='1'></i>Návrh 2027</span></div>
+  </section>
+
+  <section class='lb-card lb-pozor' id='co-si-vsimnut'>
+    <h2 class='lb-h2'>Čo si všimnúť</h2>
+    <p class='lb-hint'>Najdôležitejšie zistenia z návrhu aj s otázkami, ktoré sa oplatí položiť na zastupiteľstve.</p>
+    <div class='lb-insights'>
+      <article class='lb-ins' id='zistenie-investicie'>
+        <h3 class='lb-h3'><span class='lb-badge'>1</span>Investície takmer zmiznú</h3>
+        <p>V rokoch 2027–2029 je na investície len <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Návrh 2027'>—</b> ročne, na pozemky a fotovoltiku na škole. V roku 2026 to bolo <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Upravený 2026'>—</b> a v roku 2025 <b data-draw='val-eur' data-source='suhrn' data-field='kap_vydavky' data-where='obdobie=Skutočnosť 2025'>—</b>. Kapitálové príjmy sú len <b data-draw='val-eur' data-source='suhrn' data-field='kap_prijmy' data-where='obdobie=Návrh 2027'>—</b>, rozpočet teda nepočíta ani s dotáciami na projekty.</p>
+        <p class='lb-q'>Aké investície obec plánuje a z čoho ich zaplatí?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-rezerva'>
+        <h3 class='lb-h3'><span class='lb-badge'>2</span>Rozpočet bez rezervy</h3>
+        <div class='lb-ucet' data-draw='rezerva' data-source='rezerva_2027'></div>
+        <p>Prebytok bežného rozpočtu pokryje len investície a splátku úveru. Na nepredvídané výdavky ani do rezervného fondu nezostáva nič.</p>
+        <p class='lb-q'>Koľko peňazí je dnes v rezervnom fonde?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-zmeny'>
+        <h3 class='lb-h3'><span class='lb-badge'>3</span>Kde sa kráti a kde pridáva</h3>
+        <p class='lb-hint'>Zmena bežných výdavkov v návrhu 2027 oproti upravenému rozpočtu 2026. Zobrazené sú oblasti so zmenou aspoň 2 000 €. Časť poklesov sú len jednorazové výdavky roku 2026 (napríklad z rezervného fondu alebo vrátenie dotácie), rozpis je vyššie v časti Najväčšie zmeny v položkách.</p>
+        <div class='lb-bars' data-draw='zmeny-oblasti' data-source='zmeny_oblasti'></div>
+        <p class='lb-q'>Prečo klesá príspevok FK Baník (zo 6 000 € na 3 000 €) a peniaze na kultúrne akcie (z 13 000 € na 10 000 €)?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-roky'>
+        <h3 class='lb-h3'><span class='lb-badge'>4</span>Roky 2028 a 2029 sú len kópia</h3>
+        <p>Výdavky sú v návrhu na roky 2027, 2028 aj 2029 rovnaké: <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2027'>—</b>, <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2028'>—</b> a <b data-draw='val-eur' data-source='suhrn' data-field='vydavky' data-where='obdobie=Návrh 2029'>—</b>. Nepočíta sa s infláciou, rastom platov ani cien energií, takže ako plán majú tieto roky malú výpovednú hodnotu.</p>
+      </article>
+      <article class='lb-ins' id='zistenie-deficity'>
+        <h3 class='lb-h3'><span class='lb-badge'>5</span>Prebytok bežného rozpočtu sa zmenšuje</h3>
+        <p class='lb-hint'>Bežné príjmy mínus bežné výdavky, teda koľko zostane z chodu obce a školy. 2024 a 2025 sú skutočnosť, 2026 a 2027 plán.</p>
+        <div class='lb-bars' data-draw='vysledky' data-source='vysledok'></div>
+        <p>V rokoch 2024 a 2025 zostalo z bežného rozpočtu 110 552 € a 158 457 €. Investície do ciest, ulíc a odvodnenia sa platili z tohto prebytku, z eurofondov a z rezervného fondu a fondu rozvoja a opráv. Upravený rozpočet 2026 počíta v bežnom rozpočte s mínusom, ktorý kryje rezervný fond. Návrh 2027 nepočíta s peniazmi z fondov ani zo zostatkov: tieto príjmy sú <b data-draw='val-eur' data-source='suhrn' data-field='fo_prijmy' data-where='obdobie=Návrh 2027'>—</b>.</p>
+        <p class='lb-hint'>Skutočnosť a plán sa nedajú porovnať úplne, obce príjmy zvyčajne plánujú opatrne.</p>
+        <p class='lb-q'>Prečo má byť prebytok v roku 2027 o toľko menší ako v rokoch 2024 a 2025?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-odpad'>
+        <h3 class='lb-h3'><span class='lb-badge'>6</span>Poplatok za odpad nepokryje všetky náklady</h3>
+        <p>Poplatok za komunálny odpad prinesie <b data-draw='val-eur' data-source='prijmy' data-field='suma' data-where='skupina=Poplatok za komunálny odpad'>—</b>, odpady stoja <b data-draw='val-eur' data-source='vydavky' data-field='navrh_2027' data-where='oblast=Odpady'>—</b>. Poplatok teda pokrýva <b data-draw='val-pct' data-source='odpad_pokrytie'>—</b> nákladov. Poplatok aj daň z nehnuteľností ostávajú na úrovni roku 2026.</p>
+      </article>
+      <article class='lb-ins' id='zistenie-dohody'>
+        <h3 class='lb-h3'><span class='lb-badge'>7</span>Na úrade menej platov, viac dohôd</h3>
+        <p>Platy zamestnancov obecného úradu klesajú z 83 968 € na 71 262 €, odmeny za prácu na dohodu naopak rastú z 12 362 € na 26 620 €. Materiál na prevádzku úradu rastie z 8 776 € na 16 000 € a energie (vykurovanie a elektrina) o 8 370 €.</p>
+        <p class='lb-q'>Ide o presun práce zo zamestnancov na dohody a čo je v prevádzkovej réžii?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-cov'>
+        <h3 class='lb-h3'><span class='lb-badge'>8</span>Stočné pokryje len polovicu nákladov na čistiareň</h3>
+        <p>Stočné prinesie 30 000 €, prevádzka čistiarne odpadových vôd stojí 59 000 €. Zo stočného sa platí obsluha, údržba a rozbory vody, elektrinu za 28 000 € platí obec z vlastných peňazí. Pre porovnanie, koľko nákladov pokryjú poplatky v iných oblastiach:</p>
+        <div class='lb-bars' data-draw='pokrytie' data-source='pokrytie'></div>
+        <p class='lb-hint'>Cenu stočného schvaľuje Úrad pre reguláciu sieťových odvetví. Platná cena 0,8539 € za m³ a 10 € ročne (bez DPH, do konca roka 2027) vychádza z prevádzkových nákladov 31 313 € a odpisov 2 890 €. Rozpočet počíta s nákladmi 59 000 €.</p>
+        <p class='lb-q'>Prečo obec pri výpočte ceny stočného rátala s nižšími nákladmi, ako uvádza rozpočet?</p>
+      </article>
+      <article class='lb-ins' id='zistenie-pozicky'>
+        <h3 class='lb-h3'><span class='lb-badge'>9</span>Obecné firmy: nájom, pôžičky a zlúčenie</h3>
+        <p>Obecné lesy Ľubietová platia obci za prenájom lesov 6 € za každý vyťažený m³ dreva. Poľnohospodárske pozemky obec prenajíma podľa zmlúv z mája 2026 za necelých 4 500 € ročne, väčšinu zo 123 000 € za prenájom pozemkov teda tvorí nájom lesov.</p>
+        <p>Z rezervného fondu obec v roku 2025 požičala Obecným lesom 150 000 € na lesnú cestu Vôdka so splatnosťou do konca roka 2025 a v tom roku sa jej zo splátok vrátilo 150 000 €. Obecnej píle požičala 40 000 € v roku 2024 na nakladač a 80 000 € v roku 2025 na pílu a guľatinu. Podľa zmlúv a dodatkov ich mala píla vrátiť v roku 2026, schválený rozpočet 2026 s tým počítal (120 000 €), upravený rozpočet 2026 ani návrh na roky 2027–2029 už nie. V upravenom rozpočte 2026 je aj 2 460 € na poradenstvo k zlúčeniu spoločnosti.</p>
+        <p class='lb-q'>Čo bude s pôžičkami píle (120 000 €) po jej zlúčení s Obecnými lesmi a kedy ich obec dostane späť?</p>
+      </article>
+    </div>
   </section>
 
 
