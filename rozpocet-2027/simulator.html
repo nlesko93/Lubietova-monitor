@@ -62,6 +62,9 @@ details.items summary::-webkit-details-marker{display:none}
 .item{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0;border-bottom:1px dotted var(--line)}
 .item span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
 .locked-list .item{font-size:14px}
+.gloss{margin:0 0 14px;font-size:14px}
+.gloss summary{cursor:pointer;color:var(--c0)}
+.gloss ul{margin:6px 0 0;padding-left:20px;line-height:1.5}
 .det-toggle{margin:4px 0 8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
 .item.edit{align-items:center}
 .item.edit .iv{display:flex;gap:8px;align-items:center}
@@ -134,6 +137,14 @@ button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
   <p class="small muted"><a href="./">← Infografika rozpočtu 2027–2029</a></p>
   <h1>Poskladajte si rozpočet obce Ľubietová</h1>
   <p class="lead">Začínate s návrhom rozpočtu obce na rok 2027. Posúvajte príjmy a výdavky, pridajte investície a nájdite na ne peniaze. Rozpočet musí na konci sedieť: bežné výdavky nesmú prevýšiť bežné príjmy a investície aj splátky úverov musia mať krytie. Svoj rozpočet potom pošlite odkazom.</p>
+  <details class="gloss"><summary>Čo je bežný a kapitálový rozpočet?</summary><ul>
+    <li><strong>Bežné príjmy</strong>: peniaze, ktoré obec dostáva pravidelne každý rok: podielové dane, daň z nehnuteľností, poplatky, nájomné a peniaze od štátu na školu a ďalšie úlohy.</li>
+    <li><strong>Bežné výdavky</strong>: peniaze na každodenný chod obce a školy: platy a odvody, energie, služby, materiál, opravy a údržba, príspevky spolkom. Drobné nákupy do 1 700 € sú tiež bežné výdavky.</li>
+    <li><strong>Kapitálové príjmy</strong>: jednorazové príjmy z majetku alebo na investície: predaj pozemkov a budov, dotácie na stavby a rekonštrukcie.</li>
+    <li><strong>Kapitálové výdavky</strong>: investície, z ktorých vzniká alebo sa zhodnocuje majetok obce: stavby, rekonštrukcie, kúpa pozemkov, strojov a zariadení nad 1 700 € alebo softvéru nad 2 400 €.</li>
+    <li><strong>Finančné operácie</strong>: nie sú to príjmy ani výdavky, len presuny peňazí: rezervný fond, nevyčerpané peniaze z minulých rokov, úvery a ich splátky, pôžičky obecným firmám a ich vrátenie.</li>
+    <li><strong>Pravidlo</strong>: bežný rozpočet má byť spravidla vyrovnaný alebo v prebytku. Kapitálový rozpočet môže byť v schodku, ak ho pokryje prebytok bežného rozpočtu alebo finančné operácie (zákon 583/2004 Z. z., § 10).</li>
+  </ul></details>
 
   <div class="bar" id="bar">
     <div class="bar-in">
