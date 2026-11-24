@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,14 +65,25 @@ jobs:
         with:
           path: .
 
+      # GitHub občas nenájde práve nahraný artefakt stránky, preto druhý pokus
       - name: Deploy na GitHub Pages
-        id: deployment
+        id: deploy1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Počkať pred druhým pokusom
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy na GitHub Pages (druhý pokus)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
       - name: Overenie nasadenej stránky
         run: |
           sleep 10
-          url="${{ steps.deployment.outputs.page_url }}"
+          url="${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url }}"
           echo "Kontrolujem $url"
           curl -sSf "$url" | grep -q "Ľubietová" && echo "OK: stránka beží"
           curl -sSf "${url}data/news.json" | head -c 200
